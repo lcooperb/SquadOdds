@@ -1,0 +1,412 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import { useSession } from 'next-auth/react'
+import { useRouter } from 'next/navigation'
+import Navigation from '@/components/Navigation'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
+import { Badge } from '@/components/ui/Badge'
+import { Button } from '@/components/ui/Button'
+import { Progress } from '@/components/ui/Progress'
+import {
+  User,
+  DollarSign,
+  TrendingUp,
+  TrendingDown,
+  Target,
+  Calendar,
+  BarChart3,
+  Trophy,
+  Activity,
+  Clock
+} from 'lucide-react'
+
+interface UserProfile {
+  id: string
+  email: string
+  username: string
+  displayName: string
+  image?: string
+  virtualBalance: number
+  totalWinnings: number
+  totalLosses: number
+  isAdmin: boolean
+  createdAt: string
+  bets: Array<{
+    id: string
+    side: string
+    amount: number
+    price: number
+    shares: number
+    status: string
+    createdAt: string
+    event: {
+      id: string
+      title: string
+      category: string
+      status: string
+      resolved: boolean
+      outcome: boolean | null
+    }
+  }>
+  createdEvents: Array<{
+    id: string
+    title: string
+    category: string
+    status: string
+    resolved: boolean
+    createdAt: string
+  }>
+  _count: {
+    bets: number
+    createdEvents: number
+  }
+}
+
+export default function Profile() {
+  const { data: session, status } = useSession()
+  const router = useRouter()
+  const [profile, setProfile] = useState<UserProfile | null>(null)
+  const [loading, setLoading] = useState(true)
+  const [activeTab, setActiveTab] = useState<'bets' | 'created'>('bets')
+
+  useEffect(() => {
+    if (status === 'loading') return
+    if (!session) {
+      router.push('/auth/signin')
+      return
+    }
+
+    fetchProfile()
+  }, [session, status, router])
+
+  const fetchProfile = async () => {
+    try {
+      const response = await fetch('/api/users')
+      if (response.ok) {
+        const userData = await response.json()
+        setProfile(userData)
+      }
+    } catch (error) {
+      console.error('Error fetching profile:', error)
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  if (loading || !session) {
+    return (
+      <>
+        <Navigation />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-white">Loading profile...</div>
+        </div>
+      </>
+    )
+  }
+
+  if (!profile) {
+    return (
+      <>
+        <Navigation />
+        <div className="min-h-screen flex items-center justify-center">
+          <div className="text-center">
+            <h1 className="text-2xl font-bold text-white mb-2">Profile not found</h1>
+            <p className="text-gray-400">Unable to load your profile information.</p>
+          </div>
+        </div>
+      </>
+    )
+  }
+
+  const activeBets = profile.bets.filter(bet => bet.status === 'ACTIVE')
+  const completedBets = profile.bets.filter(bet => bet.status !== 'ACTIVE')
+  const wonBets = completedBets.filter(bet => bet.status === 'WON')
+  const winRate = completedBets.length > 0 ? (wonBets.length / completedBets.length) * 100 : 0
+  const netProfit = Number(profile.totalWinnings) - Number(profile.totalLosses)
+
+  const getBetStatusColor = (status: string) => {
+    switch (status) {
+      case 'WON': return 'success'
+      case 'LOST': return 'error'
+      case 'ACTIVE': return 'default'
+      default: return 'secondary'
+    }
+  }
+
+  const getCategoryColor = (category: string) => {
+    switch (category.toLowerCase()) {
+      case 'career': return 'default'
+      case 'relationships': return 'error'
+      case 'personal': return 'success'
+      case 'life events': return 'warning'
+      default: return 'secondary'
+    }
+  }
+
+  return (
+    <>
+      <Navigation />
+      <main className="container mx-auto px-4 py-8">
+        {/* Profile Header */}
+        <div className="mb-8">
+          <div className="flex items-center gap-6 mb-6">
+            <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center">
+              <User className="h-10 w-10 text-white" />
+            </div>
+            <div>
+              <h1 className="text-3xl font-bold text-white">{profile.displayName}</h1>
+              <p className="text-gray-400 text-lg">@{profile.username}</p>
+              <p className="text-gray-500 text-sm">
+                Member since {new Date(profile.createdAt).toLocaleDateString()}
+              </p>
+            </div>
+          </div>
+
+          {/* Stats Overview */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardContent className="p-4 text-center">
+                <DollarSign className="h-8 w-8 text-green-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">
+                  ${Number(profile.virtualBalance).toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-400">Current Balance</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardContent className="p-4 text-center">
+                <TrendingUp className="h-8 w-8 text-purple-400 mx-auto mb-2" />
+                <div className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)}
+                </div>
+                <div className="text-sm text-gray-400">Net Profit</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardContent className="p-4 text-center">
+                <Target className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">{winRate.toFixed(1)}%</div>
+                <div className="text-sm text-gray-400">Win Rate</div>
+              </CardContent>
+            </Card>
+
+            <Card className="bg-gray-800/50 border-gray-700">
+              <CardContent className="p-4 text-center">
+                <Activity className="h-8 w-8 text-orange-400 mx-auto mb-2" />
+                <div className="text-2xl font-bold text-white">{profile._count.bets}</div>
+                <div className="text-sm text-gray-400">Total Bets</div>
+              </CardContent>
+            </Card>
+          </div>
+        </div>
+
+        {/* Detailed Stats */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <BarChart3 className="h-5 w-5" />
+                Performance
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Total Winnings</span>
+                <span className="text-green-400 font-semibold">
+                  +${Number(profile.totalWinnings).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Total Losses</span>
+                <span className="text-red-400 font-semibold">
+                  -${Number(profile.totalLosses).toFixed(2)}
+                </span>
+              </div>
+              <div className="flex justify-between border-t border-gray-700 pt-2">
+                <span className="text-white font-medium">Net Profit/Loss</span>
+                <span className={`font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5" />
+                Betting Stats
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Active Bets</span>
+                <span className="text-white font-semibold">{activeBets.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Won Bets</span>
+                <span className="text-green-400 font-semibold">{wonBets.length}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Lost Bets</span>
+                <span className="text-red-400 font-semibold">
+                  {completedBets.length - wonBets.length}
+                </span>
+              </div>
+              <div className="space-y-2">
+                <div className="flex justify-between text-sm">
+                  <span className="text-gray-400">Win Rate</span>
+                  <span className="text-white">{winRate.toFixed(1)}%</span>
+                </div>
+                <Progress value={winRate} variant="yes" />
+              </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="h-5 w-5" />
+                Market Creation
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="flex justify-between">
+                <span className="text-gray-400">Markets Created</span>
+                <span className="text-white font-semibold">{profile._count.createdEvents}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Active Markets</span>
+                <span className="text-white font-semibold">
+                  {profile.createdEvents.filter(e => e.status === 'ACTIVE').length}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Resolved Markets</span>
+                <span className="text-white font-semibold">
+                  {profile.createdEvents.filter(e => e.resolved).length}
+                </span>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+
+        {/* Activity Tabs */}
+        <Card>
+          <CardHeader>
+            <div className="flex items-center justify-between">
+              <CardTitle>Activity</CardTitle>
+              <div className="flex gap-2">
+                <Button
+                  variant={activeTab === 'bets' ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab('bets')}
+                >
+                  My Bets ({profile.bets.length})
+                </Button>
+                <Button
+                  variant={activeTab === 'created' ? 'primary' : 'ghost'}
+                  size="sm"
+                  onClick={() => setActiveTab('created')}
+                >
+                  Created Markets ({profile.createdEvents.length})
+                </Button>
+              </div>
+            </div>
+          </CardHeader>
+          <CardContent>
+            {activeTab === 'bets' ? (
+              <div className="space-y-4">
+                {profile.bets.length > 0 ? (
+                  profile.bets.map((bet) => (
+                    <div key={bet.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant={getCategoryColor(bet.event.category)}>
+                            {bet.event.category}
+                          </Badge>
+                          <Badge variant={getBetStatusColor(bet.status)}>
+                            {bet.status}
+                          </Badge>
+                        </div>
+                        <h4 className="font-medium text-white mb-1">{bet.event.title}</h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-400">
+                          <span>Bet: ${Number(bet.amount).toFixed(2)} on {bet.side}</span>
+                          <span>@ {Number(bet.price).toFixed(0)}¢</span>
+                          <span className="flex items-center gap-1">
+                            <Clock className="h-3 w-3" />
+                            {new Date(bet.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <div className="text-white font-medium">
+                          {Number(bet.shares).toFixed(2)} shares
+                        </div>
+                        {bet.status !== 'ACTIVE' && (
+                          <div className={`text-sm ${bet.status === 'WON' ? 'text-green-400' : 'text-red-400'}`}>
+                            {bet.status === 'WON' ? '+' : '-'}${Number(bet.amount).toFixed(2)}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <Target className="h-12 w-12 mx-auto mb-2" />
+                    <p>No bets placed yet</p>
+                    <p className="text-sm">Start trading to see your bets here!</p>
+                  </div>
+                )}
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {profile.createdEvents.length > 0 ? (
+                  profile.createdEvents.map((event) => (
+                    <div key={event.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <Badge variant={getCategoryColor(event.category)}>
+                            {event.category}
+                          </Badge>
+                          <Badge variant={event.resolved ? 'success' : 'default'}>
+                            {event.status}
+                          </Badge>
+                        </div>
+                        <h4 className="font-medium text-white mb-1">{event.title}</h4>
+                        <div className="flex items-center gap-4 text-sm text-gray-400">
+                          <span className="flex items-center gap-1">
+                            <Calendar className="h-3 w-3" />
+                            Created {new Date(event.createdAt).toLocaleDateString()}
+                          </span>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => router.push(`/market/${event.id}`)}
+                        >
+                          View Market
+                        </Button>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <Calendar className="h-12 w-12 mx-auto mb-2" />
+                    <p>No markets created yet</p>
+                    <p className="text-sm">Create your first market to see it here!</p>
+                  </div>
+                )}
+              </div>
+            )}
+          </CardContent>
+        </Card>
+      </main>
+    </>
+  )
+}
