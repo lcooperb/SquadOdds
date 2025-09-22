@@ -237,7 +237,7 @@ export default function AdminPanel() {
                       <CardTitle className="text-lg">{event.title}</CardTitle>
                       <p className="text-gray-400 text-sm mt-1">{event.description}</p>
                       <div className="flex items-center gap-2 mt-2">
-                        <Badge variant="outline">{event.category}</Badge>
+                        <Badge variant="secondary">{event.category}</Badge>
                         <Badge variant={event.marketType === 'BINARY' ? 'default' : 'secondary'}>
                           {event.marketType === 'BINARY' ? 'Yes/No' : 'Multiple Choice'}
                         </Badge>
