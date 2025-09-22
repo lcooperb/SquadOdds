@@ -78,7 +78,7 @@ export default function SignUp() {
       <div className="max-w-md w-full space-y-8 p-8">
         <div>
           <h2 className="mt-6 text-center text-3xl font-bold text-white">
-            Join <span className="text-purple-500">FriendBets</span>
+            Join <span className="text-purple-500">SquadOdds</span>
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>

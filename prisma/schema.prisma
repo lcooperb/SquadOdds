@@ -80,17 +80,21 @@ model Event {
   resolutionDate DateTime?
   endDate        DateTime?   // Optional for ongoing events
   isOngoing      Boolean     @default(false) // For events without end dates
-  yesPrice       Decimal     @default(50.00) // Price as percentage (0-100)
+  marketType     String      @default("BINARY") // BINARY (yes/no) or MULTIPLE (multiple options)
+  yesPrice       Decimal     @default(50.00) // Price as percentage (0-100) - only for binary
   totalVolume    Decimal     @default(0.00)
   resolved       Boolean     @default(false)
-  outcome        Boolean? // true for YES, false for NO
+  outcome        Boolean? // true for YES, false for NO (only for binary markets)
+  winningOptionId String?   // ID of winning option for multiple choice markets
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  createdBy    User         @relation("EventCreator", fields: [createdById], references: [id])
-  bets         Bet[]
-  priceHistory PricePoint[]
-  comments     Comment[]
+  createdBy     User         @relation("EventCreator", fields: [createdById], references: [id])
+  bets          Bet[]
+  priceHistory  PricePoint[]
+  comments      Comment[]
+  options       MarketOption[] // For multiple choice markets
+  winningOption MarketOption? @relation("WinningOption", fields: [winningOptionId], references: [id])
 
   @@map("events")
 }
@@ -108,20 +112,52 @@ model PricePoint {
   @@map("price_history")
 }
 
+model MarketOption {
+  id          String   @id @default(cuid())
+  eventId     String
+  title       String   // e.g., "Alice", "Bob", "Charlie"
+  description String?  // Optional description
+  price       Decimal  @default(33.33) // Current probability/price as percentage
+  totalVolume Decimal  @default(0.00)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  event        Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  bets         Bet[]
+  priceHistory OptionPricePoint[]
+  winningEvents Event[] @relation("WinningOption")
+
+  @@map("market_options")
+}
+
+model OptionPricePoint {
+  id       String   @id @default(cuid())
+  optionId String
+  price    Decimal
+  volume   Decimal
+  timestamp DateTime @default(now())
+
+  option MarketOption @relation(fields: [optionId], references: [id], onDelete: Cascade)
+
+  @@map("option_price_history")
+}
+
 model Bet {
   id        String    @id @default(cuid())
   userId    String
   eventId   String
-  side      String // "YES" or "NO"
+  optionId  String?   // For multiple choice markets
+  side      String?   // "YES" or "NO" for binary markets
   amount    Decimal
-  price     Decimal // Price when bet was made (0-100)
-  shares    Decimal // Calculated from amount/price * 100
+  price     Decimal   // Price when bet was made (0-100)
+  shares    Decimal   // Calculated from amount/price * 100
   status    String    @default("ACTIVE") // ACTIVE, WON, LOST
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
 
-  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
-  event Event @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  user   User          @relation(fields: [userId], references: [id], onDelete: Cascade)
+  event  Event         @relation(fields: [eventId], references: [id], onDelete: Cascade)
+  option MarketOption? @relation(fields: [optionId], references: [id], onDelete: Cascade)
 
   @@map("bets")
 }

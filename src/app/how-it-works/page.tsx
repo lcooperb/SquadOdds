@@ -8,14 +8,14 @@ export default function HowItWorks() {
       <Navigation />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
-          <h1 className="text-4xl font-bold text-white mb-8 text-center">How FriendBets Works</h1>
+          <h1 className="text-4xl font-bold text-white mb-8 text-center">How SquadOdds Works</h1>
 
           <div className="grid md:grid-cols-3 gap-8 mb-12">
             <div className="text-center p-6 bg-gray-800/50 rounded-lg border border-gray-700">
               <div className="text-4xl mb-4">🎯</div>
               <h3 className="text-xl font-semibold text-white mb-4">Create Markets</h3>
               <p className="text-gray-400">
-                Anyone in your friend group can create prediction markets about personal events,
+                Anyone in your squad can create prediction markets about personal events,
                 achievements, or future outcomes. Set an end date and let the betting begin!
               </p>
             </div>
@@ -65,8 +65,8 @@ export default function HowItWorks() {
             <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700">
               <h2 className="text-2xl font-semibold text-white mb-4">How Pricing Works</h2>
               <p className="text-gray-300 mb-4">
-                FriendBets uses a simple market maker algorithm. Prices represent the collective
-                opinion of your friend group:
+                SquadOdds uses a simple market maker algorithm. Prices represent the collective
+                opinion of your squad:
               </p>
               <ul className="space-y-2 text-gray-300">
                 <li className="flex items-start">
@@ -87,7 +87,7 @@ export default function HowItWorks() {
             <div className="bg-gray-800/30 rounded-lg p-6 border border-gray-700">
               <h2 className="text-2xl font-semibold text-white mb-4">Settling Up</h2>
               <p className="text-gray-300 mb-4">
-                FriendBets tracks virtual winnings and losses. When you&apos;re ready to settle:
+                SquadOdds tracks virtual winnings and losses. When you&apos;re ready to settle:
               </p>
               <ul className="space-y-2 text-gray-300">
                 <li className="flex items-start">
@@ -109,7 +109,7 @@ export default function HowItWorks() {
           <div className="text-center mt-12">
             <h2 className="text-2xl font-semibold text-white mb-4">Ready to Start?</h2>
             <p className="text-gray-400 mb-6">
-              Join your friend group&apos;s prediction market and start making your bets!
+              Join your squad&apos;s prediction market and start making your bets!
             </p>
             <div className="flex gap-4 justify-center">
               <Link href="/auth/signup">

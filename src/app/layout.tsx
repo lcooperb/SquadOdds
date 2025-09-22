@@ -6,8 +6,8 @@ import Providers from '@/components/Providers'
 const inter = Inter({ subsets: ['latin'] })
 
 export const metadata: Metadata = {
-  title: 'FriendBets - Friend Group Predictions',
-  description: 'A prediction market for your friend group to bet on personal life events',
+  title: 'SquadOdds - Squad Predictions',
+  description: 'A prediction market for your squad to bet on personal life events',
 }
 
 export default function RootLayout({

@@ -19,6 +19,7 @@ export async function GET(
             username: true,
           },
         },
+        options: true,
         bets: {
           include: {
             user: {
@@ -26,6 +27,12 @@ export async function GET(
                 id: true,
                 displayName: true,
                 username: true,
+              },
+            },
+            option: {
+              select: {
+                id: true,
+                title: true,
               },
             },
           },

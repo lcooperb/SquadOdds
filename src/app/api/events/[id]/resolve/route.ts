@@ -18,24 +18,48 @@ export async function POST(
       )
     }
 
-    const { outcome } = await request.json()
+    const { outcome, winningOptionId } = await request.json()
 
-    if (typeof outcome !== 'boolean') {
+    // Validate based on market type - we'll get the event first to check type
+    const eventToCheck = await prisma.event.findUnique({
+      where: { id: params.id },
+      select: { marketType: true }
+    })
+
+    if (!eventToCheck) {
       return NextResponse.json(
-        { message: 'Outcome must be true (YES) or false (NO)' },
-        { status: 400 }
+        { message: 'Event not found' },
+        { status: 404 }
       )
     }
 
-    // Get the event with all bets
+    if (eventToCheck.marketType === 'BINARY') {
+      if (typeof outcome !== 'boolean') {
+        return NextResponse.json(
+          { message: 'Binary markets require outcome to be true (YES) or false (NO)' },
+          { status: 400 }
+        )
+      }
+    } else if (eventToCheck.marketType === 'MULTIPLE') {
+      if (!winningOptionId || typeof winningOptionId !== 'string') {
+        return NextResponse.json(
+          { message: 'Multiple choice markets require winningOptionId' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Get the event with all bets and options
     const event = await prisma.event.findUnique({
       where: { id: params.id },
       include: {
         bets: {
           include: {
             user: true,
+            option: true,
           },
         },
+        options: true,
       },
     })
 
@@ -60,7 +84,8 @@ export async function POST(
         where: { id: params.id },
         data: {
           resolved: true,
-          outcome,
+          outcome: event.marketType === 'BINARY' ? outcome : null,
+          winningOptionId: event.marketType === 'MULTIPLE' ? winningOptionId : null,
           status: 'RESOLVED',
           resolutionDate: new Date(),
         },
@@ -68,7 +93,14 @@ export async function POST(
 
       // Process all bets
       for (const bet of event.bets) {
-        const isWinner = (outcome && bet.side === 'YES') || (!outcome && bet.side === 'NO')
+        let isWinner = false
+
+        if (event.marketType === 'BINARY') {
+          isWinner = (outcome && bet.side === 'YES') || (!outcome && bet.side === 'NO')
+        } else if (event.marketType === 'MULTIPLE') {
+          isWinner = bet.optionId === winningOptionId
+        }
+
         const newStatus = isWinner ? 'WON' : 'LOST'
 
         // Update bet status
@@ -109,10 +141,14 @@ export async function POST(
       return resolvedEvent
     })
 
+    const winnerDescription = event.marketType === 'BINARY'
+      ? (outcome ? 'YES' : 'NO')
+      : event.options?.find(opt => opt.id === winningOptionId)?.title || 'Unknown'
+
     return NextResponse.json({
       message: 'Event resolved successfully',
       event: result,
-      outcome: outcome ? 'YES' : 'NO',
+      outcome: winnerDescription,
     })
   } catch (error) {
     console.error('Error resolving event:', error)

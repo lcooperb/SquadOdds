@@ -1,6 +1,6 @@
-# FriendBets 🎯
+# SquadOdds 🎯
 
-A **Polymarket-inspired prediction market platform** for friend groups. Create and bet on personal life events with virtual money!
+A **Polymarket-inspired prediction market platform** for squads. Create and bet on personal life events with virtual money!
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![TypeScript](https://img.shields.io/badge/TypeScript-blue) ![Prisma](https://img.shields.io/badge/Prisma-2D3748) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38B2AC)
 
@@ -39,8 +39,8 @@ A **Polymarket-inspired prediction market platform** for friend groups. Create a
 
 1. **Clone the repository**
    ```bash
-   git clone https://github.com/yourusername/friendbets.git
-   cd friendbets
+   git clone https://github.com/yourusername/squadodds.git
+   cd squadodds
    ```
 
 2. **Install dependencies**
@@ -114,7 +114,7 @@ prisma/                   # Database schema and migrations
 1. **Sign Up**: Create an account to get $100 virtual money
 2. **Browse Markets**: Explore betting opportunities on the homepage
 3. **Place Bets**: Click any market to see details and place YES/NO bets
-4. **Create Markets**: Add new events for your friend group
+4. **Create Markets**: Add new events for your squad
 5. **Engage**: Comment on markets and see live trading activity
 6. **Track Performance**: Monitor your portfolio and leaderboard ranking
 
@@ -145,4 +145,4 @@ Found a bug or have a feature idea? Open an issue or submit a PR!
 
 ---
 
-**Built with ❤️ for friend group drama** 😄
+**Built with ❤️ for squad drama** 😄

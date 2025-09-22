@@ -176,7 +176,7 @@ export default function SearchDropdown() {
           ) : query.trim() && !loading ? (
             <div className="p-4 text-center text-gray-400">
               <Search className="h-8 w-8 mx-auto mb-2 opacity-50" />
-              <p>No markets found for "{query}"</p>
+              <p>No markets found for &quot;{query}&quot;</p>
               <p className="text-xs mt-1">Try searching with different keywords</p>
             </div>
           ) : null}

@@ -45,6 +45,20 @@ async function main() {
     },
   })
 
+  // Create admin user
+  const adminUser = await prisma.user.upsert({
+    where: { email: 'lcooperband@gmail.com' },
+    update: { isAdmin: true },
+    create: {
+      email: 'lcooperband@gmail.com',
+      username: 'lcooperband',
+      displayName: 'Admin User',
+      hashedPassword,
+      virtualBalance: 1000.00,
+      isAdmin: true,
+    },
+  })
+
   // Create sample events
   const event1 = await prisma.event.create({
     data: {
@@ -95,6 +109,58 @@ async function main() {
       createdById: user1.id,
       yesPrice: 45.0,
       totalVolume: 60.0,
+    },
+  })
+
+  // Create sample multiple choice market
+  const event5 = await prisma.event.create({
+    data: {
+      title: 'Which team will win the 2024 World Series?',
+      description: 'Pick which MLB team you think will win the 2024 World Series championship.',
+      category: 'Sports',
+      marketType: 'MULTIPLE',
+      endDate: new Date('2024-11-01'),
+      isOngoing: false,
+      createdById: user1.id,
+      yesPrice: 0, // Not used for multiple choice
+      totalVolume: 150.0,
+    },
+  })
+
+  // Create options for the multiple choice market
+  const option1 = await prisma.marketOption.create({
+    data: {
+      eventId: event5.id,
+      title: 'Los Angeles Dodgers',
+      price: 35.0,
+      totalVolume: 50.0,
+    },
+  })
+
+  const option2 = await prisma.marketOption.create({
+    data: {
+      eventId: event5.id,
+      title: 'New York Yankees',
+      price: 28.0,
+      totalVolume: 40.0,
+    },
+  })
+
+  const option3 = await prisma.marketOption.create({
+    data: {
+      eventId: event5.id,
+      title: 'Houston Astros',
+      price: 22.0,
+      totalVolume: 35.0,
+    },
+  })
+
+  const option4 = await prisma.marketOption.create({
+    data: {
+      eventId: event5.id,
+      title: 'Other Team',
+      price: 15.0,
+      totalVolume: 25.0,
     },
   })
 
@@ -162,6 +228,43 @@ async function main() {
       amount: 40.0,
       price: 80.0,
       shares: 50.0,
+    },
+  })
+
+  // Create sample bets for multiple choice market
+  await prisma.bet.create({
+    data: {
+      userId: user1.id,
+      eventId: event5.id,
+      side: null, // No side for multiple choice
+      optionId: option1.id,
+      amount: 30.0,
+      price: 35.0,
+      shares: 85.71,
+    },
+  })
+
+  await prisma.bet.create({
+    data: {
+      userId: user2.id,
+      eventId: event5.id,
+      side: null,
+      optionId: option2.id,
+      amount: 25.0,
+      price: 28.0,
+      shares: 89.29,
+    },
+  })
+
+  await prisma.bet.create({
+    data: {
+      userId: user3.id,
+      eventId: event5.id,
+      side: null,
+      optionId: option3.id,
+      amount: 20.0,
+      price: 22.0,
+      shares: 90.91,
     },
   })
 

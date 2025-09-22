@@ -29,7 +29,10 @@ export default function CreateMarket() {
     category: '',
     endDate: '',
     isOngoing: false,
+    marketType: 'BINARY', // BINARY or MULTIPLE
   })
+  const [options, setOptions] = useState<string[]>([''])
+  const [newOption, setNewOption] = useState('')
 
   if (status === 'loading') {
     return (
@@ -55,6 +58,21 @@ export default function CreateMarket() {
     }))
   }
 
+  const addOption = () => {
+    if (newOption.trim() && !options.includes(newOption.trim())) {
+      setOptions(prev => [...prev.filter(opt => opt.trim()), newOption.trim()])
+      setNewOption('')
+    }
+  }
+
+  const removeOption = (index: number) => {
+    setOptions(prev => prev.filter((_, i) => i !== index))
+  }
+
+  const updateOption = (index: number, value: string) => {
+    setOptions(prev => prev.map((opt, i) => i === index ? value : opt))
+  }
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     setLoading(true)
@@ -71,6 +89,8 @@ export default function CreateMarket() {
           category: formData.category,
           endDate: formData.isOngoing ? null : formData.endDate,
           isOngoing: formData.isOngoing,
+          marketType: formData.marketType,
+          options: formData.marketType === 'MULTIPLE' ? options.filter(opt => opt.trim()) : undefined,
         }),
       })
 
@@ -89,7 +109,9 @@ export default function CreateMarket() {
     }
   }
 
-  const isFormValid = formData.title && formData.description && formData.category && (formData.isOngoing || formData.endDate)
+  const isFormValid = formData.title && formData.description && formData.category &&
+    (formData.isOngoing || formData.endDate) &&
+    (formData.marketType === 'BINARY' || (formData.marketType === 'MULTIPLE' && options.filter(opt => opt.trim()).length >= 2))
 
   return (
     <>
@@ -167,6 +189,84 @@ export default function CreateMarket() {
                 </select>
               </div>
 
+              {/* Market Type */}
+              <div>
+                <label htmlFor="marketType" className="block text-sm font-medium text-white mb-2">
+                  Market Type *
+                </label>
+                <select
+                  id="marketType"
+                  name="marketType"
+                  value={formData.marketType}
+                  onChange={handleInputChange}
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                  required
+                >
+                  <option value="BINARY">Yes/No Question</option>
+                  <option value="MULTIPLE">Multiple Choice</option>
+                </select>
+                <p className="text-sm text-gray-400 mt-1">
+                  {formData.marketType === 'BINARY'
+                    ? 'Users bet on YES or NO for your question'
+                    : 'Users bet on specific options you provide (e.g., who will win)'}
+                </p>
+              </div>
+
+              {/* Multiple Choice Options */}
+              {formData.marketType === 'MULTIPLE' && (
+                <div className="bg-gray-800/50 rounded-lg p-4">
+                  <label className="block text-sm font-medium text-white mb-3">
+                    Market Options *
+                  </label>
+
+                  {/* Existing Options */}
+                  <div className="space-y-2 mb-4">
+                    {options.filter(opt => opt.trim()).map((option, index) => (
+                      <div key={index} className="flex items-center gap-2">
+                        <input
+                          type="text"
+                          value={option}
+                          onChange={(e) => updateOption(index, e.target.value)}
+                          placeholder={`Option ${index + 1}`}
+                          className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => removeOption(index)}
+                          className="px-3 py-2 bg-red-600 hover:bg-red-700 text-white rounded-md transition-colors"
+                        >
+                          Remove
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Add New Option */}
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="text"
+                      value={newOption}
+                      onChange={(e) => setNewOption(e.target.value)}
+                      placeholder="Add new option..."
+                      className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500"
+                      onKeyPress={(e) => e.key === 'Enter' && (e.preventDefault(), addOption())}
+                    />
+                    <button
+                      type="button"
+                      onClick={addOption}
+                      disabled={!newOption.trim()}
+                      className="px-4 py-2 bg-purple-600 hover:bg-purple-700 disabled:bg-gray-600 disabled:cursor-not-allowed text-white rounded-md transition-colors"
+                    >
+                      <Plus className="h-4 w-4" />
+                    </button>
+                  </div>
+
+                  <p className="text-sm text-gray-400 mt-2">
+                    Add at least 2 options. Examples: &quot;Alice&quot;, &quot;Bob&quot;, &quot;Charlie&quot; for &quot;Who will get married first?&quot;
+                  </p>
+                </div>
+              )}
+
               {/* Ongoing Event Toggle */}
               <div className="bg-gray-800/50 rounded-lg p-4">
                 <div className="flex items-center justify-between mb-2">
@@ -185,7 +285,7 @@ export default function CreateMarket() {
                 <div className="flex items-start gap-2 text-gray-400 text-sm">
                   <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                   <p>
-                    Check this for events without a specific end date (like "Will Sarah get married?" or "Will Mike move to a new city?").
+                    Check this for events without a specific end date (like &quot;Will Sarah get married?&quot; or &quot;Will Mike move to a new city?&quot;).
                     These markets stay open until manually resolved.
                   </p>
                 </div>

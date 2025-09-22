@@ -13,27 +13,43 @@ interface BettingModalProps {
   event: {
     id: string
     title: string
+    marketType: string
     yesPrice: number
   }
+  selectedOption?: {
+    id: string
+    title: string
+    price: number
+  } | null
+  selectedSide?: 'YES' | 'NO'
   userBalance: number
-  onPlaceBet: (eventId: string, side: 'YES' | 'NO', amount: number) => Promise<void>
+  onPlaceBet: (eventId: string, side: 'YES' | 'NO' | null, amount: number, optionId?: string) => Promise<void>
 }
 
 export default function BettingModal({
   isOpen,
   onClose,
   event,
+  selectedOption,
+  selectedSide = 'YES',
   userBalance,
   onPlaceBet
 }: BettingModalProps) {
-  const [selectedSide, setSelectedSide] = useState<'YES' | 'NO'>('YES')
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
 
+  const isMultipleChoice = event.marketType === 'MULTIPLE'
   const yesPrice = Number(event.yesPrice)
   const noPrice = 100 - yesPrice
-  const currentPrice = selectedSide === 'YES' ? yesPrice : noPrice
+
+  // For multiple choice, calculate the price based on the selected side
+  const optionPrice = selectedOption ? Number(selectedOption.price) : 0
+  const optionNoPrice = selectedOption ? (100 - Number(selectedOption.price)) : 0
+
+  const currentPrice = isMultipleChoice
+    ? (selectedSide === 'YES' ? optionPrice : optionNoPrice)
+    : (selectedSide === 'YES' ? yesPrice : noPrice)
   const betAmount = Number(amount) || 0
   const maxShares = betAmount > 0 ? (betAmount / currentPrice * 100) : 0
   const maxPayout = betAmount > 0 ? (betAmount / currentPrice * 100) : 0
@@ -54,7 +70,11 @@ export default function BettingModal({
 
     setLoading(true)
     try {
-      await onPlaceBet(event.id, selectedSide, betAmount)
+      if (isMultipleChoice && selectedOption) {
+        await onPlaceBet(event.id, selectedSide, betAmount, selectedOption.id)
+      } else {
+        await onPlaceBet(event.id, selectedSide, betAmount)
+      }
       onClose()
       setAmount('')
     } catch (err) {
@@ -77,37 +97,47 @@ export default function BettingModal({
           <h3 className="font-semibold text-white mb-2 line-clamp-2">
             {event.title}
           </h3>
-          <div className="flex justify-center gap-4 text-sm">
-            <div className="flex items-center text-green-400">
-              <TrendingUp className="h-4 w-4 mr-1" />
-              YES {yesPrice}¢
+          {isMultipleChoice && selectedOption ? (
+            <div className="flex justify-center">
+              <div className="flex items-center text-purple-400">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                {selectedOption.title} {Number(selectedOption.price).toFixed(1)}¢
+              </div>
             </div>
-            <div className="flex items-center text-red-400">
-              <TrendingDown className="h-4 w-4 mr-1" />
-              NO {noPrice}¢
+          ) : (
+            <div className="flex justify-center gap-4 text-sm">
+              <div className="flex items-center text-green-400">
+                <TrendingUp className="h-4 w-4 mr-1" />
+                YES {yesPrice}¢
+              </div>
+              <div className="flex items-center text-red-400">
+                <TrendingDown className="h-4 w-4 mr-1" />
+                NO {noPrice}¢
+              </div>
             </div>
-          </div>
+          )}
         </div>
 
-        {/* Side Selection */}
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-3">
-            Choose your position
-          </label>
-          <div className="grid grid-cols-2 gap-3">
-            <button
-              type="button"
-              onClick={() => setSelectedSide('YES')}
-              className={`p-4 rounded-lg border-2 transition-all ${
-                selectedSide === 'YES'
-                  ? 'border-green-500 bg-green-500/10'
-                  : 'border-gray-600 hover:border-green-500/50'
-              }`}
-            >
-              <div className="text-center">
-                <div className="text-2xl font-bold text-green-400">{yesPrice}¢</div>
-                <div className="text-sm text-gray-300">YES</div>
-              </div>
+        {/* Side Selection - Only for Binary Markets */}
+        {!isMultipleChoice && (
+          <div>
+            <label className="block text-sm font-medium text-gray-300 mb-3">
+              Choose your position
+            </label>
+            <div className="grid grid-cols-2 gap-3">
+              <button
+                type="button"
+                onClick={() => setSelectedSide('YES')}
+                className={`p-4 rounded-lg border-2 transition-all ${
+                  selectedSide === 'YES'
+                    ? 'border-green-500 bg-green-500/10'
+                    : 'border-gray-600 hover:border-green-500/50'
+                }`}
+              >
+                <div className="text-center">
+                  <div className="text-2xl font-bold text-green-400">{yesPrice}¢</div>
+                  <div className="text-sm text-gray-300">YES</div>
+                </div>
             </button>
             <button
               type="button"
@@ -125,6 +155,7 @@ export default function BettingModal({
             </button>
           </div>
         </div>
+        )}
 
         {/* Amount Input */}
         <div>
@@ -177,19 +208,27 @@ export default function BettingModal({
               <span className="text-sm font-medium text-white">Bet Summary</span>
             </div>
             <div className="space-y-1 text-sm">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Side:</span>
-                <Badge variant={selectedSide === 'YES' ? 'success' : 'error'}>
-                  {selectedSide}
-                </Badge>
-              </div>
+              {!isMultipleChoice && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Side:</span>
+                  <Badge variant={selectedSide === 'YES' ? 'success' : 'error'}>
+                    {selectedSide}
+                  </Badge>
+                </div>
+              )}
+              {isMultipleChoice && selectedOption && (
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Option:</span>
+                  <span className="text-white">{selectedOption.title}</span>
+                </div>
+              )}
               <div className="flex justify-between">
                 <span className="text-gray-400">Amount:</span>
                 <span className="text-white">${betAmount.toFixed(2)}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Price:</span>
-                <span className="text-white">{currentPrice}¢</span>
+                <span className="text-white">{currentPrice.toFixed(1)}¢</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Max payout:</span>
@@ -220,11 +259,11 @@ export default function BettingModal({
           </Button>
           <Button
             type="submit"
-            variant={selectedSide === 'YES' ? 'yes' : 'no'}
+            variant={isMultipleChoice ? 'default' : (selectedSide === 'YES' ? 'yes' : 'no')}
             className="flex-1"
             disabled={loading || !amount || betAmount <= 0 || betAmount > userBalance}
           >
-            {loading ? 'Placing...' : `Bet ${selectedSide}`}
+            {loading ? 'Placing...' : isMultipleChoice ? 'Place Bet' : `Bet ${selectedSide}`}
           </Button>
         </div>
       </form>

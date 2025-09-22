@@ -21,8 +21,8 @@ export async function GET(request: NextRequest) {
 
     if (search) {
       where.OR = [
-        { title: { contains: search, mode: 'insensitive' } },
-        { description: { contains: search, mode: 'insensitive' } },
+        { title: { contains: search } },
+        { description: { contains: search } },
       ]
     }
 
@@ -77,6 +77,8 @@ export async function POST(request: NextRequest) {
       category,
       endDate,
       isOngoing,
+      marketType = 'BINARY',
+      options = [],
     } = await request.json()
 
     if (!title || !description || !category) {
@@ -94,6 +96,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Validate multiple choice markets have at least 2 options
+    if (marketType === 'MULTIPLE') {
+      if (!options || options.length < 2) {
+        return NextResponse.json(
+          { message: 'Multiple choice markets must have at least 2 options' },
+          { status: 400 }
+        )
+      }
+    }
+
     // Validate end date is in the future (if provided)
     let endDateTime = null
     if (endDate) {
@@ -106,6 +118,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    // Create event with options if it's a multiple choice market
     const event = await prisma.event.create({
       data: {
         title,
@@ -113,8 +126,15 @@ export async function POST(request: NextRequest) {
         category,
         endDate: endDateTime,
         isOngoing: Boolean(isOngoing),
+        marketType,
         createdById: session.user.id,
-        yesPrice: 50.0, // Start at 50/50 odds
+        yesPrice: marketType === 'BINARY' ? 50.0 : 0.0, // Only for binary markets
+        options: marketType === 'MULTIPLE' ? {
+          create: options.map((title: string, index: number) => ({
+            title: title.trim(),
+            price: 100 / options.length, // Distribute equally initially
+          }))
+        } : undefined,
       },
       include: {
         createdBy: {
@@ -124,6 +144,7 @@ export async function POST(request: NextRequest) {
             username: true,
           },
         },
+        options: true,
         _count: {
           select: {
             bets: true,
