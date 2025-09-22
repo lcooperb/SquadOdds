@@ -302,7 +302,7 @@ export default function AdminPanel() {
                     <div className="bg-gray-800/50 rounded-lg p-3">
                       <h4 className="font-medium text-white mb-2">Resolution:</h4>
                       {event.marketType === 'BINARY' ? (
-                        <Badge variant={event.outcome ? 'success' : 'destructive'}>
+                        <Badge variant={event.outcome ? 'success' : 'error'}>
                           {event.outcome ? 'YES' : 'NO'}
                         </Badge>
                       ) : (
