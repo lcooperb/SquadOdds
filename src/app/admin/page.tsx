@@ -353,7 +353,7 @@ export default function AdminPanel() {
                         )}
                         <Button
                           onClick={() => toggleUserAdmin(user.id, user.isAdmin)}
-                          variant={user.isAdmin ? 'destructive' : 'default'}
+                          variant="outline"
                           size="sm"
                         >
                           <Settings className="h-4 w-4 mr-2" />
