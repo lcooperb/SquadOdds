@@ -104,7 +104,7 @@ export default function AddOptionModal({
           </Button>
           <Button
             type="submit"
-            variant="default"
+            variant="primary"
             className="flex-1 flex items-center gap-2"
             disabled={loading || !title.trim()}
           >
