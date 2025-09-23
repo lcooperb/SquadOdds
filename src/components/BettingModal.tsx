@@ -38,6 +38,7 @@ export default function BettingModal({
   const [amount, setAmount] = useState('')
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState('')
+  const [localSelectedSide, setSelectedSide] = useState<'YES' | 'NO'>(selectedSide)
 
   const isMultipleChoice = event.marketType === 'MULTIPLE'
   const yesPrice = Number(event.yesPrice)
@@ -48,8 +49,8 @@ export default function BettingModal({
   const optionNoPrice = selectedOption ? (100 - Number(selectedOption.price)) : 0
 
   const currentPrice = isMultipleChoice
-    ? (selectedSide === 'YES' ? optionPrice : optionNoPrice)
-    : (selectedSide === 'YES' ? yesPrice : noPrice)
+    ? (localSelectedSide === 'YES' ? optionPrice : optionNoPrice)
+    : (localSelectedSide === 'YES' ? yesPrice : noPrice)
   const betAmount = Number(amount) || 0
   const maxShares = betAmount > 0 ? (betAmount / currentPrice * 100) : 0
   const maxPayout = betAmount > 0 ? (betAmount / currentPrice * 100) : 0
@@ -71,9 +72,9 @@ export default function BettingModal({
     setLoading(true)
     try {
       if (isMultipleChoice && selectedOption) {
-        await onPlaceBet(event.id, selectedSide, betAmount, selectedOption.id)
+        await onPlaceBet(event.id, localSelectedSide, betAmount, selectedOption.id)
       } else {
-        await onPlaceBet(event.id, selectedSide, betAmount)
+        await onPlaceBet(event.id, localSelectedSide, betAmount)
       }
       onClose()
       setAmount('')
@@ -129,7 +130,7 @@ export default function BettingModal({
                 type="button"
                 onClick={() => setSelectedSide('YES')}
                 className={`p-4 rounded-lg border-2 transition-all ${
-                  selectedSide === 'YES'
+                  localSelectedSide === 'YES'
                     ? 'border-green-500 bg-green-500/10'
                     : 'border-gray-600 hover:border-green-500/50'
                 }`}
@@ -143,7 +144,7 @@ export default function BettingModal({
               type="button"
               onClick={() => setSelectedSide('NO')}
               className={`p-4 rounded-lg border-2 transition-all ${
-                selectedSide === 'NO'
+                localSelectedSide === 'NO'
                   ? 'border-red-500 bg-red-500/10'
                   : 'border-gray-600 hover:border-red-500/50'
               }`}
@@ -211,8 +212,8 @@ export default function BettingModal({
               {!isMultipleChoice && (
                 <div className="flex justify-between">
                   <span className="text-gray-400">Side:</span>
-                  <Badge variant={selectedSide === 'YES' ? 'success' : 'error'}>
-                    {selectedSide}
+                  <Badge variant={localSelectedSide === 'YES' ? 'success' : 'error'}>
+                    {localSelectedSide}
                   </Badge>
                 </div>
               )}
@@ -259,11 +260,11 @@ export default function BettingModal({
           </Button>
           <Button
             type="submit"
-            variant={isMultipleChoice ? 'default' : (selectedSide === 'YES' ? 'yes' : 'no')}
+            variant={isMultipleChoice ? 'primary' : (localSelectedSide === 'YES' ? 'yes' : 'no')}
             className="flex-1"
             disabled={loading || !amount || betAmount <= 0 || betAmount > userBalance}
           >
-            {loading ? 'Placing...' : isMultipleChoice ? 'Place Bet' : `Bet ${selectedSide}`}
+            {loading ? 'Placing...' : isMultipleChoice ? 'Place Bet' : `Bet ${localSelectedSide}`}
           </Button>
         </div>
       </form>
