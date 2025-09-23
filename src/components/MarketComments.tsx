@@ -54,7 +54,7 @@ interface Holder {
 
 interface Activity {
   id: string
-  side: string
+  side: string | null
   amount: number
   price: number
   shares: number
@@ -454,10 +454,10 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
               activity.slice(0, 20).map((bet) => (
                 <div key={bet.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
                   <div className="flex items-center gap-3">
-                    <div className={`w-2 h-2 rounded-full ${bet.side === 'YES' ? 'bg-green-400' : 'bg-red-400'}`} />
+                    <div className={`w-2 h-2 rounded-full ${bet.side === 'YES' ? 'bg-green-400' : bet.side === 'NO' ? 'bg-red-400' : 'bg-gray-400'}`} />
                     <div>
                       <div className="text-white font-medium">
-                        {bet.user.displayName} bought {bet.side}
+                        {bet.user.displayName} bought {bet.side || 'UNKNOWN'}
                       </div>
                       <div className="text-gray-400 text-sm">
                         {new Date(bet.createdAt).toLocaleString()}
