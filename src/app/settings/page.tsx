@@ -274,7 +274,7 @@ export default function Settings() {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-gray-300">
-                    <p className="mb-2"><strong>Tip:</strong> Use a unique passphrase you don't reuse elsewhere.</p>
+                    <p className="mb-2"><strong>Tip:</strong> Use a unique passphrase you don&apos;t reuse elsewhere.</p>
                     <p className="text-xs text-gray-400">Minimum length is 8 characters.</p>
                   </div>
                 </div>
