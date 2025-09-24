@@ -75,7 +75,7 @@ export default function Home() {
 
   return (
     <>
-      <main className="container mx-auto px-3 py-4">
+      <main className="container mx-auto px-4 py-8">
         {/* Welcome Header - only show if logged in */}
         {session && (
           <div className="mb-4">
@@ -96,7 +96,7 @@ export default function Home() {
                 <div>
                   <p className="text-gray-400 text-sm">Your Balance</p>
                   <p className="text-2xl font-bold text-green-400">
-                    ₺{userBalance.toFixed(2)}
+                    ₺{Math.round(userBalance).toLocaleString("en-US")}
                   </p>
                 </div>
                 <DollarSign className="h-8 w-8 text-green-400" />

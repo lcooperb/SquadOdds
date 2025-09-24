@@ -273,8 +273,7 @@ export default function SearchDropdown() {
                       </p>
                       <div className="flex items-center gap-4 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
-                          <DollarSign className="h-3 w-3" />
-                          ₺{user.virtualBalance.toLocaleString()}
+                          ₺{Math.round(user.virtualBalance).toLocaleString("en-US")}
                         </span>
                         {user._count && (
                           <>
@@ -292,7 +291,7 @@ export default function SearchDropdown() {
                     </div>
                     <div className="ml-4 text-right">
                       <div className="text-green-400 font-bold text-sm">
-                        ₺{user.totalWinnings.toLocaleString()}
+                        ₺{Math.round(user.totalWinnings).toLocaleString("en-US")}
                       </div>
                       <div className="text-gray-400 text-xs">winnings</div>
                     </div>

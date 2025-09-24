@@ -105,11 +105,7 @@ export default function Dashboard() {
             <div>
               <p className="text-gray-400 text-sm">Your Balance</p>
               <p className="text-2xl font-bold text-green-400 text-numbers">
-                $
-                {userBalance.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+                ₺{Math.round(userBalance).toLocaleString("en-US")}
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-green-400" />
@@ -131,10 +127,9 @@ export default function Dashboard() {
             <div>
               <p className="text-gray-400 text-sm">Total Volume</p>
               <p className="text-2xl font-bold text-white text-numbers">
-                $
-                {events
-                  .reduce((sum, e) => sum + Number(e.totalVolume), 0)
-                  .toLocaleString("en-US")}
+                ₺{Math.round(
+                  events.reduce((sum, e) => sum + Number(e.totalVolume), 0)
+                ).toLocaleString("en-US")}
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-gray-400" />

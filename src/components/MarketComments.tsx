@@ -432,7 +432,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-white font-medium">${holder.totalAmount.toFixed(2)}</div>
+                    <div className="text-white font-medium">₺{Math.round(holder.totalAmount).toLocaleString("en-US")}</div>
                     <div className="text-gray-400 text-sm">
                       {holder.yesShares.toFixed(0)} YES, {holder.noShares.toFixed(0)} NO
                     </div>
@@ -465,9 +465,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-white font-medium">
-                      ${Number(bet.amount).toFixed(2)}
-                    </div>
+                    <div className="text-white font-medium">₺{Math.round(Number(bet.amount)).toLocaleString("en-US")}</div>
                     <div className="text-gray-400 text-sm">
                       @ {Number(bet.price).toFixed(0)}¢
                     </div>

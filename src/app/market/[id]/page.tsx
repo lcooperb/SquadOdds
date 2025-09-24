@@ -381,7 +381,7 @@ export default function MarketPage() {
 
   return (
     <>
-      <main className="container mx-auto px-4 pt-8 pb-6 min-h-screen">
+      <main className="container mx-auto px-4 py-8 min-h-screen">
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
           {/* Left Column - Market Info */}
           <div className="lg:col-span-2 space-y-6">
@@ -423,7 +423,7 @@ export default function MarketPage() {
                     Volume
                   </div>
                   <div className="text-white font-semibold">
-                    ${Number(event.totalVolume).toLocaleString("en-US")}
+                    ₺{Math.round(Number(event.totalVolume)).toLocaleString("en-US")}
                   </div>
                 </div>
 
@@ -560,9 +560,7 @@ export default function MarketPage() {
                               )}
                           </div>
                           <div className="text-xs text-gray-400 mt-1">
-                            $
-                            {Number(option.totalVolume).toLocaleString("en-US")}{" "}
-                            vol
+                            ₺{Math.round(Number(option.totalVolume)).toLocaleString("en-US")} vol
                           </div>
                         </div>
 

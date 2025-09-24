@@ -141,7 +141,7 @@ export default function Leaderboard() {
               <CardContent className="p-4 text-center">
                 <DollarSign className="h-8 w-8 text-blue-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">
-                  ${data.meta.totalVolume.toLocaleString("en-US")}
+                  ₺{Math.round(data.meta.totalVolume).toLocaleString("en-US")}
                 </div>
                 <div className="text-sm text-gray-400">Total Volume</div>
               </CardContent>
@@ -241,11 +241,8 @@ export default function Leaderboard() {
                               : "text-red-400"
                           }`}
                         >
-                          {user.stats.netProfit >= 0 ? "+" : ""}$
-                          {user.stats.netProfit.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}
+                          {user.stats.netProfit >= 0 ? "+" : "-"}₺
+                          {Math.round(Math.abs(user.stats.netProfit)).toLocaleString("en-US")}
                         </div>
                         <div className="text-xs text-gray-400">Net Profit</div>
                       </div>
@@ -282,21 +279,16 @@ export default function Leaderboard() {
                     {/* Right: Current Balance */}
                     <div className="text-right">
                       <div className="text-xl font-bold text-white">
-                        {user.virtualBalance.toLocaleString()} tokens
+                        ₺{Math.round(user.virtualBalance).toLocaleString()}
                       </div>
                       <div className="text-sm text-gray-400">
-                        Current Balance ($
-                        {(user.virtualBalance/100).toLocaleString("en-US", {
-                          minimumFractionDigits: 2,
-                          maximumFractionDigits: 2,
-                        })})
+                        Current Balance
                       </div>
                       <div className="text-xs text-gray-500 mt-1">
                         {user.stats.eventsCreated} markets created
                       </div>
                     </div>
                   </div>
-
                   {/* Mobile Stats */}
                   <div className="md:hidden mt-4 grid grid-cols-2 gap-4 text-center">
                     <div>

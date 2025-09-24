@@ -5,16 +5,42 @@ import Link from 'next/link'
 import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import SearchDropdown from '@/components/SearchDropdown'
-import { Menu, X, User, LogOut, Settings, TrendingUp, Users } from 'lucide-react'
+import { Menu, X, User, LogOut, Settings, TrendingUp, Users, CreditCard, ArrowDownCircle } from 'lucide-react'
 
 export default function Navigation() {
   const { data: session } = useSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [userBalance, setUserBalance] = useState<number | null>(null)
+  const [pendingAdminCount, setPendingAdminCount] = useState<number>(0)
 
   const handleSignOut = () => {
     signOut({ callbackUrl: '/' })
   }
+
+  useEffect(() => {
+    const fetchAdminPending = async () => {
+      if (!session?.user?.isAdmin) return
+      try {
+        const [paymentsRes, redemptionsRes] = await Promise.all([
+          fetch('/api/admin/payments/process'),
+          fetch('/api/admin/redemptions'),
+        ])
+        let pending = 0
+        if (paymentsRes.ok) {
+          const payments = await paymentsRes.json()
+          pending += (payments || []).filter((p: any) => p.status === 'PENDING').length
+        }
+        if (redemptionsRes.ok) {
+          const redemptions = await redemptionsRes.json()
+          pending += (redemptions || []).filter((r: any) => r.status === 'PENDING').length
+        }
+        setPendingAdminCount(pending)
+      } catch (e) {
+        console.error('Error fetching pending admin counts', e)
+      }
+    }
+    fetchAdminPending()
+  }, [session])
 
   useEffect(() => {
     if (session?.user) {
@@ -44,8 +70,9 @@ export default function Navigation() {
             {/* Logo */}
             <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
               <TrendingUp className="h-8 w-8 text-purple-500" />
-              <span className="text-xl font-bold text-white">
-                Friend<span className="text-purple-500">Bets</span>
+              <span className="text-xl font-bold">
+                <span className="text-white">Squad</span>
+                <span className="text-purple-500">Odds</span>
               </span>
             </Link>
 
@@ -81,12 +108,18 @@ export default function Navigation() {
                   >
                     Portfolio
                   </Link>
+                  
                   {session.user.isAdmin && (
                     <Link
                       href="/admin"
-                      className="text-gray-300 hover:text-white text-sm font-normal transition-colors"
+                      className="text-gray-300 hover:text-white text-sm font-normal transition-colors relative"
                     >
                       Admin
+                      {pendingAdminCount > 0 && (
+                        <span className="ml-1 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] px-1.5 py-0.5 align-middle">
+                          {pendingAdminCount}
+                        </span>
+                      )}
                     </Link>
                   )}
                 </>
@@ -109,7 +142,7 @@ export default function Navigation() {
                 <div className="text-sm text-gray-300 whitespace-nowrap">
                   <span className="text-green-400 font-semibold">
                     {userBalance !== null
-                      ? `₺${userBalance.toLocaleString()}`
+                      ? `₺${Math.round(userBalance).toLocaleString("en-US")}`
                       : "..."}
                   </span>
                 </div>
@@ -142,6 +175,22 @@ export default function Navigation() {
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
+                        </Link>
+                        <Link
+                          href="/topup"
+                          className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <CreditCard className="h-4 w-4 mr-2" />
+                          Top Up
+                        </Link>
+                        <Link
+                          href="/redeem"
+                          className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
+                          onClick={() => setIsMenuOpen(false)}
+                        >
+                          <ArrowDownCircle className="h-4 w-4 mr-2" />
+                          Redeem
                         </Link>
                         <button
                           onClick={() => {
@@ -207,6 +256,7 @@ export default function Navigation() {
                   >
                     Portfolio
                   </Link>
+                  
                   {session.user.isAdmin && (
                     <Link
                       href="/admin"
@@ -214,6 +264,11 @@ export default function Navigation() {
                       onClick={() => setIsMenuOpen(false)}
                     >
                       Admin
+                      {pendingAdminCount > 0 && (
+                        <span className="ml-2 inline-flex items-center justify-center rounded-full bg-red-600 text-white text-[10px] px-1.5 py-0.5 align-middle">
+                          {pendingAdminCount}
+                        </span>
+                      )}
                     </Link>
                   )}
                   <button

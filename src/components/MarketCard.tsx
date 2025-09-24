@@ -49,13 +49,22 @@ export default function MarketCard({
   const yesPercentage = Math.round(Number(event.yesPrice));
   const noPercentage = 100 - yesPercentage;
 
-  const formatVolume = (volume: number) => {
-    if (volume >= 1000000) {
-      return `${(volume / 1000000).toFixed(1)}M`;
-    } else if (volume >= 1000) {
-      return `${(volume / 1000).toFixed(1)}K`;
+  const formatCompactNumber = (value: number) => {
+    const abs = Math.abs(value);
+    let result = '';
+    if (abs >= 1_000_000_000) {
+      const v = value / 1_000_000_000;
+      result = Number.isInteger(v) ? `${v}b` : `${v.toFixed(1)}b`;
+    } else if (abs >= 1_000_000) {
+      const v = value / 1_000_000;
+      result = Number.isInteger(v) ? `${v}m` : `${v.toFixed(1)}m`;
+    } else if (abs >= 1_000) {
+      const v = value / 1_000;
+      result = Number.isInteger(v) ? `${v}k` : `${v.toFixed(1)}k`;
+    } else {
+      result = Math.round(value).toString();
     }
-    return volume.toString();
+    return result;
   };
   const endDate = event.endDate ? new Date(event.endDate) : null;
   const isExpiringSoon = endDate
@@ -121,11 +130,11 @@ export default function MarketCard({
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span className="flex items-center gap-1">
                     <DollarSign className="h-3 w-3" />₺
-                    {formatVolume(Number(event.totalVolume))}
+                    {formatCompactNumber(Number(event.totalVolume))}
                   </span>
                   <span className="flex items-center gap-1">
                     <Users className="h-3 w-3" />
-                    {event._count?.bets || 0}
+                    {formatCompactNumber(event._count?.bets || 0)}
                   </span>
                 </div>
               </div>
@@ -186,7 +195,7 @@ export default function MarketCard({
             <div className="flex items-center justify-between text-sm text-gray-400 mt-auto">
               <div className="flex items-center gap-1">
                 <span>
-                  ₺{formatVolume(Number(event.totalVolume))} Vol.
+                  ₺{formatCompactNumber(Number(event.totalVolume))} Vol.
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -274,7 +283,7 @@ export default function MarketCard({
           <div className="flex items-center justify-between text-sm text-gray-400 mt-auto">
             <div className="flex items-center gap-1">
               <span>
-                ₺{Number(event.totalVolume).toLocaleString("en-US")} Vol.
+                ₺{formatCompactNumber(Number(event.totalVolume))} Vol.
               </span>
             </div>
             <div className="flex items-center gap-2">

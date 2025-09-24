@@ -19,6 +19,7 @@ import {
   Clock,
   AlertCircle,
   X,
+  ArrowDownCircle,
 } from "lucide-react";
 
 interface User {
@@ -79,15 +80,32 @@ interface Payment {
   };
 }
 
+interface Redemption {
+  id: string;
+  tokenAmount: number;
+  dollarAmount: number;
+  venmoHandle: string;
+  status: string;
+  requestedAt: string;
+  processedAt: string | null;
+  adminNotes: string | null;
+  user: {
+    email: string;
+    displayName: string;
+    username: string;
+  };
+}
+
 export default function AdminPanel() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"events" | "users" | "payments">(
+  const [activeTab, setActiveTab] = useState<"events" | "users" | "payments" | "redemptions">(
     "events"
   );
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
+  const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
 
   // Payment form state
@@ -137,10 +155,11 @@ export default function AdminPanel() {
 
   const fetchData = async () => {
     try {
-      const [eventsRes, usersRes, paymentsRes] = await Promise.all([
+      const [eventsRes, usersRes, paymentsRes, redemptionsRes] = await Promise.all([
         fetch("/api/admin/events"),
         fetch("/api/admin/users"),
         fetch("/api/admin/payments/process"),
+        fetch("/api/admin/redemptions"),
       ]);
 
       if (eventsRes.ok) {
@@ -156,6 +175,10 @@ export default function AdminPanel() {
       if (paymentsRes.ok) {
         const paymentsData = await paymentsRes.json();
         setPayments(paymentsData);
+      }
+      if (redemptionsRes.ok) {
+        const redemptionsData = await redemptionsRes.json();
+        setRedemptions(redemptionsData);
       }
     } catch (error) {
       console.error("Error fetching admin data:", error);
@@ -320,10 +343,43 @@ export default function AdminPanel() {
         return "success";
       case "PENDING":
         return "warning";
+      case "APPROVED":
+        return "default";
+      case "COMPLETED":
+        return "success";
       case "REJECTED":
         return "error";
       default:
         return "secondary";
+    }
+  };
+
+  const [processingRedemptionId, setProcessingRedemptionId] = useState<string | null>(null);
+  const handleRedemptionAction = async (
+    redemptionId: string,
+    action: "approve" | "complete" | "reject",
+    adminNotes?: string
+  ) => {
+    setProcessingRedemptionId(redemptionId);
+    try {
+      const response = await fetch(`/api/admin/redemptions/${redemptionId}`, {
+        method: "PUT",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ action, adminNotes }),
+      });
+      if (response.ok) {
+        const result = await response.json();
+        alert(result.message || `Redemption ${action}d`);
+        fetchRedemptions();
+      } else {
+        const err = await response.json();
+        alert(err.message || `Failed to ${action} redemption`);
+      }
+    } catch (error) {
+      console.error(`Error ${action} redemption:`, error);
+      alert(`An error occurred while processing redemption`);
+    } finally {
+      setProcessingRedemptionId(null);
     }
   };
 
@@ -395,6 +451,22 @@ export default function AdminPanel() {
           >
             <DollarSign className="inline h-4 w-4 mr-2" />
             Payments
+          </button>
+          <button
+            onClick={() => setActiveTab("redemptions")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === "redemptions"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            <ArrowDownCircle className="inline h-4 w-4 mr-2" />
+            Redemptions ({redemptions.length})
+            {redemptions.filter((r) => r.status === "PENDING").length > 0 && (
+              <Badge variant="warning" className="ml-2">
+                {redemptions.filter((r) => r.status === "PENDING").length} Pending
+              </Badge>
+            )}
           </button>
         </div>
 
@@ -530,6 +602,84 @@ export default function AdminPanel() {
           </div>
         )}
 
+        {/* Redemptions Tab */}
+        {activeTab === "redemptions" && (
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <ArrowDownCircle className="h-5 w-5" />
+                  Redemption Requests ({redemptions.length})
+                  {redemptions.filter((r) => r.status === "PENDING").length > 0 && (
+                    <Badge variant="warning" className="ml-2">
+                      {redemptions.filter((r) => r.status === "PENDING").length} Pending
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {redemptions.length > 0 ? (
+                  <div className="space-y-4">
+                    {redemptions.map((r) => (
+                      <div key={r.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge variant={getStatusColor(r.status)}>
+                              {r.status === "PENDING" && <Clock className="h-3 w-3 mr-1" />}
+                              {r.status === "APPROVED" && <CheckCircle className="h-3 w-3 mr-1" />}
+                              {r.status === "COMPLETED" && <CheckCircle className="h-3 w-3 mr-1" />}
+                              {r.status === "REJECTED" && <AlertCircle className="h-3 w-3 mr-1" />}
+                              {r.status}
+                            </Badge>
+                            <Badge variant="secondary">@{r.user.username}</Badge>
+                          </div>
+                          <div className="text-sm text-gray-400 flex gap-4 flex-wrap">
+                            <span className="text-white font-medium">{r.user.displayName} ({r.user.email})</span>
+                            <span>Venmo: {r.venmoHandle}</span>
+                            <span>{new Date(r.requestedAt).toLocaleString()}</span>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <div>
+                            <div className="text-white font-semibold">₺{Math.round(r.tokenAmount).toLocaleString("en-US")}</div>
+                            <div className="text-xs text-gray-400">≈ ${r.dollarAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                          </div>
+                          {r.status === "PENDING" && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                className="bg-green-600 hover:bg-green-700"
+                                onClick={() => handleRedemptionAction(r.id, "complete")}
+                                disabled={processingRedemptionId === r.id}
+                              >
+                                {processingRedemptionId === r.id ? "Processing..." : "Complete"}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => handleRedemptionAction(r.id, "reject")}
+                                disabled={processingRedemptionId === r.id}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                              >
+                                <X className="h-4 w-4 mr-1" /> Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <ArrowDownCircle className="h-12 w-12 mx-auto mb-2" />
+                    <p>No redemption requests yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
+
         {/* Users Tab */}
         {activeTab === "users" && (
           <div className="space-y-4">
@@ -550,14 +700,7 @@ export default function AdminPanel() {
                         </p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
                           <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />$
-                            {Number(user.virtualBalance).toLocaleString(
-                              "en-US",
-                              {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              }
-                            )}
+                            ₺{Math.round(Number(user.virtualBalance)).toLocaleString("en-US")}
                           </span>
                           <span>{user._count.bets} bets</span>
                           <span>{user._count.createdEvents} markets</span>

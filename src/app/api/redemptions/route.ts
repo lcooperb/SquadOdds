@@ -83,21 +83,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create redemption request
+    // Create redemption request and HOLD tokens immediately by decrementing balance
     const dollarAmount = tokenAmount / 100
-    const redemption = await prisma.redemption.create({
-      data: {
-        userId: session.user.id,
-        tokenAmount,
-        dollarAmount,
-        venmoHandle: venmoHandle.trim(),
-        status: 'PENDING',
-      },
-    })
+    const [redemption] = await prisma.$transaction([
+      prisma.redemption.create({
+        data: {
+          userId: session.user.id,
+          tokenAmount,
+          dollarAmount,
+          venmoHandle: venmoHandle.trim(),
+          status: 'PENDING',
+        },
+      }),
+      prisma.user.update({
+        where: { id: session.user.id },
+        data: {
+          virtualBalance: { decrement: Number(tokenAmount) },
+        },
+      }),
+    ])
 
     return NextResponse.json(
       {
-        message: 'Redemption request created successfully',
+        message: 'Redemption request created successfully. Tokens placed on hold.',
         redemption
       },
       { status: 201 }

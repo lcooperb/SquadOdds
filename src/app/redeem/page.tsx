@@ -44,7 +44,7 @@ export default function RedeemPage() {
   const [submitting, setSubmitting] = useState(false);
   const [redeemAmount, setRedeemAmount] = useState("");
   const [venmoHandle, setVenmoHandle] = useState("");
-  const [showForm, setShowForm] = useState(false);
+  
 
   useEffect(() => {
     if (status === "loading") return;
@@ -115,7 +115,6 @@ export default function RedeemPage() {
           "Redemption request submitted successfully! Admin will process your request."
         );
         setRedeemAmount("");
-        setShowForm(false);
         fetchUserData();
       } else {
         const error = await response.json();
@@ -172,6 +171,9 @@ export default function RedeemPage() {
   }
 
   const dollarValue = profile.virtualBalance / 100;
+  const heldAmount = redemptions
+    .filter((r) => r.status === "PENDING")
+    .reduce((sum, r) => sum + Number(r.tokenAmount), 0);
 
   return (
     <main className="container mx-auto px-4 py-8 max-w-4xl">
@@ -191,7 +193,7 @@ export default function RedeemPage() {
         <CardContent>
           <div className="text-center p-4 bg-gray-800/30 rounded-lg">
             <div className="text-3xl font-bold text-green-400 mb-2">
-              ₺{profile.virtualBalance.toLocaleString()}
+              ₺{Math.round(profile.virtualBalance).toLocaleString("en-US")}
             </div>
             <div className="text-gray-400">
               Available Balance ($
@@ -200,6 +202,11 @@ export default function RedeemPage() {
                 maximumFractionDigits: 2,
               })} USD)
             </div>
+            {heldAmount > 0 && (
+              <div className="text-sm text-yellow-300 mt-1">
+                Held (pending): ₺{Math.round(heldAmount).toLocaleString("en-US")}
+              </div>
+            )}
           </div>
         </CardContent>
       </Card>
@@ -207,22 +214,11 @@ export default function RedeemPage() {
       {/* Redemption Form */}
       <Card className="mb-6">
         <CardHeader>
-          <div className="flex items-center justify-between">
             <CardTitle className="flex items-center gap-2">
               <ArrowDownCircle className="h-5 w-5" />
               Request Redemption
             </CardTitle>
-            <Button
-              variant={showForm ? "ghost" : "primary"}
-              size="sm"
-              onClick={() => setShowForm(!showForm)}
-              disabled={profile.virtualBalance < 100}
-            >
-              {showForm ? "Cancel" : "Redeem Tokens"}
-            </Button>
-          </div>
-        </CardHeader>
-        {showForm && (
+          </CardHeader>
           <CardContent>
             <form onSubmit={handleRedeem} className="space-y-4">
               <div>
@@ -267,22 +263,41 @@ export default function RedeemPage() {
                 <div className="flex justify-between mt-1 text-xs text-gray-400">
                   <span>Minimum: 100 tokens</span>
                   <span>
-                    Available: ₺{profile.virtualBalance.toLocaleString()}
+                    Available: ₺{Math.round(profile.virtualBalance).toLocaleString("en-US")}
                   </span>
+                </div>
+                {/* Quick-select partial redemption buttons */}
+                <div className="flex flex-wrap gap-2 mt-2">
+                  {[
+                    { label: "25%", value: Math.floor(profile.virtualBalance * 0.25) },
+                    { label: "50%", value: Math.floor(profile.virtualBalance * 0.5) },
+                    { label: "75%", value: Math.floor(profile.virtualBalance * 0.75) },
+                    { label: "Max", value: profile.virtualBalance },
+                  ].map((opt) => (
+                    <button
+                      key={opt.label}
+                      type="button"
+                      onClick={() => setRedeemAmount(String(opt.value))}
+                      className="px-3 py-1 text-xs rounded-md border border-gray-600 bg-gray-800 text-gray-300 hover:bg-gray-700 transition-colors"
+                    >
+                      {opt.label}
+                    </button>
+                  ))}
                 </div>
               </div>
 
               {redeemAmount && parseInt(redeemAmount) >= 100 && (
                 <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
                   <div className="flex items-center justify-between">
-                    <span className="text-white">You will receive:</span>
-                    <span className="font-bold text-green-400">
-                      $
-                      {(parseInt(redeemAmount || "0") / 100).toLocaleString("en-US", {
-                        minimumFractionDigits: 2,
-                        maximumFractionDigits: 2,
-                      })}
-                    </span>
+                    <span className="text-white">You will redeem:</span>
+                    <div className="text-right">
+                      <div className="font-bold text-green-400">
+                        ₺{Math.round(parseInt(redeemAmount || "0")).toLocaleString("en-US")}
+                      </div>
+                      <div className="text-xs text-gray-300">
+                        ≈ ${((parseInt(redeemAmount || "0") || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -304,8 +319,8 @@ export default function RedeemPage() {
                         provide
                       </li>
                       <li>
-                        • Funds will be deducted from your balance once
-                        approved
+                        • Funds will be removed from your available balance
+                        until approved
                       </li>
                     </ul>
                   </div>
@@ -326,7 +341,6 @@ export default function RedeemPage() {
               </Button>
             </form>
           </CardContent>
-        )}
       </Card>
 
       {/* Redemption History */}

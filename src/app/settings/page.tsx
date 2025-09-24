@@ -31,6 +31,10 @@ export default function Settings() {
   const router = useRouter();
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
+  const [currentPassword, setCurrentPassword] = useState("");
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [changing, setChanging] = useState(false);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -52,6 +56,44 @@ export default function Settings() {
       console.error("Error fetching profile:", error);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleChangePassword = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPassword || !newPassword || !confirmPassword) {
+      alert("Please fill out all password fields");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      alert("New password and confirmation do not match");
+      return;
+    }
+    if (newPassword.length < 8) {
+      alert("New password must be at least 8 characters");
+      return;
+    }
+    setChanging(true);
+    try {
+      const res = await fetch("/api/auth/change-password", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ currentPassword, newPassword, confirmPassword }),
+      });
+      const data = await res.json();
+      if (res.ok) {
+        alert("Password updated successfully");
+        setCurrentPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+      } else {
+        alert(data.message || data.error || "Failed to change password");
+      }
+    } catch (err) {
+      console.error("Error changing password:", err);
+      alert("An unexpected error occurred");
+    } finally {
+      setChanging(false);
     }
   };
 
@@ -159,14 +201,9 @@ export default function Settings() {
             <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
               <div>
                 <div className="text-2xl font-bold text-green-400">
-                  ₺{profile.virtualBalance.toLocaleString()}
+                  ₺{Math.round(profile.virtualBalance).toLocaleString("en-US")}
                 </div>
-                <div className="text-sm text-gray-400">
-                  Current Balance (${(profile.virtualBalance/100).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })} USD)
-                </div>
+                <div className="text-sm text-gray-400">Current Balance</div>
               </div>
               <div className="flex space-x-2">
                 <Button
@@ -195,23 +232,54 @@ export default function Settings() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
-              <div className="flex items-start gap-3">
-                <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+            <form onSubmit={handleChangePassword} className="space-y-3">
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">Current Password</label>
+                <input
+                  type="password"
+                  value={currentPassword}
+                  onChange={(e) => setCurrentPassword(e.target.value)}
+                  placeholder="Enter current password"
+                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                />
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <h4 className="text-white font-medium mb-1">
-                    Password Management
-                  </h4>
-                  <p className="text-gray-300 text-sm mb-3">
-                    Your account is secured with NextAuth. Password changes and account security
-                    are managed through your authentication provider.
-                  </p>
-                  <p className="text-gray-400 text-xs">
-                    For enhanced security, consider enabling two-factor authentication with your provider.
-                  </p>
+                  <label className="block text-sm font-medium text-white mb-2">New Password</label>
+                  <input
+                    type="password"
+                    value={newPassword}
+                    onChange={(e) => setNewPassword(e.target.value)}
+                    placeholder="At least 8 characters"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-white mb-2">Confirm New Password</label>
+                  <input
+                    type="password"
+                    value={confirmPassword}
+                    onChange={(e) => setConfirmPassword(e.target.value)}
+                    placeholder="Re-enter new password"
+                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  />
                 </div>
               </div>
-            </div>
+              <div className="flex justify-end">
+                <Button type="submit" disabled={changing || !currentPassword || !newPassword || !confirmPassword}>
+                  {changing ? "Updating..." : "Change Password"}
+                </Button>
+              </div>
+              <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
+                <div className="flex items-start gap-3">
+                  <AlertCircle className="h-5 w-5 text-blue-400 flex-shrink-0 mt-0.5" />
+                  <div className="text-sm text-gray-300">
+                    <p className="mb-2"><strong>Tip:</strong> Use a unique passphrase you don't reuse elsewhere.</p>
+                    <p className="text-xs text-gray-400">Minimum length is 8 characters.</p>
+                  </div>
+                </div>
+              </div>
+            </form>
           </CardContent>
         </Card>
 

@@ -198,15 +198,9 @@ export default function Profile() {
               <CardContent className="p-4 text-center">
                 <DollarSign className="h-8 w-8 text-green-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white text-numbers">
-                  {Number(profile.virtualBalance).toLocaleString()} tokens
+                  ₺{Math.round(Number(profile.virtualBalance)).toLocaleString("en-US")}
                 </div>
-                <div className="text-sm text-gray-400">
-                  Current Balance ($
-                  {(Number(profile.virtualBalance)/100).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })})
-                </div>
+                <div className="text-sm text-gray-400">Current Balance</div>
               </CardContent>
             </Card>
 
@@ -216,11 +210,7 @@ export default function Profile() {
                 <div
                   className={`text-2xl font-bold text-numbers ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
                 >
-                  {netProfit >= 0 ? "+" : ""}$
-                  {netProfit.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {netProfit >= 0 ? "+" : ""}₺{Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
                 </div>
                 <div className="text-sm text-gray-400">Net Profit</div>
               </CardContent>
@@ -261,21 +251,13 @@ export default function Profile() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Winnings</span>
                 <span className="text-green-400 font-semibold">
-                  +$
-                  {Number(profile.totalWinnings).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  +₺{Math.round(Number(profile.totalWinnings)).toLocaleString("en-US")}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Losses</span>
                 <span className="text-red-400 font-semibold">
-                  -$
-                  {Number(profile.totalLosses).toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  -₺{Math.round(Number(profile.totalLosses)).toLocaleString("en-US")}
                 </span>
               </div>
               <div className="flex justify-between border-t border-gray-700 pt-2">
@@ -283,11 +265,7 @@ export default function Profile() {
                 <span
                   className={`font-bold ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
                 >
-                  {netProfit >= 0 ? "+" : ""}$
-                  {netProfit.toLocaleString("en-US", {
-                    minimumFractionDigits: 2,
-                    maximumFractionDigits: 2,
-                  })}
+                  {netProfit >= 0 ? "+" : "-"}₺{Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
                 </span>
               </div>
             </CardContent>
@@ -412,7 +390,7 @@ export default function Profile() {
                         </h4>
                         <div className="flex items-center gap-4 text-sm text-gray-400">
                           <span>
-                            Bet: {Number(bet.amount * 100).toLocaleString()} tokens on {bet.side}
+                            Bet: ₺{Math.round(Number(bet.amount * 100)).toLocaleString("en-US")} on {bet.side}
                             {bet.option && ` (${bet.option.title})`}
                           </span>
                           <span>@ {Number(bet.price).toFixed(0)}¢</span>
@@ -430,8 +408,7 @@ export default function Profile() {
                           <div
                             className={`text-sm ${bet.status === "WON" ? "text-green-400" : "text-red-400"}`}
                           >
-                            {bet.status === "WON" ? "+" : "-"}
-                            {Number(bet.amount * 100).toLocaleString()} tokens
+                            {bet.status === "WON" ? "+" : "-"}₺{Math.round(Number(bet.amount * 100)).toLocaleString("en-US")}
                           </div>
                         )}
                       </div>

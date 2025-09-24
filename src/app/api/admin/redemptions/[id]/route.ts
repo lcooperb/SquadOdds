@@ -16,9 +16,9 @@ export async function PUT(
     const { action, adminNotes } = await request.json()
     const redemptionId = params.id
 
-    if (!['approve', 'complete', 'reject'].includes(action)) {
+    if (!['complete', 'reject'].includes(action)) {
       return NextResponse.json(
-        { message: 'Invalid action. Must be approve, complete, or reject' },
+        { message: 'Invalid action. Must be complete or reject' },
         { status: 400 }
       )
     }
@@ -41,9 +41,7 @@ export async function PUT(
       adminNotes: adminNotes || null,
     }
 
-    if (action === 'approve') {
-      updateData.status = 'APPROVED'
-    } else if (action === 'complete') {
+    if (action === 'complete') {
       if (redemption.status !== 'APPROVED' && redemption.status !== 'PENDING') {
         return NextResponse.json(
           { message: 'Can only complete approved or pending redemptions' },
@@ -51,13 +49,26 @@ export async function PUT(
         )
       }
 
-      // Deduct tokens from user's balance and mark as completed
+      // Tokens were already deducted (held) at request time; mark as completed only
+      await prisma.redemption.update({
+        where: { id: redemptionId },
+        data: {
+          ...updateData,
+          status: 'COMPLETED',
+        }
+      })
+
+      return NextResponse.json({
+        message: `Redemption completed! Tokens were already held at request time for ${redemption.user.displayName}.`
+      })
+    } else if (action === 'reject') {
+      // Refund held tokens back to user and mark as rejected
       await prisma.$transaction([
         prisma.user.update({
           where: { id: redemption.userId },
           data: {
             virtualBalance: {
-              decrement: Number(redemption.tokenAmount)
+              increment: Number(redemption.tokenAmount)
             }
           }
         }),
@@ -65,27 +76,17 @@ export async function PUT(
           where: { id: redemptionId },
           data: {
             ...updateData,
-            status: 'COMPLETED',
+            status: 'REJECTED'
           }
         })
       ])
 
       return NextResponse.json({
-        message: `Redemption completed! ${redemption.tokenAmount} tokens deducted from ${redemption.user.displayName}'s balance.`
-      })
-    } else if (action === 'reject') {
-      updateData.status = 'REJECTED'
-    }
-
-    // Update redemption (for approve and reject)
-    if (action !== 'complete') {
-      await prisma.redemption.update({
-        where: { id: redemptionId },
-        data: updateData
+        message: `Redemption rejected and ${redemption.tokenAmount} tokens refunded to ${redemption.user.displayName}.`
       })
     }
 
-    const actionText = action === 'approve' ? 'approved' : 'rejected'
+    const actionText = action
     return NextResponse.json({
       message: `Redemption ${actionText} successfully`
     })
