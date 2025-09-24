@@ -7,11 +7,7 @@ import { Button } from '@/components/ui/Button'
 import SearchDropdown from '@/components/SearchDropdown'
 import { Menu, X, User, LogOut, Settings, TrendingUp, Users } from 'lucide-react'
 
-interface NavigationProps {
-  onSearch?: (query: string) => void
-}
-
-export default function Navigation({ onSearch }: NavigationProps) {
+export default function Navigation() {
   const { data: session } = useSession()
   const [isMenuOpen, setIsMenuOpen] = useState(false)
   const [userBalance, setUserBalance] = useState<number | null>(null)
@@ -42,21 +38,29 @@ export default function Navigation({ onSearch }: NavigationProps) {
   return (
     <nav className="bg-gray-900/80 backdrop-blur-sm border-b border-gray-700 sticky top-0 z-40">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
-          {/* Logo */}
-          <Link href="/" className="flex items-center space-x-2">
-            <TrendingUp className="h-8 w-8 text-purple-500" />
-            <span className="text-xl font-bold text-white">
-              Friend<span className="text-purple-500">Bets</span>
-            </span>
-          </Link>
+        <div className="flex items-center h-16">
+          {/* Left side - Logo and Search */}
+          <div className="flex items-center space-x-4">
+            {/* Logo */}
+            <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
+              <TrendingUp className="h-8 w-8 text-purple-500" />
+              <span className="text-xl font-bold text-white">
+                Friend<span className="text-purple-500">Bets</span>
+              </span>
+            </Link>
 
-          {/* Search Bar */}
-          <SearchDropdown />
+            {/* Search Bar */}
+            {session && (
+              <div className="ml-8">
+                <SearchDropdown />
+              </div>
+            )}
+          </div>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:block">
-            <div className="flex items-center space-x-4">
+          {/* Right side - Navigation Links and User Menu */}
+          <div className="ml-auto flex items-center space-x-4">
+            {/* Desktop Navigation Links */}
+            <div className="hidden md:flex items-center space-x-4">
               {session ? (
                 <>
                   <Link
@@ -97,19 +101,18 @@ export default function Navigation({ onSearch }: NavigationProps) {
                 </>
               )}
             </div>
-          </div>
 
-          {/* Right side */}
-          <div className="hidden md:block">
-            <div className="ml-4 flex items-center md:ml-6 space-x-4">
-              {session ? (
-                <>
-                  {/* Balance Display */}
-                  <div className="text-sm text-gray-300">
-                    Balance: <span className="text-green-400 font-semibold">
-                      ${userBalance !== null ? userBalance.toFixed(2) : '...'}
-                    </span>
-                  </div>
+            {/* Balance and User Menu */}
+            {session ? (
+              <>
+                {/* Balance Display */}
+                <div className="text-sm text-gray-300 whitespace-nowrap">
+                  <span className="text-green-400 font-semibold">
+                    {userBalance !== null
+                      ? `₺${userBalance.toLocaleString()}`
+                      : "..."}
+                  </span>
+                </div>
 
                   {/* User Menu */}
                   <div className="relative">
@@ -153,18 +156,17 @@ export default function Navigation({ onSearch }: NavigationProps) {
                       </div>
                     )}
                   </div>
-                </>
-              ) : (
-                <div className="flex items-center space-x-4">
-                  <Link href="/auth/signin">
-                    <Button variant="ghost">Sign in</Button>
-                  </Link>
-                  <Link href="/auth/signup">
-                    <Button>Get Started</Button>
-                  </Link>
-                </div>
-              )}
-            </div>
+              </>
+            ) : (
+              <div className="flex items-center space-x-4">
+                <Link href="/auth/signin">
+                  <Button variant="ghost">Sign in</Button>
+                </Link>
+                <Link href="/auth/signup">
+                  <Button>Get Started</Button>
+                </Link>
+              </div>
+            )}
           </div>
 
           {/* Mobile menu button */}

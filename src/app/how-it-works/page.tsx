@@ -1,11 +1,9 @@
-import Navigation from '@/components/Navigation'
 import { Button } from '@/components/ui/Button'
 import Link from 'next/link'
 
 export default function HowItWorks() {
   return (
     <>
-      <Navigation />
       <main className="container mx-auto px-4 py-8">
         <div className="max-w-4xl mx-auto">
           <h1 className="text-4xl font-bold text-white mb-8 text-center">How SquadOdds Works</h1>
@@ -44,19 +42,19 @@ export default function HowItWorks() {
               <h2 className="text-2xl font-semibold text-white mb-4">Example Markets</h2>
               <ul className="space-y-3 text-gray-300">
                 <li className="flex items-start">
-                  <span className="text-purple-500 mr-2">•</span>
+                  <span className="text-blue-500 mr-2">•</span>
                   <span>&quot;Will Sarah get promoted by the end of the year?&quot;</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-purple-500 mr-2">•</span>
+                  <span className="text-blue-500 mr-2">•</span>
                   <span>&quot;Will Mike finish his marathon training program?&quot;</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-purple-500 mr-2">•</span>
+                  <span className="text-blue-500 mr-2">•</span>
                   <span>&quot;Will our group take a vacation together this summer?&quot;</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-purple-500 mr-2">•</span>
+                  <span className="text-blue-500 mr-2">•</span>
                   <span>&quot;Will Alex ask out their crush before Valentine&apos;s Day?&quot;</span>
                 </li>
               </ul>
@@ -91,15 +89,15 @@ export default function HowItWorks() {
               </p>
               <ul className="space-y-2 text-gray-300">
                 <li className="flex items-start">
-                  <span className="text-blue-400 mr-2">•</span>
+                  <span className="text-gray-400 mr-2">•</span>
                   <span>Check your net winnings/losses in your profile</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-400 mr-2">•</span>
+                  <span className="text-gray-400 mr-2">•</span>
                   <span>Agree on a conversion rate (e.g., $1 virtual = $0.10 real)</span>
                 </li>
                 <li className="flex items-start">
-                  <span className="text-blue-400 mr-2">•</span>
+                  <span className="text-gray-400 mr-2">•</span>
                   <span>Winners collect from losers using Venmo, cash, or however you prefer</span>
                 </li>
               </ul>

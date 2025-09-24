@@ -1,12 +1,11 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import Navigation from '@/components/Navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
 import {
   Shield,
   CheckCircle,
@@ -15,233 +14,423 @@ import {
   TrendingUp,
   Calendar,
   DollarSign,
-  Settings
-} from 'lucide-react'
+  Settings,
+  Plus,
+  Clock,
+  AlertCircle,
+  X,
+} from "lucide-react";
 
 interface User {
-  id: string
-  email: string
-  username: string
-  displayName: string
-  virtualBalance: number
-  isAdmin: boolean
-  createdAt: string
+  id: string;
+  email: string;
+  username: string;
+  displayName: string;
+  virtualBalance: number;
+  isAdmin: boolean;
+  createdAt: string;
   _count: {
-    bets: number
-    createdEvents: number
-  }
+    bets: number;
+    createdEvents: number;
+  };
 }
 
 interface Event {
-  id: string
-  title: string
-  description: string
-  category: string
-  status: string
-  marketType: string
-  endDate: string | null
-  isOngoing: boolean
-  totalVolume: number
-  resolved: boolean
-  outcome: boolean | null
-  winningOptionId: string | null
-  createdAt: string
+  id: string;
+  title: string;
+  description: string;
+  category: string;
+  status: string;
+  marketType: string;
+  endDate: string | null;
+  isOngoing: boolean;
+  totalVolume: number;
+  resolved: boolean;
+  outcome: boolean | null;
+  winningOptionId: string | null;
+  createdAt: string;
   createdBy: {
-    displayName: string
-    username: string
-  }
+    displayName: string;
+    username: string;
+  };
   options?: Array<{
-    id: string
-    title: string
-    price: number
-    totalVolume: number
-  }>
+    id: string;
+    title: string;
+    price: number;
+    totalVolume: number;
+  }>;
   _count: {
-    bets: number
-  }
+    bets: number;
+  };
+}
+
+interface Payment {
+  id: string;
+  amount: number;
+  tokens: number;
+  transactionId: string;
+  paymentMethod: string;
+  status: string;
+  createdAt: string;
+  verifiedAt: string | null;
+  user: {
+    email: string;
+    displayName: string;
+  };
 }
 
 export default function AdminPanel() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [activeTab, setActiveTab] = useState<'events' | 'users'>('events')
-  const [events, setEvents] = useState<Event[]>([])
-  const [users, setUsers] = useState<User[]>([])
-  const [loading, setLoading] = useState(true)
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const [activeTab, setActiveTab] = useState<"events" | "users" | "payments">(
+    "events"
+  );
+  const [events, setEvents] = useState<Event[]>([]);
+  const [users, setUsers] = useState<User[]>([]);
+  const [payments, setPayments] = useState<Payment[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  // Payment form state
+  const [paymentLoading, setPaymentLoading] = useState(false);
+  const [processing, setProcessing] = useState(false);
+  const [userEmail, setUserEmail] = useState("");
+  const [amount, setAmount] = useState("");
+  const [transactionId, setTransactionId] = useState("");
+  const [paymentMethod, setPaymentMethod] = useState("venmo");
+  const [showForm, setShowForm] = useState(false);
+  const [approvingPayment, setApprovingPayment] = useState<string | null>(null);
 
   useEffect(() => {
-    if (status === 'loading') return
+    if (status === "loading") return;
 
     if (!session?.user) {
-      router.push('/auth/signin')
-      return
+      router.push("/auth/signin");
+      return;
     }
 
     // Check if user is admin
-    fetchUserData()
-  }, [session, status, router])
+    fetchUserData();
+  }, [session, status, router]);
 
   const fetchUserData = async () => {
     try {
-      const response = await fetch('/api/users')
+      const response = await fetch("/api/users");
       if (response.ok) {
-        const userData = await response.json()
+        const userData = await response.json();
         if (!userData.isAdmin) {
-          router.push('/')
-          return
+          router.push("/");
+          return;
         }
       } else {
-        router.push('/')
-        return
+        router.push("/");
+        return;
       }
     } catch (error) {
-      console.error('Error checking admin status:', error)
-      router.push('/')
-      return
+      console.error("Error checking admin status:", error);
+      router.push("/");
+      return;
     }
 
     // If we get here, user is admin
-    fetchData()
-  }
+    fetchData();
+  };
 
   const fetchData = async () => {
     try {
-      const [eventsRes, usersRes] = await Promise.all([
-        fetch('/api/admin/events'),
-        fetch('/api/admin/users')
-      ])
+      const [eventsRes, usersRes, paymentsRes] = await Promise.all([
+        fetch("/api/admin/events"),
+        fetch("/api/admin/users"),
+        fetch("/api/admin/payments/process"),
+      ]);
 
       if (eventsRes.ok) {
-        const eventsData = await eventsRes.json()
-        setEvents(eventsData)
+        const eventsData = await eventsRes.json();
+        setEvents(eventsData);
       }
 
       if (usersRes.ok) {
-        const usersData = await usersRes.json()
-        setUsers(usersData)
+        const usersData = await usersRes.json();
+        setUsers(usersData);
+      }
+
+      if (paymentsRes.ok) {
+        const paymentsData = await paymentsRes.json();
+        setPayments(paymentsData);
       }
     } catch (error) {
-      console.error('Error fetching admin data:', error)
+      console.error("Error fetching admin data:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
-  const resolveEvent = async (eventId: string, resolution: 'YES' | 'NO' | string) => {
+  const fetchPayments = async () => {
+    try {
+      setPaymentLoading(true);
+      const response = await fetch("/api/admin/payments/process");
+      if (response.ok) {
+        const data = await response.json();
+        setPayments(data);
+      }
+    } catch (error) {
+      console.error("Error fetching payments:", error);
+    } finally {
+      setPaymentLoading(false);
+    }
+  };
+
+  const resolveEvent = async (
+    eventId: string,
+    resolution: "YES" | "NO" | string
+  ) => {
     try {
       const response = await fetch(`/api/events/${eventId}/resolve`, {
-        method: 'POST',
+        method: "POST",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          outcome: resolution === 'YES' ? true : resolution === 'NO' ? false : undefined,
-          winningOptionId: resolution !== 'YES' && resolution !== 'NO' ? resolution : undefined
+          outcome:
+            resolution === "YES"
+              ? true
+              : resolution === "NO"
+                ? false
+                : undefined,
+          winningOptionId:
+            resolution !== "YES" && resolution !== "NO"
+              ? resolution
+              : undefined,
         }),
-      })
+      });
 
       if (response.ok) {
-        fetchData() // Refresh data
+        fetchData(); // Refresh data
       } else {
-        const error = await response.json()
-        alert(`Error resolving event: ${error.message}`)
+        const error = await response.json();
+        alert(`Error resolving event: ${error.message}`);
       }
     } catch (error) {
-      console.error('Error resolving event:', error)
-      alert('Error resolving event')
+      console.error("Error resolving event:", error);
+      alert("Error resolving event");
     }
-  }
+  };
 
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
-        method: 'PATCH',
+        method: "PATCH",
         headers: {
-          'Content-Type': 'application/json',
+          "Content-Type": "application/json",
         },
         body: JSON.stringify({ isAdmin: !isAdmin }),
-      })
+      });
 
       if (response.ok) {
-        fetchData() // Refresh data
+        fetchData(); // Refresh data
       } else {
-        const error = await response.json()
-        alert(`Error updating user: ${error.message}`)
+        const error = await response.json();
+        alert(`Error updating user: ${error.message}`);
       }
     } catch (error) {
-      console.error('Error updating user:', error)
-      alert('Error updating user')
+      console.error("Error updating user:", error);
+      alert("Error updating user");
     }
-  }
+  };
 
-  if (status === 'loading' || loading) {
+  const processPayment = async () => {
+    if (!userEmail || !amount || !transactionId) {
+      alert("Please fill in all fields");
+      return;
+    }
+
+    setProcessing(true);
+    try {
+      const response = await fetch("/api/admin/payments/process", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          userEmail,
+          amount: Number(amount),
+          paymentMethod,
+          externalTransactionId: transactionId,
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(
+          `Success! Added ${result.tokensAdded} tokens to ${result.user.displayName}'s account`
+        );
+
+        // Reset form
+        setUserEmail("");
+        setAmount("");
+        setTransactionId("");
+        setShowForm(false);
+
+        // Refresh payments list
+        fetchPayments();
+      } else {
+        const error = await response.json();
+        alert(error.message || "Failed to process payment");
+      }
+    } catch (error) {
+      console.error("Error processing payment:", error);
+      alert("An error occurred while processing the payment");
+    } finally {
+      setProcessing(false);
+    }
+  };
+
+  const handlePaymentAction = async (
+    paymentId: string,
+    action: "approve" | "reject"
+  ) => {
+    setApprovingPayment(paymentId);
+    try {
+      const response = await fetch(`/api/admin/payments/${paymentId}`, {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ action }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(result.message);
+        fetchPayments(); // Refresh the list
+      } else {
+        const error = await response.json();
+        alert(error.message || `Failed to ${action} payment`);
+      }
+    } catch (error) {
+      console.error(`Error ${action}ing payment:`, error);
+      alert(`An error occurred while ${action}ing the payment`);
+    } finally {
+      setApprovingPayment(null);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case "VERIFIED":
+        return "success";
+      case "PENDING":
+        return "warning";
+      case "REJECTED":
+        return "error";
+      default:
+        return "secondary";
+    }
+  };
+
+  const getPaymentMethodColor = (method: string) => {
+    switch (method.toLowerCase()) {
+      case "venmo":
+        return "default";
+      case "cashapp":
+        return "success";
+      case "paypal":
+        return "warning";
+      default:
+        return "secondary";
+    }
+  };
+
+  if (status === "loading" || loading) {
     return (
       <>
-        <Navigation />
-        <div className="min-h-screen flex items-center justify-center">
+                <div className="min-h-screen flex items-center justify-center">
           <div className="text-white">Loading admin panel...</div>
         </div>
       </>
-    )
+    );
   }
 
   return (
     <>
-      <Navigation />
-      <main className="container mx-auto px-4 py-8">
+            <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
-            <Shield className="h-8 w-8 text-purple-500" />
+            <Shield className="h-8 w-8 text-blue-500" />
             Admin Panel
           </h1>
-          <p className="text-gray-400">
-            Manage events and users for SquadOdds
-          </p>
+          <p className="text-gray-400">Manage events and users for SquadOdds</p>
         </div>
 
         {/* Tab Navigation */}
         <div className="flex space-x-4 mb-6">
           <button
-            onClick={() => setActiveTab('events')}
+            onClick={() => setActiveTab("events")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'events'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              activeTab === "events"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
           >
             <TrendingUp className="inline h-4 w-4 mr-2" />
             Events ({events.length})
           </button>
           <button
-            onClick={() => setActiveTab('users')}
+            onClick={() => setActiveTab("users")}
             className={`px-4 py-2 rounded-lg font-medium transition-colors ${
-              activeTab === 'users'
-                ? 'bg-purple-600 text-white'
-                : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+              activeTab === "users"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
             }`}
           >
             <Users className="inline h-4 w-4 mr-2" />
             Users ({users.length})
           </button>
+          <button
+            onClick={() => setActiveTab("payments")}
+            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+              activeTab === "payments"
+                ? "bg-blue-600 text-white"
+                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
+            }`}
+          >
+            <DollarSign className="inline h-4 w-4 mr-2" />
+            Payments
+          </button>
         </div>
 
         {/* Events Tab */}
-        {activeTab === 'events' && (
+        {activeTab === "events" && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-white mb-4">Event Management</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">
+              Event Management
+            </h2>
             {events.map((event) => (
               <Card key={event.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
                     <div>
                       <CardTitle className="text-lg">{event.title}</CardTitle>
-                      <p className="text-gray-400 text-sm mt-1">{event.description}</p>
+                      <p className="text-gray-400 text-sm mt-1">
+                        {event.description}
+                      </p>
                       <div className="flex items-center gap-2 mt-2">
                         <Badge variant="secondary">{event.category}</Badge>
-                        <Badge variant={event.marketType === 'BINARY' ? 'default' : 'secondary'}>
-                          {event.marketType === 'BINARY' ? 'Yes/No' : 'Multiple Choice'}
+                        <Badge
+                          variant={
+                            event.marketType === "BINARY"
+                              ? "default"
+                              : "secondary"
+                          }
+                        >
+                          {event.marketType === "BINARY"
+                            ? "Yes/No"
+                            : "Multiple Choice"}
                         </Badge>
-                        <Badge variant={event.status === 'ACTIVE' ? 'default' : 'secondary'}>
+                        <Badge
+                          variant={
+                            event.status === "ACTIVE" ? "default" : "secondary"
+                          }
+                        >
                           {event.status}
                         </Badge>
                         {event.resolved && (
@@ -252,26 +441,33 @@ export default function AdminPanel() {
                     <div className="text-right text-sm text-gray-400">
                       <div>by @{event.createdBy.username}</div>
                       <div>{event._count.bets} bets</div>
-                      <div>${Number(event.totalVolume).toFixed(2)} volume</div>
+                      <div>
+                        $
+                        {Number(event.totalVolume).toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}{" "}
+                        volume
+                      </div>
                     </div>
                   </div>
                 </CardHeader>
                 <CardContent>
-                  {!event.resolved && event.status === 'ACTIVE' && (
+                  {!event.resolved && event.status === "ACTIVE" && (
                     <div className="space-y-3">
                       <h4 className="font-medium text-white">Resolve Event:</h4>
 
-                      {event.marketType === 'BINARY' ? (
+                      {event.marketType === "BINARY" ? (
                         <div className="flex gap-2">
                           <Button
-                            onClick={() => resolveEvent(event.id, 'YES')}
+                            onClick={() => resolveEvent(event.id, "YES")}
                             className="bg-green-600 hover:bg-green-700"
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Resolve YES
                           </Button>
                           <Button
-                            onClick={() => resolveEvent(event.id, 'NO')}
+                            onClick={() => resolveEvent(event.id, "NO")}
                             className="bg-red-600 hover:bg-red-700"
                           >
                             <XCircle className="h-4 w-4 mr-2" />
@@ -280,16 +476,21 @@ export default function AdminPanel() {
                         </div>
                       ) : (
                         <div className="space-y-2">
-                          <p className="text-sm text-gray-400">Select winning option:</p>
+                          <p className="text-sm text-gray-400">
+                            Select winning option:
+                          </p>
                           <div className="flex flex-wrap gap-2">
                             {event.options?.map((option) => (
                               <Button
                                 key={option.id}
-                                onClick={() => resolveEvent(event.id, option.id)}
+                                onClick={() =>
+                                  resolveEvent(event.id, option.id)
+                                }
                                 className="bg-green-600 hover:bg-green-700"
                               >
                                 <CheckCircle className="h-4 w-4 mr-2" />
-                                {option.title} ({option.price.toFixed(1)}%)
+                                {option.title} (
+                                {Number(option.price).toFixed(1)}%)
                               </Button>
                             ))}
                           </div>
@@ -300,14 +501,18 @@ export default function AdminPanel() {
 
                   {event.resolved && (
                     <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="font-medium text-white mb-2">Resolution:</h4>
-                      {event.marketType === 'BINARY' ? (
-                        <Badge variant={event.outcome ? 'success' : 'error'}>
-                          {event.outcome ? 'YES' : 'NO'}
+                      <h4 className="font-medium text-white mb-2">
+                        Resolution:
+                      </h4>
+                      {event.marketType === "BINARY" ? (
+                        <Badge variant={event.outcome ? "success" : "error"}>
+                          {event.outcome ? "YES" : "NO"}
                         </Badge>
                       ) : (
                         <Badge variant="success">
-                          {event.options?.find(opt => opt.id === event.winningOptionId)?.title || 'Unknown'}
+                          {event.options?.find(
+                            (opt) => opt.id === event.winningOptionId
+                          )?.title || "Unknown"}
                         </Badge>
                       )}
                     </div>
@@ -326,38 +531,51 @@ export default function AdminPanel() {
         )}
 
         {/* Users Tab */}
-        {activeTab === 'users' && (
+        {activeTab === "users" && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-white mb-4">User Management</h2>
+            <h2 className="text-xl font-semibold text-white mb-4">
+              User Management
+            </h2>
             <div className="grid gap-4">
               {users.map((user) => (
                 <Card key={user.id}>
                   <CardContent className="p-4">
                     <div className="flex items-center justify-between">
                       <div>
-                        <h3 className="font-medium text-white">{user.displayName}</h3>
-                        <p className="text-gray-400 text-sm">@{user.username} • {user.email}</p>
+                        <h3 className="font-medium text-white">
+                          {user.displayName}
+                        </h3>
+                        <p className="text-gray-400 text-sm">
+                          @{user.username} • {user.email}
+                        </p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
                           <span className="flex items-center gap-1">
-                            <DollarSign className="h-3 w-3" />
-                            ${Number(user.virtualBalance).toFixed(2)}
+                            <DollarSign className="h-3 w-3" />$
+                            {Number(user.virtualBalance).toLocaleString(
+                              "en-US",
+                              {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              }
+                            )}
                           </span>
                           <span>{user._count.bets} bets</span>
                           <span>{user._count.createdEvents} markets</span>
-                          <span>Joined {new Date(user.createdAt).toLocaleDateString()}</span>
+                          <span>
+                            Joined{" "}
+                            {new Date(user.createdAt).toLocaleDateString()}
+                          </span>
                         </div>
                       </div>
                       <div className="flex items-center gap-2">
-                        {user.isAdmin && (
-                          <Badge variant="default">Admin</Badge>
-                        )}
+                        {user.isAdmin && <Badge variant="default">Admin</Badge>}
                         <Button
                           onClick={() => toggleUserAdmin(user.id, user.isAdmin)}
                           variant="outline"
                           size="sm"
                         >
                           <Settings className="h-4 w-4 mr-2" />
-                          {user.isAdmin ? 'Remove Admin' : 'Make Admin'}
+                          {user.isAdmin ? "Remove Admin" : "Make Admin"}
                         </Button>
                       </div>
                     </div>
@@ -374,7 +592,231 @@ export default function AdminPanel() {
             )}
           </div>
         )}
+
+        {/* Payments Tab */}
+        {activeTab === "payments" && (
+          <div className="space-y-6">
+            {/* Quick Process Form */}
+            <Card>
+              <CardHeader>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <Plus className="h-5 w-5" />
+                    Process External Payment
+                  </CardTitle>
+                  <Button
+                    variant={showForm ? "ghost" : "primary"}
+                    size="sm"
+                    onClick={() => setShowForm(!showForm)}
+                  >
+                    {showForm ? "Cancel" : "Add Payment"}
+                  </Button>
+                </div>
+              </CardHeader>
+              {showForm && (
+                <CardContent className="space-y-4">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        User Email *
+                      </label>
+                      <input
+                        type="email"
+                        value={userEmail}
+                        onChange={(e) => setUserEmail(e.target.value)}
+                        placeholder="user@example.com"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Amount (USD) *
+                      </label>
+                      <input
+                        type="number"
+                        step="0.01"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="10.00"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Transaction ID *
+                      </label>
+                      <input
+                        type="text"
+                        value={transactionId}
+                        onChange={(e) => setTransactionId(e.target.value)}
+                        placeholder="Venmo/CashApp transaction ID"
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-sm font-medium text-white mb-2">
+                        Payment Method
+                      </label>
+                      <select
+                        value={paymentMethod}
+                        onChange={(e) => setPaymentMethod(e.target.value)}
+                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="venmo">Venmo</option>
+                        <option value="cashapp">Cash App</option>
+                        <option value="paypal">PayPal</option>
+                        <option value="bank">Bank Transfer</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  {amount && (
+                    <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
+                      <div className="flex items-center justify-between">
+                        <span className="text-white">Tokens to add:</span>
+                        <span className="font-bold text-green-400">
+                          {(Number(amount) * 100).toLocaleString()} tokens
+                        </span>
+                      </div>
+                    </div>
+                  )}
+
+                  <Button
+                    onClick={processPayment}
+                    disabled={
+                      processing || !userEmail || !amount || !transactionId
+                    }
+                    className="w-full"
+                  >
+                    {processing ? "Processing..." : "Process Payment"}
+                  </Button>
+                </CardContent>
+              )}
+            </Card>
+
+            {/* Recent Payments */}
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <DollarSign className="h-5 w-5" />
+                  Recent Payments ({payments.length})
+                  {payments.filter((p) => p.status === "PENDING").length >
+                    0 && (
+                    <Badge variant="warning" className="ml-2">
+                      {payments.filter((p) => p.status === "PENDING").length}{" "}
+                      Pending
+                    </Badge>
+                  )}
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                {paymentLoading ? (
+                  <div className="text-center py-8 text-gray-400">
+                    <DollarSign className="h-12 w-12 mx-auto mb-2 animate-pulse" />
+                    <p>Loading payments...</p>
+                  </div>
+                ) : payments.length > 0 ? (
+                  <div className="space-y-4">
+                    {payments.map((payment) => (
+                      <div
+                        key={payment.id}
+                        className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                      >
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-2">
+                            <Badge
+                              variant={getPaymentMethodColor(
+                                payment.paymentMethod
+                              )}
+                            >
+                              {payment.paymentMethod.toUpperCase()}
+                            </Badge>
+                            <Badge variant={getStatusColor(payment.status)}>
+                              {payment.status === "VERIFIED" && (
+                                <CheckCircle className="h-3 w-3 mr-1" />
+                              )}
+                              {payment.status === "PENDING" && (
+                                <Clock className="h-3 w-3 mr-1" />
+                              )}
+                              {payment.status === "REJECTED" && (
+                                <AlertCircle className="h-3 w-3 mr-1" />
+                              )}
+                              {payment.status}
+                            </Badge>
+                          </div>
+                          <div className="flex items-center gap-4 text-sm">
+                            <span className="text-white font-medium">
+                              {payment.user.displayName} ({payment.user.email})
+                            </span>
+                            <span className="text-gray-400">
+                              ID: {payment.transactionId}
+                            </span>
+                            <span className="text-gray-400">
+                              {new Date(payment.createdAt).toLocaleString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right flex items-center gap-3">
+                          <div>
+                            <div className="text-white font-semibold">
+                              $
+                              {Number(payment.amount).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}
+                            </div>
+                            <div className="text-sm text-green-400">
+                              +{payment.tokens.toLocaleString()} tokens
+                            </div>
+                          </div>
+                          {payment.status === "PENDING" && (
+                            <div className="flex gap-2">
+                              <Button
+                                size="sm"
+                                onClick={() =>
+                                  handlePaymentAction(payment.id, "approve")
+                                }
+                                disabled={approvingPayment === payment.id}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                {approvingPayment === payment.id ? (
+                                  "Processing..."
+                                ) : (
+                                  <>
+                                    <CheckCircle className="h-4 w-4 mr-1" />
+                                    Approve
+                                  </>
+                                )}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() =>
+                                  handlePaymentAction(payment.id, "reject")
+                                }
+                                disabled={approvingPayment === payment.id}
+                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                              >
+                                <X className="h-4 w-4 mr-1" />
+                                Reject
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-center py-8 text-gray-400">
+                    <DollarSign className="h-12 w-12 mx-auto mb-2" />
+                    <p>No payments processed yet</p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+        )}
       </main>
     </>
-  )
+  );
 }

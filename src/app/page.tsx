@@ -4,7 +4,6 @@ import { useSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import { useEffect, useState } from 'react'
 import Link from 'next/link'
-import Navigation from '@/components/Navigation'
 import MarketCard from '@/components/MarketCard'
 import { Button } from '@/components/ui/Button'
 import { Plus, TrendingUp, DollarSign, Users } from 'lucide-react'
@@ -76,7 +75,6 @@ export default function Home() {
 
   return (
     <>
-      <Navigation onSearch={setSearchQuery} />
       <main className="container mx-auto px-4 py-8">
         {/* Welcome Header - only show if logged in */}
         {session && (
@@ -192,7 +190,7 @@ export default function Home() {
             {session && <Button>Create Your First Market</Button>}
           </div>
         ) : (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
             {events.map((event) => (
               <MarketCard key={event.id} event={event} />
             ))}
