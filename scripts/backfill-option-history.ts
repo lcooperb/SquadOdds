@@ -41,7 +41,7 @@ async function backfillOptionHistory() {
     console.log(`\nExisting history entries: ${existingHistory.length}`)
 
     // Get unique timestamps
-    const uniqueTimestamps = [...new Set(existingHistory.map(h => h.timestamp.getTime()))]
+    const uniqueTimestamps = Array.from(new Set(existingHistory.map(h => h.timestamp.getTime())))
     console.log(`Unique timestamps: ${uniqueTimestamps.length}`)
 
     // For each timestamp, ensure ALL options have a price point
