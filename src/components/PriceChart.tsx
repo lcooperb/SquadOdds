@@ -129,7 +129,7 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
   }
 
   const chartData = marketType === 'MULTIPLE'
-    ? formatMultipleChoiceData(filteredData as any[], options)
+    ? formatMultipleChoiceData(filteredData as any[], options || [])
     : (() => {
         // For binary markets, add current time point with current prices
         const yesPrice = currentYesPrice || 50
