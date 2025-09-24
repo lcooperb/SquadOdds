@@ -370,7 +370,7 @@ export default function AdminPanel() {
       if (response.ok) {
         const result = await response.json();
         alert(result.message || `Redemption ${action}d`);
-        fetchRedemptions();
+        fetchData();
       } else {
         const err = await response.json();
         alert(err.message || `Failed to ${action} redemption`);
