@@ -67,6 +67,42 @@ export async function GET(request: NextRequest) {
           totalLosses: true,
           isAdmin: true,
           createdAt: true,
+          bets: {
+            include: {
+              event: {
+                select: {
+                  id: true,
+                  title: true,
+                  category: true,
+                  status: true,
+                  resolved: true,
+                  outcome: true,
+                }
+              },
+              option: {
+                select: {
+                  id: true,
+                  title: true,
+                }
+              }
+            },
+            orderBy: {
+              createdAt: 'desc'
+            }
+          },
+          createdEvents: {
+            select: {
+              id: true,
+              title: true,
+              category: true,
+              status: true,
+              resolved: true,
+              createdAt: true,
+            },
+            orderBy: {
+              createdAt: 'desc'
+            }
+          },
           _count: {
             select: {
               bets: true,

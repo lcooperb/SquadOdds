@@ -15,7 +15,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { eventId, side, amount } = await request.json()
+    const { eventId, side, amount, optionId } = await request.json()
 
     if (!eventId || !side || !amount) {
       return NextResponse.json(
@@ -47,6 +47,7 @@ export async function POST(request: NextRequest) {
       where: { id: eventId },
       include: {
         bets: true,
+        options: true,
       },
     })
 
@@ -85,8 +86,32 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate current price and shares
-    const currentPrice = side === 'YES' ? Number(event.yesPrice) : (100 - Number(event.yesPrice))
+    // For multiple choice markets, validate optionId and get option price
+    let currentPrice: number
+    let selectedOption = null
+
+    if (event.marketType === 'MULTIPLE') {
+      if (!optionId) {
+        return NextResponse.json(
+          { message: 'Option ID is required for multiple choice markets' },
+          { status: 400 }
+        )
+      }
+
+      selectedOption = event.options?.find(opt => opt.id === optionId)
+      if (!selectedOption) {
+        return NextResponse.json(
+          { message: 'Option not found' },
+          { status: 404 }
+        )
+      }
+
+      currentPrice = side === 'YES' ? Number(selectedOption.price) : (100 - Number(selectedOption.price))
+    } else {
+      // Binary market
+      currentPrice = side === 'YES' ? Number(event.yesPrice) : (100 - Number(event.yesPrice))
+    }
+
     const shares = (amount / currentPrice) * 100
 
     // Start transaction to place bet and update user balance and event volume
@@ -100,6 +125,7 @@ export async function POST(request: NextRequest) {
           amount,
           price: currentPrice,
           shares,
+          optionId: event.marketType === 'MULTIPLE' ? optionId : null,
         },
         include: {
           user: {
@@ -138,44 +164,116 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // Recalculate market price based on all bets
-      const allBets = await tx.bet.findMany({
-        where: { eventId },
-      })
+      if (event.marketType === 'MULTIPLE') {
+        // For multiple choice markets, recalculate prices for ALL options to ensure they sum to 100%
+        const allOptions = event.options || []
 
-      const yesBets = allBets.filter(b => b.side === 'YES')
-      const noBets = allBets.filter(b => b.side === 'NO')
+        // Calculate new prices for all options based on their YES bets
+        const optionData = await Promise.all(
+          allOptions.map(async (option) => {
+            const optionBets = await tx.bet.findMany({
+              where: { eventId, optionId: option.id },
+            })
 
-      const yesAmount = yesBets.reduce((sum, b) => sum + Number(b.amount), 0)
-      const noAmount = noBets.reduce((sum, b) => sum + Number(b.amount), 0)
-      const totalAmount = yesAmount + noAmount
+            const yesAmount = optionBets.filter(b => b.side === 'YES').reduce((sum, b) => sum + Number(b.amount), 0)
+            return {
+              option,
+              yesAmount,
+            }
+          })
+        )
 
-      let newYesPrice = 50 // default 50/50
-      if (totalAmount > 0) {
-        newYesPrice = (yesAmount / totalAmount) * 100
-        // Ensure price stays within reasonable bounds
-        newYesPrice = Math.max(5, Math.min(95, newYesPrice))
+        // Calculate total YES amount across all options
+        const totalYesAmount = optionData.reduce((sum, data) => sum + data.yesAmount, 0)
+
+        // Calculate normalized prices that sum to 100%
+        const normalizedPrices = optionData.map(data => {
+          if (totalYesAmount === 0) {
+            // If no bets, distribute equally
+            return 100 / allOptions.length
+          }
+
+          // Price is proportional to YES bets for this option
+          const rawPrice = (data.yesAmount / totalYesAmount) * 100
+          return Math.max(1, Math.min(99, rawPrice)) // Keep within bounds
+        })
+
+        // Ensure prices sum to exactly 100% by adjusting the largest
+        const priceSum = normalizedPrices.reduce((sum, price) => sum + price, 0)
+        if (priceSum !== 100) {
+          const adjustment = 100 - priceSum
+          const maxIndex = normalizedPrices.indexOf(Math.max(...normalizedPrices))
+          normalizedPrices[maxIndex] = Math.max(1, Math.min(99, normalizedPrices[maxIndex] + adjustment))
+        }
+
+        // Create a single timestamp for all options to ensure they're grouped correctly
+        const sharedTimestamp = new Date()
+
+        // Update all option prices and record history for ALL options at the SAME timestamp
+        for (let i = 0; i < allOptions.length; i++) {
+          const option = allOptions[i]
+          const newPrice = normalizedPrices[i]
+
+          await tx.marketOption.update({
+            where: { id: option.id },
+            data: {
+              price: newPrice,
+              totalVolume: option.id === optionId ? {
+                increment: amount,
+              } : undefined,
+            },
+          })
+
+          // Record price history point for ALL options at the SAME timestamp
+          await tx.optionPricePoint.create({
+            data: {
+              optionId: option.id,
+              price: newPrice,
+              volume: option.id === optionId ? Number(option.totalVolume) + amount : Number(option.totalVolume),
+              timestamp: sharedTimestamp,
+            },
+          })
+        }
+      } else {
+        // Binary market price calculation
+        const allBets = await tx.bet.findMany({
+          where: { eventId },
+        })
+
+        const yesBets = allBets.filter(b => b.side === 'YES')
+        const noBets = allBets.filter(b => b.side === 'NO')
+
+        const yesAmount = yesBets.reduce((sum, b) => sum + Number(b.amount), 0)
+        const noAmount = noBets.reduce((sum, b) => sum + Number(b.amount), 0)
+        const totalAmount = yesAmount + noAmount
+
+        let newYesPrice = 50 // default 50/50
+        if (totalAmount > 0) {
+          newYesPrice = (yesAmount / totalAmount) * 100
+          // Ensure price stays within reasonable bounds
+          newYesPrice = Math.max(5, Math.min(95, newYesPrice))
+        }
+
+        const newNoPrice = 100 - newYesPrice
+
+        // Update event price
+        await tx.event.update({
+          where: { id: eventId },
+          data: {
+            yesPrice: newYesPrice,
+          },
+        })
+
+        // Record price history point for binary markets
+        await tx.pricePoint.create({
+          data: {
+            eventId,
+            yesPrice: newYesPrice,
+            noPrice: newNoPrice,
+            volume: event.totalVolume + amount,
+          },
+        })
       }
-
-      const newNoPrice = 100 - newYesPrice
-
-      // Update event price
-      const updatedEvent = await tx.event.update({
-        where: { id: eventId },
-        data: {
-          yesPrice: newYesPrice,
-        },
-      })
-
-      // Record price history point
-      await tx.pricePoint.create({
-        data: {
-          eventId,
-          yesPrice: newYesPrice,
-          noPrice: newNoPrice,
-          volume: updatedEvent.totalVolume,
-        },
-      })
 
       return bet
     })

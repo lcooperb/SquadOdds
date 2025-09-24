@@ -6,7 +6,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "sqlite"
   url      = env("DATABASE_URL")
 }
 
@@ -45,6 +45,7 @@ model User {
   displayName     String
   image           String?
   hashedPassword  String?
+  venmoHandle     String?   // Venmo username for payments
   virtualBalance  Decimal   @default(100.00)
   totalWinnings   Decimal   @default(0.00)
   totalLosses     Decimal   @default(0.00)
@@ -58,6 +59,8 @@ model User {
   bets          Bet[]
   comments      Comment[]
   commentLikes  CommentLike[]
+  payments      Payment[]
+  redemptions   Redemption[]
 }
 
 model VerificationToken {
@@ -191,4 +194,36 @@ model CommentLike {
 
   @@unique([commentId, userId])
   @@map("comment_likes")
+}
+
+model Payment {
+  id            String   @id @default(cuid())
+  userId        String
+  amount        Decimal  // USD amount paid
+  tokens        Decimal  // Tokens received (typically 100x amount)
+  transactionId String   @unique // From payment provider
+  paymentMethod String   @default("manual") // venmo, cashapp, paypal, bank, etc.
+  status        String   @default("PENDING") // PENDING, VERIFIED, REJECTED
+  createdAt     DateTime @default(now())
+  verifiedAt    DateTime?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model Redemption {
+  id            String   @id @default(cuid())
+  userId        String
+  tokenAmount   Decimal  // Tokens to redeem
+  dollarAmount  Decimal  // Dollar equivalent (typically tokenAmount / 100)
+  venmoHandle   String   // User's Venmo handle
+  status        String   @default("PENDING") // PENDING, APPROVED, COMPLETED, REJECTED
+  requestedAt   DateTime @default(now())
+  processedAt   DateTime?
+  adminNotes    String?  // Optional notes from admin
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("redemptions")
 }

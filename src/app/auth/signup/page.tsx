@@ -4,12 +4,14 @@ import { useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { signIn } from 'next-auth/react'
 import Link from 'next/link'
+import { TrendingUp } from 'lucide-react'
 
 export default function SignUp() {
   const [formData, setFormData] = useState({
     email: '',
     username: '',
     displayName: '',
+    venmoHandle: '',
     password: '',
     confirmPassword: '',
   })
@@ -45,6 +47,7 @@ export default function SignUp() {
           email: formData.email,
           username: formData.username,
           displayName: formData.displayName,
+          venmoHandle: formData.venmoHandle,
           password: formData.password,
         }),
       })
@@ -76,9 +79,15 @@ export default function SignUp() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 p-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-white">
-            Join <span className="text-purple-500">SquadOdds</span>
+        <div className="text-center">
+          <Link href="/" className="flex items-center justify-center space-x-2 mb-6">
+            <TrendingUp className="h-8 w-8 text-blue-500" />
+            <span className="text-xl font-bold">
+              <span className="text-white">Squad</span><span className="text-blue-500">Odds</span>
+            </span>
+          </Link>
+          <h2 className="text-3xl font-bold text-white">
+            Create your account
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -94,7 +103,7 @@ export default function SignUp() {
                 required
                 value={formData.email}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your email"
               />
             </div>
@@ -109,7 +118,7 @@ export default function SignUp() {
                 required
                 value={formData.username}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Choose a username"
               />
             </div>
@@ -124,9 +133,26 @@ export default function SignUp() {
                 required
                 value={formData.displayName}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Your display name"
               />
+            </div>
+            <div>
+              <label htmlFor="venmoHandle" className="block text-sm font-medium text-gray-300">
+                Venmo Handle (Optional)
+              </label>
+              <input
+                id="venmoHandle"
+                name="venmoHandle"
+                type="text"
+                value={formData.venmoHandle}
+                onChange={handleChange}
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                placeholder="@your-venmo-handle"
+              />
+              <p className="mt-1 text-xs text-gray-400">
+                Used for token redemptions and payment verification
+              </p>
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-300">
@@ -139,7 +165,7 @@ export default function SignUp() {
                 required
                 value={formData.password}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Create a password"
               />
             </div>
@@ -154,7 +180,7 @@ export default function SignUp() {
                 required
                 value={formData.confirmPassword}
                 onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Confirm your password"
               />
             </div>
@@ -177,7 +203,7 @@ export default function SignUp() {
           <div className="text-center">
             <p className="text-gray-400">
               Already have an account?{' '}
-              <Link href="/auth/signin" className="text-purple-500 hover:text-purple-400">
+              <Link href="/auth/signin" className="text-blue-500 hover:text-blue-400">
                 Sign in
               </Link>
             </p>

@@ -1,90 +1,91 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { Input } from '@/components/ui/Input'
-import { Button } from '@/components/ui/Button'
-import { Badge } from '@/components/ui/Badge'
-import { Search, X } from 'lucide-react'
+import { useState } from "react";
+import { Input } from "@/components/ui/Input";
+import { Button } from "@/components/ui/Button";
+import { Badge } from "@/components/ui/Badge";
+import { Search, X } from "lucide-react";
 
 interface SearchBarProps {
-  onSearch: (query: string) => void
-  onFilterCategory: (category: string | null) => void
-  selectedCategory: string | null
+  onSearch: (query: string) => void;
+  onFilterCategory: (category: string | null) => void;
+  selectedCategory: string | null;
 }
 
 const categories = [
-  'All',
-  'Career',
-  'Relationships',
-  'Personal',
-  'Life Events',
-  'Random'
-]
+  "All",
+  "Career",
+  "Relationships",
+  "Personal",
+  "Life Events",
+  "Random",
+];
 
 export default function SearchBar({
   onSearch,
   onFilterCategory,
-  selectedCategory
+  selectedCategory,
 }: SearchBarProps) {
-  const [searchQuery, setSearchQuery] = useState('')
+  const [searchQuery, setSearchQuery] = useState("");
 
   const handleSearchSubmit = (e: React.FormEvent) => {
-    e.preventDefault()
-    onSearch(searchQuery)
-  }
+    e.preventDefault();
+    onSearch(searchQuery);
+  };
 
   const handleClearSearch = () => {
-    setSearchQuery('')
-    onSearch('')
-  }
+    setSearchQuery("");
+    onSearch("");
+  };
 
   const handleCategoryClick = (category: string) => {
-    const newCategory = category === 'All' ? null : category
-    onFilterCategory(newCategory)
-  }
+    const newCategory = category === "All" ? null : category;
+    onFilterCategory(newCategory);
+  };
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-3">
       {/* Search Input */}
       <form onSubmit={handleSearchSubmit} className="relative">
-        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
+        <Search className="absolute left-2 top-1/2 transform -translate-y-1/2 h-3 w-3 text-gray-400" />
         <Input
           type="text"
           placeholder="Search markets..."
           value={searchQuery}
           onChange={(e) => setSearchQuery(e.target.value)}
-          className="pl-10 pr-10"
+          className="pl-8 pr-8 h-8 text-sm"
         />
         {searchQuery && (
           <button
             type="button"
             onClick={handleClearSearch}
-            className="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
+            className="absolute right-2 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-white transition-colors"
           >
-            <X className="h-4 w-4" />
+            <X className="h-3 w-3" />
           </button>
         )}
       </form>
 
       {/* Category Filters */}
-      <div className="flex flex-wrap gap-2">
+      <div className="flex flex-wrap gap-1.5">
         {categories.map((category) => {
-          const isSelected = selectedCategory === category ||
-            (category === 'All' && selectedCategory === null)
+          const isSelected =
+            selectedCategory === category ||
+            (category === "All" && selectedCategory === null);
 
           return (
             <button
               key={category}
               onClick={() => handleCategoryClick(category)}
-              className={`px-3 py-1 rounded-full text-sm font-medium transition-all ${
+              className={`px-2 py-0.5 rounded-full text-xs font-medium transition-all ${
                 isSelected
-                  ? 'bg-purple-600 text-white'
-                  : 'bg-gray-700 text-gray-300 hover:bg-gray-600'
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-300 hover:bg-gray-600"
               }`}
             >
               {category}
             </button>
-          )
+          );
         })}
       </div>
 
@@ -117,5 +118,5 @@ export default function SearchBar({
         </div>
       )}
     </div>
-  )
+  );
 }

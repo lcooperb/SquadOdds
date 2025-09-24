@@ -24,7 +24,7 @@ const Progress = forwardRef<HTMLDivElement, ProgressProps>(
           className={cn(
             'h-full w-full flex-1 transition-all duration-300 ease-in-out',
             {
-              'bg-gradient-to-r from-purple-600 to-purple-500': variant === 'default',
+              'bg-gradient-to-r from-blue-600 to-blue-500': variant === 'default',
               'bg-gradient-to-r from-green-600 to-green-500': variant === 'yes',
               'bg-gradient-to-r from-red-600 to-red-500': variant === 'no',
             }

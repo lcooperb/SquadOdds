@@ -4,6 +4,7 @@ import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
+import { TrendingUp } from 'lucide-react'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -39,9 +40,15 @@ export default function SignIn() {
   return (
     <div className="min-h-screen flex items-center justify-center">
       <div className="max-w-md w-full space-y-8 p-8">
-        <div>
-          <h2 className="mt-6 text-center text-3xl font-bold text-white">
-            Sign in to <span className="text-purple-500">SquadOdds</span>
+        <div className="text-center">
+          <Link href="/" className="flex items-center justify-center space-x-2 mb-6">
+            <TrendingUp className="h-8 w-8 text-blue-500" />
+            <span className="text-xl font-bold">
+              <span className="text-white">Squad</span><span className="text-blue-500">Odds</span>
+            </span>
+          </Link>
+          <h2 className="text-3xl font-bold text-white">
+            Sign in to your account
           </h2>
         </div>
         <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
@@ -57,7 +64,7 @@ export default function SignIn() {
                 required
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your email"
               />
             </div>
@@ -72,7 +79,7 @@ export default function SignIn() {
                 required
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent"
+                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 placeholder="Enter your password"
               />
             </div>
@@ -95,7 +102,7 @@ export default function SignIn() {
           <div className="text-center">
             <p className="text-gray-400">
               Don&apos;t have an account?{' '}
-              <Link href="/auth/signup" className="text-purple-500 hover:text-purple-400">
+              <Link href="/auth/signup" className="text-blue-500 hover:text-blue-400">
                 Sign up
               </Link>
             </p>

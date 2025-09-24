@@ -4,7 +4,7 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, username, displayName, password } = await request.json()
+    const { email, username, displayName, venmoHandle, password } = await request.json()
 
     if (!email || !username || !displayName || !password) {
       return NextResponse.json(
@@ -39,6 +39,7 @@ export async function POST(request: NextRequest) {
         email,
         username,
         displayName,
+        venmoHandle: venmoHandle || null,
         hashedPassword,
         virtualBalance: 100, // Starting balance
       },

@@ -36,6 +36,7 @@ export async function GET(request: NextRequest) {
             username: true,
           },
         },
+        options: true,
         _count: {
           select: {
             bets: true,
@@ -79,6 +80,8 @@ export async function POST(request: NextRequest) {
       isOngoing,
       marketType = 'BINARY',
       options = [],
+      initialOdds = {},
+      investment = 1000,
     } = await request.json()
 
     if (!title || !description || !category) {
@@ -118,24 +121,171 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Create event with options if it's a multiple choice market
-    const event = await prisma.event.create({
-      data: {
-        title,
-        description,
-        category,
-        endDate: endDateTime,
-        isOngoing: Boolean(isOngoing),
-        marketType,
-        createdById: session.user.id,
-        yesPrice: marketType === 'BINARY' ? 50.0 : 0.0, // Only for binary markets
-        options: marketType === 'MULTIPLE' ? {
-          create: options.map((title: string, index: number) => ({
-            title: title.trim(),
-            price: 100 / options.length, // Distribute equally initially
-          }))
-        } : undefined,
-      },
+    // Get user to check balance
+    const user = await prisma.user.findUnique({
+      where: { id: session.user.id },
+      select: { virtualBalance: true }
+    })
+
+    if (!user) {
+      return NextResponse.json(
+        { message: 'User not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check if user has sufficient balance for the $10 investment
+    if (Number(user.virtualBalance) < investment) {
+      return NextResponse.json(
+        { message: `Insufficient balance. You need ${investment} tokens ($${(investment/100).toFixed(2)}) to create a market.` },
+        { status: 400 }
+      )
+    }
+
+    // Validate odds add up to 100%
+    if (marketType === 'BINARY') {
+      const { yes = 50, no = 50 } = initialOdds
+      if (yes + no !== 100) {
+        return NextResponse.json(
+          { message: 'Binary market odds must add up to 100%' },
+          { status: 400 }
+        )
+      }
+    } else if (marketType === 'MULTIPLE') {
+      const totalOdds = Object.values(initialOdds).reduce((sum: number, odds: any) => sum + (Number(odds) || 0), 0)
+      if (Math.abs(totalOdds - 100) > 0.01) { // Allow small floating point differences
+        return NextResponse.json(
+          { message: 'Multiple choice market odds must add up to 100%' },
+          { status: 400 }
+        )
+      }
+    }
+
+    // Create event with transaction to handle investment and initial odds
+    const event = await prisma.$transaction(async (tx) => {
+      // Create the event with initial odds
+      const createdEvent = await tx.event.create({
+        data: {
+          title,
+          description,
+          category,
+          endDate: endDateTime,
+          isOngoing: Boolean(isOngoing),
+          marketType,
+          createdById: session.user.id,
+          yesPrice: marketType === 'BINARY' ? Number(initialOdds.yes || 50) : 0.0,
+          totalVolume: investment, // Start with creator's investment
+          options: marketType === 'MULTIPLE' ? {
+            create: options.map((title: string, index: number) => ({
+              title: title.trim(),
+              price: Number(initialOdds[index] || (100 / options.length)),
+              totalVolume: investment * (Number(initialOdds[index] || (100 / options.length)) / 100),
+            }))
+          } : undefined,
+        },
+        include: {
+          createdBy: {
+            select: {
+              id: true,
+              displayName: true,
+              username: true,
+            },
+          },
+          options: true,
+        },
+      })
+
+      // Deduct $10 investment from user's balance
+      await tx.user.update({
+        where: { id: session.user.id },
+        data: {
+          virtualBalance: {
+            decrement: investment,
+          },
+        },
+      })
+
+      // Create initial bets based on creator's odds to establish market prices
+      if (marketType === 'BINARY') {
+        const { yes = 50, no = 50 } = initialOdds
+        const yesAmount = investment * (yes / 100)
+        const noAmount = investment * (no / 100)
+
+        // Create YES bet
+        if (yesAmount > 0) {
+          await tx.bet.create({
+            data: {
+              userId: session.user.id,
+              eventId: createdEvent.id,
+              side: 'YES',
+              amount: yesAmount,
+              price: yes,
+              shares: (yesAmount / yes) * 100,
+            },
+          })
+        }
+
+        // Create NO bet
+        if (noAmount > 0) {
+          await tx.bet.create({
+            data: {
+              userId: session.user.id,
+              eventId: createdEvent.id,
+              side: 'NO',
+              amount: noAmount,
+              price: 100 - yes, // NO price is inverse of YES price
+              shares: (noAmount / (100 - yes)) * 100,
+            },
+          })
+        }
+
+        // Create initial price history point
+        await tx.pricePoint.create({
+          data: {
+            eventId: createdEvent.id,
+            yesPrice: yes,
+            noPrice: 100 - yes,
+            volume: investment,
+          },
+        })
+      } else if (marketType === 'MULTIPLE') {
+        // Create YES bets for each option based on odds
+        for (let i = 0; i < options.length; i++) {
+          const optionOdds = Number(initialOdds[i] || (100 / options.length))
+          const optionAmount = investment * (optionOdds / 100)
+          const option = createdEvent.options![i]
+
+          if (optionAmount > 0) {
+            await tx.bet.create({
+              data: {
+                userId: session.user.id,
+                eventId: createdEvent.id,
+                optionId: option.id,
+                side: 'YES',
+                amount: optionAmount,
+                price: optionOdds,
+                shares: (optionAmount / optionOdds) * 100,
+              },
+            })
+
+            // Create option price history point
+            await tx.optionPricePoint.create({
+              data: {
+                optionId: option.id,
+                price: optionOdds,
+                volume: optionAmount,
+              },
+            })
+          }
+        }
+      }
+
+      return createdEvent
+    })
+
+    // Fetch the complete event with counts for response
+    const completeEvent = await prisma.event.findUnique({
+      where: { id: event.id },
       include: {
         createdBy: {
           select: {
@@ -153,7 +303,7 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(event, { status: 201 })
+    return NextResponse.json(completeEvent, { status: 201 })
   } catch (error) {
     console.error('Error creating event:', error)
     return NextResponse.json(

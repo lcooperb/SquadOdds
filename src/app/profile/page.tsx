@@ -1,13 +1,12 @@
-'use client'
+"use client";
 
-import { useState, useEffect } from 'react'
-import { useSession } from 'next-auth/react'
-import { useRouter } from 'next/navigation'
-import Navigation from '@/components/Navigation'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
-import { Badge } from '@/components/ui/Badge'
-import { Button } from '@/components/ui/Button'
-import { Progress } from '@/components/ui/Progress'
+import { useState, useEffect } from "react";
+import { useSession } from "next-auth/react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
+import { Badge } from "@/components/ui/Badge";
+import { Button } from "@/components/ui/Button";
+import { Progress } from "@/components/ui/Progress";
 import {
   User,
   DollarSign,
@@ -18,144 +17,174 @@ import {
   BarChart3,
   Trophy,
   Activity,
-  Clock
-} from 'lucide-react'
+  Clock,
+} from "lucide-react";
 
 interface UserProfile {
-  id: string
-  email: string
-  username: string
-  displayName: string
-  image?: string
-  virtualBalance: number
-  totalWinnings: number
-  totalLosses: number
-  isAdmin: boolean
-  createdAt: string
+  id: string;
+  email: string;
+  username: string;
+  displayName: string;
+  image?: string;
+  virtualBalance: number;
+  totalWinnings: number;
+  totalLosses: number;
+  isAdmin: boolean;
+  createdAt: string;
   bets: Array<{
-    id: string
-    side: string
-    amount: number
-    price: number
-    shares: number
-    status: string
-    createdAt: string
+    id: string;
+    side: string;
+    amount: number;
+    price: number;
+    shares: number;
+    status: string;
+    createdAt: string;
     event: {
-      id: string
-      title: string
-      category: string
-      status: string
-      resolved: boolean
-      outcome: boolean | null
-    }
-  }>
+      id: string;
+      title: string;
+      category: string;
+      status: string;
+      resolved: boolean;
+      outcome: boolean | null;
+    };
+    option?: {
+      id: string;
+      title: string;
+    };
+  }>;
   createdEvents: Array<{
-    id: string
-    title: string
-    category: string
-    status: string
-    resolved: boolean
-    createdAt: string
-  }>
+    id: string;
+    title: string;
+    category: string;
+    status: string;
+    resolved: boolean;
+    createdAt: string;
+  }>;
   _count: {
-    bets: number
-    createdEvents: number
-  }
+    bets: number;
+    createdEvents: number;
+  };
 }
 
 export default function Profile() {
-  const { data: session, status } = useSession()
-  const router = useRouter()
-  const [profile, setProfile] = useState<UserProfile | null>(null)
-  const [loading, setLoading] = useState(true)
-  const [activeTab, setActiveTab] = useState<'bets' | 'created'>('bets')
+  const { data: session, status } = useSession();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const [profile, setProfile] = useState<UserProfile | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState<"bets" | "created">("bets");
+
+  // Get user ID from URL params or use current user
+  const userId = searchParams.get("id") || session?.user?.id;
 
   useEffect(() => {
-    if (status === 'loading') return
+    if (status === "loading") return;
     if (!session) {
-      router.push('/auth/signin')
-      return
+      router.push("/auth/signin");
+      return;
     }
 
-    fetchProfile()
-  }, [session, status, router])
+    fetchProfile();
+  }, [session, status, router]);
 
   const fetchProfile = async () => {
     try {
-      const response = await fetch('/api/users')
+      const url =
+        userId === session?.user?.id ? "/api/users" : `/api/users/${userId}`;
+      const response = await fetch(url);
       if (response.ok) {
-        const userData = await response.json()
-        setProfile(userData)
+        const userData = await response.json();
+        setProfile(userData);
       }
     } catch (error) {
-      console.error('Error fetching profile:', error)
+      console.error("Error fetching profile:", error);
     } finally {
-      setLoading(false)
+      setLoading(false);
     }
-  }
+  };
 
   if (loading || !session) {
     return (
       <>
-        <Navigation />
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-white">Loading profile...</div>
         </div>
       </>
-    )
+    );
   }
 
   if (!profile) {
     return (
       <>
-        <Navigation />
         <div className="min-h-screen flex items-center justify-center">
           <div className="text-center">
-            <h1 className="text-2xl font-bold text-white mb-2">Profile not found</h1>
-            <p className="text-gray-400">Unable to load your profile information.</p>
+            <h1 className="text-2xl font-bold text-white mb-2">
+              Profile not found
+            </h1>
+            <p className="text-gray-400">
+              Unable to load your profile information.
+            </p>
           </div>
         </div>
       </>
-    )
+    );
   }
 
-  const activeBets = profile.bets.filter(bet => bet.status === 'ACTIVE')
-  const completedBets = profile.bets.filter(bet => bet.status !== 'ACTIVE')
-  const wonBets = completedBets.filter(bet => bet.status === 'WON')
-  const winRate = completedBets.length > 0 ? (wonBets.length / completedBets.length) * 100 : 0
-  const netProfit = Number(profile.totalWinnings) - Number(profile.totalLosses)
+  const activeBets = (profile.bets || []).filter(
+    (bet) => bet.status === "ACTIVE"
+  );
+  const completedBets = (profile.bets || []).filter(
+    (bet) => bet.status !== "ACTIVE"
+  );
+  const wonBets = completedBets.filter((bet) => bet.status === "WON");
+  const winRate =
+    completedBets.length > 0
+      ? (wonBets.length / completedBets.length) * 100
+      : 0;
+  const netProfit =
+    Number(profile.totalWinnings || 0) - Number(profile.totalLosses || 0);
 
   const getBetStatusColor = (status: string) => {
     switch (status) {
-      case 'WON': return 'success'
-      case 'LOST': return 'error'
-      case 'ACTIVE': return 'default'
-      default: return 'secondary'
+      case "WON":
+        return "success";
+      case "LOST":
+        return "error";
+      case "ACTIVE":
+        return "default";
+      default:
+        return "secondary";
     }
-  }
+  };
 
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
-      case 'career': return 'default'
-      case 'relationships': return 'error'
-      case 'personal': return 'success'
-      case 'life events': return 'warning'
-      default: return 'secondary'
+      case "career":
+        return "default";
+      case "relationships":
+        return "error";
+      case "personal":
+        return "success";
+      case "life events":
+        return "warning";
+      default:
+        return "secondary";
     }
-  }
+  };
 
   return (
     <>
-      <Navigation />
       <main className="container mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="mb-8">
           <div className="flex items-center gap-6 mb-6">
-            <div className="w-20 h-20 bg-purple-600 rounded-full flex items-center justify-center">
+            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
               <User className="h-10 w-10 text-white" />
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">{profile.displayName}</h1>
+              <h1 className="text-3xl font-bold text-white">
+                {profile.displayName}
+              </h1>
               <p className="text-gray-400 text-lg">@{profile.username}</p>
               <p className="text-gray-500 text-sm">
                 Member since {new Date(profile.createdAt).toLocaleDateString()}
@@ -168,18 +197,30 @@ export default function Profile() {
             <Card className="bg-gray-800/50 border-gray-700">
               <CardContent className="p-4 text-center">
                 <DollarSign className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">
-                  ${Number(profile.virtualBalance).toFixed(2)}
+                <div className="text-2xl font-bold text-white text-numbers">
+                  {Number(profile.virtualBalance).toLocaleString()} tokens
                 </div>
-                <div className="text-sm text-gray-400">Current Balance</div>
+                <div className="text-sm text-gray-400">
+                  Current Balance ($
+                  {(Number(profile.virtualBalance)/100).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })})
+                </div>
               </CardContent>
             </Card>
 
             <Card className="bg-gray-800/50 border-gray-700">
               <CardContent className="p-4 text-center">
-                <TrendingUp className="h-8 w-8 text-purple-400 mx-auto mb-2" />
-                <div className={`text-2xl font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)}
+                <TrendingUp className="h-8 w-8 text-blue-400 mx-auto mb-2" />
+                <div
+                  className={`text-2xl font-bold text-numbers ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
+                >
+                  {netProfit >= 0 ? "+" : ""}$
+                  {netProfit.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </div>
                 <div className="text-sm text-gray-400">Net Profit</div>
               </CardContent>
@@ -188,7 +229,9 @@ export default function Profile() {
             <Card className="bg-gray-800/50 border-gray-700">
               <CardContent className="p-4 text-center">
                 <Target className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">{winRate.toFixed(1)}%</div>
+                <div className="text-2xl font-bold text-white text-numbers">
+                  {winRate.toFixed(1)}%
+                </div>
                 <div className="text-sm text-gray-400">Win Rate</div>
               </CardContent>
             </Card>
@@ -196,7 +239,9 @@ export default function Profile() {
             <Card className="bg-gray-800/50 border-gray-700">
               <CardContent className="p-4 text-center">
                 <Activity className="h-8 w-8 text-orange-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">{profile._count.bets}</div>
+                <div className="text-2xl font-bold text-white text-numbers">
+                  {profile._count?.bets || 0}
+                </div>
                 <div className="text-sm text-gray-400">Total Bets</div>
               </CardContent>
             </Card>
@@ -216,19 +261,33 @@ export default function Profile() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Winnings</span>
                 <span className="text-green-400 font-semibold">
-                  +${Number(profile.totalWinnings).toFixed(2)}
+                  +$
+                  {Number(profile.totalWinnings).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Losses</span>
                 <span className="text-red-400 font-semibold">
-                  -${Number(profile.totalLosses).toFixed(2)}
+                  -$
+                  {Number(profile.totalLosses).toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
               <div className="flex justify-between border-t border-gray-700 pt-2">
                 <span className="text-white font-medium">Net Profit/Loss</span>
-                <span className={`font-bold ${netProfit >= 0 ? 'text-green-400' : 'text-red-400'}`}>
-                  {netProfit >= 0 ? '+' : ''}${netProfit.toFixed(2)}
+                <span
+                  className={`font-bold ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
+                >
+                  {netProfit >= 0 ? "+" : ""}$
+                  {netProfit.toLocaleString("en-US", {
+                    minimumFractionDigits: 2,
+                    maximumFractionDigits: 2,
+                  })}
                 </span>
               </div>
             </CardContent>
@@ -244,11 +303,15 @@ export default function Profile() {
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-gray-400">Active Bets</span>
-                <span className="text-white font-semibold">{activeBets.length}</span>
+                <span className="text-white font-semibold">
+                  {activeBets.length}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Won Bets</span>
-                <span className="text-green-400 font-semibold">{wonBets.length}</span>
+                <span className="text-green-400 font-semibold">
+                  {wonBets.length}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Lost Bets</span>
@@ -276,18 +339,27 @@ export default function Profile() {
             <CardContent className="space-y-4">
               <div className="flex justify-between">
                 <span className="text-gray-400">Markets Created</span>
-                <span className="text-white font-semibold">{profile._count.createdEvents}</span>
+                <span className="text-white font-semibold">
+                  {profile._count?.createdEvents || 0}
+                </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Active Markets</span>
                 <span className="text-white font-semibold">
-                  {profile.createdEvents.filter(e => e.status === 'ACTIVE').length}
+                  {
+                    (profile.createdEvents || []).filter(
+                      (e) => e.status === "ACTIVE"
+                    ).length
+                  }
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Resolved Markets</span>
                 <span className="text-white font-semibold">
-                  {profile.createdEvents.filter(e => e.resolved).length}
+                  {
+                    (profile.createdEvents || []).filter((e) => e.resolved)
+                      .length
+                  }
                 </span>
               </div>
             </CardContent>
@@ -301,28 +373,31 @@ export default function Profile() {
               <CardTitle>Activity</CardTitle>
               <div className="flex gap-2">
                 <Button
-                  variant={activeTab === 'bets' ? 'primary' : 'ghost'}
+                  variant={activeTab === "bets" ? "primary" : "ghost"}
                   size="sm"
-                  onClick={() => setActiveTab('bets')}
+                  onClick={() => setActiveTab("bets")}
                 >
-                  My Bets ({profile.bets.length})
+                  My Bets ({(profile.bets || []).length})
                 </Button>
                 <Button
-                  variant={activeTab === 'created' ? 'primary' : 'ghost'}
+                  variant={activeTab === "created" ? "primary" : "ghost"}
                   size="sm"
-                  onClick={() => setActiveTab('created')}
+                  onClick={() => setActiveTab("created")}
                 >
-                  Created Markets ({profile.createdEvents.length})
+                  Created Markets ({(profile.createdEvents || []).length})
                 </Button>
               </div>
             </div>
           </CardHeader>
           <CardContent>
-            {activeTab === 'bets' ? (
+            {activeTab === "bets" ? (
               <div className="space-y-4">
-                {profile.bets.length > 0 ? (
-                  profile.bets.map((bet) => (
-                    <div key={bet.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                {(profile.bets || []).length > 0 ? (
+                  (profile.bets || []).map((bet) => (
+                    <div
+                      key={bet.id}
+                      className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                    >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <Badge variant={getCategoryColor(bet.event.category)}>
@@ -332,9 +407,14 @@ export default function Profile() {
                             {bet.status}
                           </Badge>
                         </div>
-                        <h4 className="font-medium text-white mb-1">{bet.event.title}</h4>
+                        <h4 className="font-medium text-white mb-1">
+                          {bet.event.title}
+                        </h4>
                         <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span>Bet: ${Number(bet.amount).toFixed(2)} on {bet.side}</span>
+                          <span>
+                            Bet: {Number(bet.amount * 100).toLocaleString()} tokens on {bet.side}
+                            {bet.option && ` (${bet.option.title})`}
+                          </span>
                           <span>@ {Number(bet.price).toFixed(0)}¢</span>
                           <span className="flex items-center gap-1">
                             <Clock className="h-3 w-3" />
@@ -346,9 +426,12 @@ export default function Profile() {
                         <div className="text-white font-medium">
                           {Number(bet.shares).toFixed(2)} shares
                         </div>
-                        {bet.status !== 'ACTIVE' && (
-                          <div className={`text-sm ${bet.status === 'WON' ? 'text-green-400' : 'text-red-400'}`}>
-                            {bet.status === 'WON' ? '+' : '-'}${Number(bet.amount).toFixed(2)}
+                        {bet.status !== "ACTIVE" && (
+                          <div
+                            className={`text-sm ${bet.status === "WON" ? "text-green-400" : "text-red-400"}`}
+                          >
+                            {bet.status === "WON" ? "+" : "-"}
+                            {Number(bet.amount * 100).toLocaleString()} tokens
                           </div>
                         )}
                       </div>
@@ -358,29 +441,39 @@ export default function Profile() {
                   <div className="text-center py-8 text-gray-400">
                     <Target className="h-12 w-12 mx-auto mb-2" />
                     <p>No bets placed yet</p>
-                    <p className="text-sm">Start trading to see your bets here!</p>
+                    <p className="text-sm">
+                      Start trading to see your bets here!
+                    </p>
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-4">
-                {profile.createdEvents.length > 0 ? (
-                  profile.createdEvents.map((event) => (
-                    <div key={event.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                {(profile.createdEvents || []).length > 0 ? (
+                  (profile.createdEvents || []).map((event) => (
+                    <div
+                      key={event.id}
+                      className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                    >
                       <div className="flex-1">
                         <div className="flex items-center gap-2 mb-1">
                           <Badge variant={getCategoryColor(event.category)}>
                             {event.category}
                           </Badge>
-                          <Badge variant={event.resolved ? 'success' : 'default'}>
+                          <Badge
+                            variant={event.resolved ? "success" : "default"}
+                          >
                             {event.status}
                           </Badge>
                         </div>
-                        <h4 className="font-medium text-white mb-1">{event.title}</h4>
+                        <h4 className="font-medium text-white mb-1">
+                          {event.title}
+                        </h4>
                         <div className="flex items-center gap-4 text-sm text-gray-400">
                           <span className="flex items-center gap-1">
                             <Calendar className="h-3 w-3" />
-                            Created {new Date(event.createdAt).toLocaleDateString()}
+                            Created{" "}
+                            {new Date(event.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
@@ -399,7 +492,9 @@ export default function Profile() {
                   <div className="text-center py-8 text-gray-400">
                     <Calendar className="h-12 w-12 mx-auto mb-2" />
                     <p>No markets created yet</p>
-                    <p className="text-sm">Create your first market to see it here!</p>
+                    <p className="text-sm">
+                      Create your first market to see it here!
+                    </p>
                   </div>
                 )}
               </div>
@@ -408,5 +503,5 @@ export default function Profile() {
         </Card>
       </main>
     </>
-  )
+  );
 }

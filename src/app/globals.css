@@ -1,12 +1,23 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;600;700&display=swap');
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 :root {
   --foreground-rgb: 255, 255, 255;
-  --background-start-rgb: 15, 23, 42;
-  --background-end-rgb: 15, 23, 42;
+  --background-start-rgb: 23, 23, 23;
+  --background-end-rgb: 23, 23, 23;
+}
+
+/* Force grayscale theme */
+.bg-primary-900 {
+  background-color: #171717 !important;
+}
+.bg-primary-800 {
+  background-color: #262626 !important;
+}
+.bg-primary-700 {
+  background-color: #404040 !important;
 }
 
 * {
@@ -19,7 +30,7 @@ html,
 body {
   max-width: 100vw;
   overflow-x: hidden;
-  font-family: 'Inter', system-ui, sans-serif;
+  font-family: 'DM Sans', system-ui, sans-serif;
 }
 
 body {
@@ -42,27 +53,44 @@ a {
   .text-balance {
     text-wrap: balance;
   }
+  
+  /* DM Sans for all text including numbers and microcopy */
+  .font-mono {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-weight: 500;
+  }
+
+  .text-numbers {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-weight: 600;
+  }
+
+  .text-microcopy {
+    font-family: 'DM Sans', system-ui, sans-serif;
+    font-size: 0.75rem;
+    font-weight: 400;
+  }
 }
 
 /* Custom gradients for buttons */
 .gradient-button {
-  background: linear-gradient(135deg, #8b5cf6 0%, #7c3aed 100%);
+  background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
   transition: all 0.2s ease-in-out;
 }
 
 .gradient-button:hover {
-  background: linear-gradient(135deg, #7c3aed 0%, #6d28d9 100%);
+  background: linear-gradient(135deg, #2563eb 0%, #1d4ed8 100%);
   transform: translateY(-1px);
 }
 
 /* Market card hover effects */
 .market-card {
   transition: all 0.2s ease-in-out;
-  border: 1px solid #334155;
+  border: 1px solid #404040;
 }
 
 .market-card:hover {
-  border-color: #8b5cf6;
+  border-color: #3b82f6;
   transform: translateY(-2px);
-  box-shadow: 0 10px 25px rgba(139, 92, 246, 0.1);
+  box-shadow: 0 10px 25px rgba(59, 130, 246, 0.1);
 }

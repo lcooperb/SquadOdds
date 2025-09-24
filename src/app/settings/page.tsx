@@ -235,7 +235,7 @@ export default function Settings() {
                     Permanently delete your account and all associated data. This action cannot be undone.
                   </p>
                   <Button
-                    variant="destructive"
+                    variant="no"
                     disabled
                     className="opacity-50 cursor-not-allowed"
                   >
