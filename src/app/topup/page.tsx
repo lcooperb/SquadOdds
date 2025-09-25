@@ -18,13 +18,12 @@ export default function TopUp() {
   const router = useRouter();
   const [selectedAmount, setSelectedAmount] = useState<number>(10);
   const [customAmount, setCustomAmount] = useState<string>("");
-  const [transactionId, setTransactionId] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
 
   // Venmo payment account details
   const paymentAccount = {
-    venmo: "@squadodds-official",
+    venmo: "@leo-cooperband",
   };
 
   const predefinedAmounts = [5, 10, 25, 50, 100, 200];
@@ -68,50 +67,26 @@ export default function TopUp() {
   };
 
   const handleSubmitPayment = async () => {
-    if (!transactionId.trim()) {
-      alert("Please enter a transaction ID");
-      return;
-    }
-
     setLoading(true);
     try {
-      const response = await fetch("/api/payments/verify", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          amount: selectedAmount,
-          transactionId: transactionId.trim(),
-          paymentMethod: "venmo",
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        alert(result.message || "Payment request submitted for admin review!");
-        router.push("/profile");
-      } else {
-        const error = await response.json();
-        alert(error.message || "Payment submission failed. Please try again.");
-      }
-    } catch (error) {
-      console.error("Error submitting payment:", error);
-      alert("An error occurred. Please try again.");
+      alert(
+        "Thanks! After your Venmo payment goes through, hit Submit. Your top-up will be approved within the next day or two."
+      );
+      router.push("/profile");
     } finally {
       setLoading(false);
     }
   };
 
-  const tokensToReceive = selectedAmount * 100;
+  // Tokens are no longer used; all amounts are in Lira.
 
   return (
     <>
             <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Add Tokens</h1>
+          <h1 className="text-3xl font-bold text-white mb-2">Add Lira</h1>
           <p className="text-gray-400">
-            Convert real money to betting tokens (1 USD = 100 tokens)
+            Add funds to your account balance in Turkish Lira (₺)
           </p>
         </div>
 
@@ -128,7 +103,7 @@ export default function TopUp() {
               {/* Predefined Amounts */}
               <div>
                 <label className="block text-sm font-medium text-white mb-3">
-                  Choose Amount (USD)
+                  Choose Amount (₺)
                 </label>
                 <div className="grid grid-cols-3 gap-3">
                   {predefinedAmounts.map((amount) => (
@@ -141,10 +116,14 @@ export default function TopUp() {
                           : "border-gray-600 bg-gray-800/50 hover:border-gray-500"
                       }`}
                     >
-                      <div className="text-white font-semibold">${amount}</div>
-                      <div className="text-sm text-gray-400">
-                        {amount * 100} tokens
+                      <div className="text-white font-semibold">
+                        ₺
+                        {amount.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
                       </div>
+                      <div className="text-sm text-gray-400">Instant balance top-up</div>
                     </button>
                   ))}
                 </div>
@@ -156,7 +135,7 @@ export default function TopUp() {
                   htmlFor="custom-amount"
                   className="block text-sm font-medium text-white mb-2"
                 >
-                  Or Enter Custom Amount
+                  Or Enter Custom Amount (₺)
                 </label>
                 <input
                   type="number"
@@ -165,7 +144,7 @@ export default function TopUp() {
                   max="1000"
                   value={customAmount}
                   onChange={(e) => handleCustomAmountChange(e.target.value)}
-                  placeholder="Enter amount in USD"
+                  placeholder="Enter amount in Lira (₺)"
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -176,17 +155,11 @@ export default function TopUp() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-white">Payment Amount:</span>
                     <span className="font-bold text-white">
-                      $
+                      ₺
                       {selectedAmount.toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
                       })}
-                    </span>
-                  </div>
-                  <div className="flex items-center justify-between">
-                    <span className="text-white">Tokens to Receive:</span>
-                    <span className="font-bold text-green-400">
-                      {tokensToReceive.toLocaleString()} tokens
                     </span>
                   </div>
                 </div>
@@ -221,26 +194,19 @@ export default function TopUp() {
                         Payment Required
                       </h4>
                       <p className="text-yellow-300 text-sm">
-                        Send exactly{" "}
-                        <strong>
-                          $
+                        Send exactly <strong>₺
                           {selectedAmount.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
-                        </strong>{" "}
-                        to one of the accounts below, then enter your
-                        transaction ID to receive{" "}
-                        <strong>
-                          {tokensToReceive.toLocaleString()} tokens
-                        </strong>
-                        .
+                        </strong> to the Venmo account below. After your payment goes through, hit Submit. Your top-up will be approved within the next day or two.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Payment Method - Venmo Only */}
+                {/* Payment Method - Venmo Only */
+                /* Updated to reflect new Venmo handle and no verification step */}
                 <div className="space-y-4">
                   <h3 className="text-white font-medium">
                     Send Payment via Venmo:
@@ -261,42 +227,26 @@ export default function TopUp() {
                     </p>
                     <p className="text-sm text-gray-400 mt-2">
                       Include your email address in the payment note so we can
-                      identify your account
+                      identify your account.
                     </p>
                   </div>
                 </div>
               </CardContent>
             </Card>
 
-            {/* Verification */}
+            {/* Submission Instructions (No Verification Required) */}
             <Card>
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5" />
-                  Verify Payment
+                  Submit Request
                 </CardTitle>
               </CardHeader>
               <CardContent className="space-y-4">
-                <div>
-                  <label
-                    htmlFor="transaction-id"
-                    className="block text-sm font-medium text-white mb-2"
-                  >
-                    Transaction ID / Reference Number *
-                  </label>
-                  <input
-                    type="text"
-                    id="transaction-id"
-                    value={transactionId}
-                    onChange={(e) => setTransactionId(e.target.value)}
-                    placeholder="Enter transaction ID from your payment app"
-                    className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                  />
-                  <p className="text-sm text-gray-400 mt-1">
-                    This helps us verify your payment quickly
-                  </p>
-                </div>
-
+                <p className="text-gray-300">
+                  After your Venmo payment goes through, hit <strong>Submit</strong>. Your top-up will be
+                  approved within the next day or two.
+                </p>
                 <div className="flex gap-3">
                   <Button
                     variant="ghost"
@@ -307,10 +257,10 @@ export default function TopUp() {
                   </Button>
                   <Button
                     onClick={handleSubmitPayment}
-                    disabled={!transactionId.trim() || loading}
+                    disabled={loading}
                     className="flex-1"
                   >
-                    {loading ? "Verifying..." : "Submit for Verification"}
+                    {loading ? "Submitting..." : "Submit"}
                   </Button>
                 </div>
               </CardContent>

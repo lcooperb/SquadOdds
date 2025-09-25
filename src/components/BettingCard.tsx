@@ -211,7 +211,7 @@ export default function BettingCard({
                 onClick={() => handleQuickAmount(value)}
                 className="text-xs"
               >
-                +${value}
+                +₺{value}
               </Button>
             ))}
             <Button
@@ -234,7 +234,7 @@ export default function BettingCard({
                 <span className="text-green-400">💸</span>
               </div>
               <div className="text-3xl font-bold text-green-400">
-                $
+                ₺
                 {potentialPayout.toLocaleString("en-US", {
                   minimumFractionDigits: 2,
                   maximumFractionDigits: 2,

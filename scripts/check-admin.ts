@@ -3,12 +3,14 @@ import { PrismaClient } from '@prisma/client'
 const prisma = new PrismaClient()
 
 async function checkAdmin() {
+  const emailArg = process.argv[2]
+  const emailEnv = process.env.ADMIN_EMAIL
+  const targetEmail = emailArg || emailEnv || 'lcooperband@gmail.com'
+
   try {
     // Check if user is admin
     const user = await prisma.user.findUnique({
-      where: {
-        email: 'lecooperband@gmail.com'
-      },
+      where: { email: targetEmail },
       select: {
         email: true,
         isAdmin: true,

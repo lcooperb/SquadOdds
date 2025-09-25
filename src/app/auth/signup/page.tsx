@@ -77,8 +77,8 @@ export default function SignUp() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center">
-      <div className="max-w-md w-full space-y-8 p-8">
+    <div className="h-[calc(100vh-112px)] flex items-center justify-center px-4 overflow-hidden">
+      <div className="max-w-md w-full space-y-6 p-8">
         <div className="text-center">
           <Link href="/" className="flex items-center justify-center space-x-2 mb-6">
             <TrendingUp className="h-8 w-8 text-blue-500" />
@@ -90,7 +90,7 @@ export default function SignUp() {
             Create your account
           </h2>
         </div>
-        <form className="mt-8 space-y-6" onSubmit={handleSubmit}>
+        <form className="mt-4 space-y-6" onSubmit={handleSubmit}>
           <div className="space-y-4">
             <div>
               <label htmlFor="email" className="block text-sm font-medium text-gray-300">

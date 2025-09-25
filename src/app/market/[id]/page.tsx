@@ -535,7 +535,10 @@ export default function MarketPage() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    {event.options?.map((option, index) => (
+                    {event.options &&
+                      [...event.options]
+                        .sort((a, b) => Number(b.price) - Number(a.price))
+                        .map((option, index) => (
                       <div
                         key={option.id}
                         className={`flex items-center py-3 px-1 ${

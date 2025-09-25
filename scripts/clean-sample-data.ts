@@ -52,9 +52,7 @@ async function cleanSampleData() {
     })
     console.log(`Deleted ${deletedByTitle.count} events by sample titles`)
 
-    // Optionally, you can also delete the sample users themselves
-    // Uncomment the lines below if you want to remove them too
-    /*
+    // Delete the sample users themselves
     if (sampleUserIds.length > 0) {
       const deletedUsers = await prisma.user.deleteMany({
         where: {
@@ -65,7 +63,13 @@ async function cleanSampleData() {
       })
       console.log(`Deleted ${deletedUsers.count} sample users`)
     }
-    */
+
+    // Verify removal
+    const remainingSampleUsers = await prisma.user.findMany({
+      where: { email: { in: ['alice@example.com', 'bob@example.com', 'charlie@example.com'] } },
+      select: { email: true }
+    })
+    console.log(`Remaining sample users: ${remainingSampleUsers.length}`)
 
     console.log('Sample data cleanup completed!')
 
