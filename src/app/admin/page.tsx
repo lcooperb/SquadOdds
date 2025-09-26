@@ -102,6 +102,9 @@ export default function AdminPanel() {
   const [activeTab, setActiveTab] = useState<"events" | "users" | "payments" | "redemptions">(
     "events"
   );
+  const [eventsSubTab, setEventsSubTab] = useState<"active" | "resolved">("active");
+  const [paymentsSubTab, setPaymentsSubTab] = useState<"pending" | "processed">("pending");
+  const [redemptionsSubTab, setRedemptionsSubTab] = useState<"pending" | "completed">("pending");
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
   const [payments, setPayments] = useState<Payment[]>([]);
@@ -202,32 +205,55 @@ export default function AdminPanel() {
     }
   };
 
-  const resolveEvent = async (
+  const openResolutionModal = (
     eventId: string,
-    resolution: "YES" | "NO" | string
+    eventTitle: string,
+    resolution: "YES" | "NO" | string,
+    resolutionLabel: string
   ) => {
+    setResolutionModal({
+      isOpen: true,
+      eventId,
+      eventTitle,
+      resolution,
+      resolutionLabel
+    });
+  };
+
+  const closeResolutionModal = () => {
+    setResolutionModal({
+      isOpen: false,
+      eventId: "",
+      eventTitle: "",
+      resolution: "",
+      resolutionLabel: ""
+    });
+  };
+
+  const confirmResolution = async () => {
     try {
-      const response = await fetch(`/api/events/${eventId}/resolve`, {
+      const response = await fetch(`/api/events/${resolutionModal.eventId}/resolve`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
           outcome:
-            resolution === "YES"
+            resolutionModal.resolution === "YES"
               ? true
-              : resolution === "NO"
+              : resolutionModal.resolution === "NO"
                 ? false
                 : undefined,
           winningOptionId:
-            resolution !== "YES" && resolution !== "NO"
-              ? resolution
+            resolutionModal.resolution !== "YES" && resolutionModal.resolution !== "NO"
+              ? resolutionModal.resolution
               : undefined,
         }),
       });
 
       if (response.ok) {
         fetchData(); // Refresh data
+        closeResolutionModal();
       } else {
         const error = await response.json();
         alert(`Error resolving event: ${error.message}`);
@@ -355,6 +381,21 @@ export default function AdminPanel() {
   };
 
   const [processingRedemptionId, setProcessingRedemptionId] = useState<string | null>(null);
+
+  // Resolution confirmation modal state
+  const [resolutionModal, setResolutionModal] = useState<{
+    isOpen: boolean;
+    eventId: string;
+    eventTitle: string;
+    resolution: "YES" | "NO" | string;
+    resolutionLabel: string;
+  }>({
+    isOpen: false,
+    eventId: "",
+    eventTitle: "",
+    resolution: "",
+    resolutionLabel: ""
+  });
   const handleRedemptionAction = async (
     redemptionId: string,
     action: "approve" | "complete" | "reject",
@@ -473,10 +514,30 @@ export default function AdminPanel() {
         {/* Events Tab */}
         {activeTab === "events" && (
           <div className="space-y-4">
-            <h2 className="text-xl font-semibold text-white mb-4">
-              Event Management
-            </h2>
-            {events.map((event) => (
+            <div className="flex items-center justify-between">
+              <h2 className="text-xl font-semibold text-white mb-4">
+                Event Management
+              </h2>
+              <div className="flex gap-2 mb-4">
+                <Button
+                  variant={eventsSubTab === "active" ? "primary" : "outline"}
+                  size="sm"
+                  onClick={() => setEventsSubTab("active")}
+                >
+                  Active ({events.filter(e => !e.resolved).length})
+                </Button>
+                <Button
+                  variant={eventsSubTab === "resolved" ? "primary" : "outline"}
+                  size="sm"
+                  onClick={() => setEventsSubTab("resolved")}
+                >
+                  Resolved ({events.filter(e => e.resolved).length})
+                </Button>
+              </div>
+            </div>
+            {events
+              .filter(event => eventsSubTab === "active" ? !event.resolved : event.resolved)
+              .map((event) => (
               <Card key={event.id}>
                 <CardHeader>
                   <div className="flex items-start justify-between">
@@ -532,14 +593,14 @@ export default function AdminPanel() {
                       {event.marketType === "BINARY" ? (
                         <div className="flex gap-2">
                           <Button
-                            onClick={() => resolveEvent(event.id, "YES")}
+                            onClick={() => openResolutionModal(event.id, event.title, "YES", "YES")}
                             className="bg-green-600 hover:bg-green-700"
                           >
                             <CheckCircle className="h-4 w-4 mr-2" />
                             Resolve YES
                           </Button>
                           <Button
-                            onClick={() => resolveEvent(event.id, "NO")}
+                            onClick={() => openResolutionModal(event.id, event.title, "NO", "NO")}
                             className="bg-red-600 hover:bg-red-700"
                           >
                             <XCircle className="h-4 w-4 mr-2" />
@@ -556,7 +617,12 @@ export default function AdminPanel() {
                               <Button
                                 key={option.id}
                                 onClick={() =>
-                                  resolveEvent(event.id, option.id)
+                                  openResolutionModal(
+                                    event.id,
+                                    event.title,
+                                    option.id,
+                                    `${option.title} (${Number(option.price).toFixed(1)}%)`
+                                  )
                                 }
                                 className="bg-green-600 hover:bg-green-700"
                               >
@@ -593,10 +659,10 @@ export default function AdminPanel() {
               </Card>
             ))}
 
-            {events.length === 0 && (
+            {events.filter(event => eventsSubTab === "active" ? !event.resolved : event.resolved).length === 0 && (
               <div className="text-center py-12">
                 <TrendingUp className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-                <p className="text-gray-400">No events found</p>
+                <p className="text-gray-400">No {eventsSubTab} events found</p>
               </div>
             )}
           </div>
@@ -607,20 +673,40 @@ export default function AdminPanel() {
           <div className="space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <ArrowDownCircle className="h-5 w-5" />
-                  Redemption Requests ({redemptions.length})
-                  {redemptions.filter((r) => r.status === "PENDING").length > 0 && (
-                    <Badge variant="warning" className="ml-2">
-                      {redemptions.filter((r) => r.status === "PENDING").length} Pending
-                    </Badge>
-                  )}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <ArrowDownCircle className="h-5 w-5" />
+                    Redemption Requests ({redemptions.length})
+                    {redemptions.filter((r) => r.status === "PENDING").length > 0 && (
+                      <Badge variant="warning" className="ml-2">
+                        {redemptions.filter((r) => r.status === "PENDING").length} Pending
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={redemptionsSubTab === "pending" ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => setRedemptionsSubTab("pending")}
+                    >
+                      Pending ({redemptions.filter(r => r.status === "PENDING").length})
+                    </Button>
+                    <Button
+                      variant={redemptionsSubTab === "completed" ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => setRedemptionsSubTab("completed")}
+                    >
+                      Completed ({redemptions.filter(r => r.status === "COMPLETED" || r.status === "REJECTED").length})
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
-                {redemptions.length > 0 ? (
+                {redemptions.filter(r => redemptionsSubTab === "pending" ? r.status === "PENDING" : (r.status === "COMPLETED" || r.status === "REJECTED")).length > 0 ? (
                   <div className="space-y-4">
-                    {redemptions.map((r) => (
+                    {redemptions
+                      .filter(r => redemptionsSubTab === "pending" ? r.status === "PENDING" : (r.status === "COMPLETED" || r.status === "REJECTED"))
+                      .map((r) => (
                       <div key={r.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -672,7 +758,7 @@ export default function AdminPanel() {
                 ) : (
                   <div className="text-center py-8 text-gray-400">
                     <ArrowDownCircle className="h-12 w-12 mx-auto mb-2" />
-                    <p>No redemption requests yet</p>
+                    <p>No {redemptionsSubTab} redemption requests</p>
                   </div>
                 )}
               </CardContent>
@@ -840,17 +926,35 @@ export default function AdminPanel() {
             {/* Recent Payments */}
             <Card>
               <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <DollarSign className="h-5 w-5" />
-                  Recent Payments ({payments.length})
-                  {payments.filter((p) => p.status === "PENDING").length >
-                    0 && (
-                    <Badge variant="warning" className="ml-2">
-                      {payments.filter((p) => p.status === "PENDING").length}{" "}
-                      Pending
-                    </Badge>
-                  )}
-                </CardTitle>
+                <div className="flex items-center justify-between">
+                  <CardTitle className="flex items-center gap-2">
+                    <DollarSign className="h-5 w-5" />
+                    Recent Payments ({payments.length})
+                    {payments.filter((p) => p.status === "PENDING").length >
+                      0 && (
+                      <Badge variant="warning" className="ml-2">
+                        {payments.filter((p) => p.status === "PENDING").length}{" "}
+                        Pending
+                      </Badge>
+                    )}
+                  </CardTitle>
+                  <div className="flex gap-2">
+                    <Button
+                      variant={paymentsSubTab === "pending" ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => setPaymentsSubTab("pending")}
+                    >
+                      Pending ({payments.filter(p => p.status === "PENDING").length})
+                    </Button>
+                    <Button
+                      variant={paymentsSubTab === "processed" ? "primary" : "outline"}
+                      size="sm"
+                      onClick={() => setPaymentsSubTab("processed")}
+                    >
+                      Processed ({payments.filter(p => p.status === "VERIFIED" || p.status === "REJECTED").length})
+                    </Button>
+                  </div>
+                </div>
               </CardHeader>
               <CardContent>
                 {paymentLoading ? (
@@ -858,9 +962,11 @@ export default function AdminPanel() {
                     <DollarSign className="h-12 w-12 mx-auto mb-2 animate-pulse" />
                     <p>Loading payments...</p>
                   </div>
-                ) : payments.length > 0 ? (
+                ) : payments.filter(p => paymentsSubTab === "pending" ? p.status === "PENDING" : (p.status === "VERIFIED" || p.status === "REJECTED")).length > 0 ? (
                   <div className="space-y-4">
-                    {payments.map((payment) => (
+                    {payments
+                      .filter(p => paymentsSubTab === "pending" ? p.status === "PENDING" : (p.status === "VERIFIED" || p.status === "REJECTED"))
+                      .map((payment) => (
                       <div
                         key={payment.id}
                         className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
@@ -952,11 +1058,71 @@ export default function AdminPanel() {
                 ) : (
                   <div className="text-center py-8 text-gray-400">
                     <DollarSign className="h-12 w-12 mx-auto mb-2" />
-                    <p>No payments processed yet</p>
+                    <p>No {paymentsSubTab} payments found</p>
                   </div>
                 )}
               </CardContent>
             </Card>
+          </div>
+        )}
+
+        {/* Resolution Confirmation Modal */}
+        {resolutionModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertCircle className="h-6 w-6 text-yellow-500" />
+                <h3 className="text-lg font-semibold text-white">
+                  Confirm Event Resolution
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-300 mb-2">
+                    You are about to resolve this event:
+                  </p>
+                  <div className="bg-gray-700 rounded p-3">
+                    <p className="text-white font-medium">
+                      {resolutionModal.eventTitle}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-gray-300 mb-2">Resolution outcome:</p>
+                  <div className="bg-gray-700 rounded p-3">
+                    <p className="text-green-400 font-medium text-lg">
+                      {resolutionModal.resolutionLabel}
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-yellow-500/10 border border-yellow-500/20 rounded p-3">
+                  <p className="text-yellow-300 text-sm">
+                    ⚠️ <strong>Warning:</strong> This action cannot be undone.
+                    All bets will be resolved and payouts distributed based on this outcome.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <Button
+                  onClick={closeResolutionModal}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmResolution}
+                  className="flex-1 bg-green-600 hover:bg-green-700"
+                >
+                  <CheckCircle className="h-4 w-4 mr-2" />
+                  Confirm Resolution
+                </Button>
+              </div>
+            </div>
           </div>
         )}
       </main>

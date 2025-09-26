@@ -65,7 +65,7 @@ export async function GET(
   }
 }
 
-// PUT /api/events/[id] - Update an event (admin only)
+// PUT /api/events/[id] - Update an event (creator or admin)
 export async function PUT(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -73,24 +73,84 @@ export async function PUT(
   try {
     const session = await getServerSession(authOptions)
 
-    if (!session?.user?.isAdmin) {
+    if (!session?.user) {
       return NextResponse.json(
-        { message: 'Admin access required' },
+        { message: 'Authentication required' },
+        { status: 401 }
+      )
+    }
+
+    // Get the event to check ownership
+    const existingEvent = await prisma.event.findUnique({
+      where: { id: params.id },
+      select: {
+        id: true,
+        createdById: true,
+        resolved: true,
+        status: true,
+        _count: {
+          select: {
+            bets: true,
+          },
+        },
+      },
+    })
+
+    if (!existingEvent) {
+      return NextResponse.json(
+        { message: 'Event not found' },
+        { status: 404 }
+      )
+    }
+
+    // Check permissions: must be creator or admin
+    const isCreator = existingEvent.createdById === session.user.id
+    const isAdmin = session.user.isAdmin
+
+    if (!isCreator && !isAdmin) {
+      return NextResponse.json(
+        { message: 'Only the market creator or admin can edit this market' },
         { status: 403 }
       )
     }
 
     const { title, description, category, endDate, status } = await request.json()
 
+    // Validation rules
+    if (!title || !description || !category) {
+      return NextResponse.json(
+        { message: 'Title, description, and category are required' },
+        { status: 400 }
+      )
+    }
+
+    // Restrict what creators can edit vs admins
+    const updateData: any = {
+      title: title.trim(),
+      description: description.trim(),
+      category,
+    }
+
+    // Only allow endDate changes if not resolved and no bets yet
+    if (endDate && !existingEvent.resolved && existingEvent._count.bets === 0) {
+      const endDateTime = new Date(endDate)
+      if (endDateTime <= new Date()) {
+        return NextResponse.json(
+          { message: 'End date must be in the future' },
+          { status: 400 }
+        )
+      }
+      updateData.endDate = endDateTime
+    }
+
+    // Only admins can change status
+    if (status && isAdmin) {
+      updateData.status = status
+    }
+
     const event = await prisma.event.update({
       where: { id: params.id },
-      data: {
-        ...(title && { title }),
-        ...(description && { description }),
-        ...(category && { category }),
-        ...(endDate && { endDate: new Date(endDate) }),
-        ...(status && { status }),
-      },
+      data: updateData,
       include: {
         createdBy: {
           select: {
@@ -99,6 +159,7 @@ export async function PUT(
             username: true,
           },
         },
+        options: true,
         _count: {
           select: {
             bets: true,

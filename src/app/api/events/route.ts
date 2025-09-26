@@ -220,7 +220,7 @@ export async function POST(request: NextRequest) {
               side: 'YES',
               amount: yesAmount,
               price: yes,
-              shares: (yesAmount / yes) * 100,
+              shares: (yesAmount / (yes / 100)),
             },
           })
         }
@@ -234,7 +234,7 @@ export async function POST(request: NextRequest) {
               side: 'NO',
               amount: noAmount,
               price: 100 - yes, // NO price is inverse of YES price
-              shares: (noAmount / (100 - yes)) * 100,
+              shares: (noAmount / ((100 - yes) / 100)),
             },
           })
         }
@@ -264,7 +264,7 @@ export async function POST(request: NextRequest) {
                 side: 'YES',
                 amount: optionAmount,
                 price: optionOdds,
-                shares: (optionAmount / optionOdds) * 100,
+                shares: (optionAmount / (optionOdds / 100)),
               },
             })
 

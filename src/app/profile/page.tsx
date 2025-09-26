@@ -73,6 +73,8 @@ export default function Profile() {
   const [profile, setProfile] = useState<UserProfile | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<"bets" | "created">("bets");
+  const [betFilter, setBetFilter] = useState<"all" | "active" | "won" | "lost">("all");
+  const [marketFilter, setMarketFilter] = useState<"all" | "active" | "resolved">("all");
 
   // Get user ID from URL params or use current user
   const userId = searchParams.get("id") || session?.user?.id;
@@ -143,6 +145,32 @@ export default function Profile() {
       : 0;
   const netProfit =
     Number(profile.totalWinnings || 0) - Number(profile.totalLosses || 0);
+
+  // Filter bets based on current filter
+  const filteredBets = (profile.bets || []).filter((bet) => {
+    switch (betFilter) {
+      case "active":
+        return bet.status === "ACTIVE";
+      case "won":
+        return bet.status === "WON";
+      case "lost":
+        return bet.status === "LOST";
+      default:
+        return true;
+    }
+  });
+
+  // Filter markets based on current filter
+  const filteredMarkets = (profile.createdEvents || []).filter((event) => {
+    switch (marketFilter) {
+      case "active":
+        return event.status === "ACTIVE" && !event.resolved;
+      case "resolved":
+        return event.resolved;
+      default:
+        return true;
+    }
+  });
 
   const getBetStatusColor = (status: string) => {
     switch (status) {
@@ -344,25 +372,25 @@ export default function Profile() {
           </Card>
         </div>
 
-        {/* Activity Tabs */}
+        {/* Activity Section */}
         <Card>
           <CardHeader>
             <div className="flex items-center justify-between">
-              <CardTitle>Activity</CardTitle>
+              <CardTitle>Recent Activity</CardTitle>
               <div className="flex gap-2">
                 <Button
                   variant={activeTab === "bets" ? "primary" : "ghost"}
                   size="sm"
                   onClick={() => setActiveTab("bets")}
                 >
-                  My Bets ({(profile.bets || []).length})
+                  Bets ({(profile.bets || []).length})
                 </Button>
                 <Button
                   variant={activeTab === "created" ? "primary" : "ghost"}
                   size="sm"
                   onClick={() => setActiveTab("created")}
                 >
-                  Created Markets ({(profile.createdEvents || []).length})
+                  Markets ({(profile.createdEvents || []).length})
                 </Button>
               </div>
             </div>
@@ -370,107 +398,178 @@ export default function Profile() {
           <CardContent>
             {activeTab === "bets" ? (
               <div className="space-y-4">
-                {(profile.bets || []).length > 0 ? (
-                  (profile.bets || []).map((bet) => (
-                    <div
-                      key={bet.id}
-                      className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={getCategoryColor(bet.event.category)}>
-                            {bet.event.category}
-                          </Badge>
-                          <Badge variant={getBetStatusColor(bet.status)}>
-                            {bet.status}
-                          </Badge>
-                        </div>
-                        <h4 className="font-medium text-white mb-1">
-                          {bet.event.title}
-                        </h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span>
-                            Bet: ₺{Math.round(Number(bet.amount * 100)).toLocaleString("en-US")} on {bet.side}
-                            {bet.option && ` (${bet.option.title})`}
-                          </span>
-                          <span>@ {Number(bet.price).toFixed(0)}¢</span>
-                          <span className="flex items-center gap-1">
-                            <Clock className="h-3 w-3" />
-                            {new Date(bet.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
-                      <div className="text-right">
-                        <div className="text-white font-medium">
-                          {Number(bet.shares).toFixed(2)} shares
-                        </div>
-                        {bet.status !== "ACTIVE" && (
-                          <div
-                            className={`text-sm ${bet.status === "WON" ? "text-green-400" : "text-red-400"}`}
-                          >
-                            {bet.status === "WON" ? "+" : "-"}₺{Math.round(Number(bet.amount * 100)).toLocaleString("en-US")}
+                {/* Bet Filters */}
+                <div className="flex gap-2 border-b border-gray-700 pb-3">
+                  <Button
+                    variant={betFilter === "all" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setBetFilter("all")}
+                  >
+                    All ({(profile.bets || []).length})
+                  </Button>
+                  <Button
+                    variant={betFilter === "active" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setBetFilter("active")}
+                  >
+                    Active ({activeBets.length})
+                  </Button>
+                  <Button
+                    variant={betFilter === "won" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setBetFilter("won")}
+                  >
+                    Won ({wonBets.length})
+                  </Button>
+                  <Button
+                    variant={betFilter === "lost" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setBetFilter("lost")}
+                  >
+                    Lost ({completedBets.length - wonBets.length})
+                  </Button>
+                </div>
+
+                {/* Bets Table */}
+                {filteredBets.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredBets.slice(0, 10).map((bet) => (
+                      <div
+                        key={bet.id}
+                        className="flex items-center justify-between py-3 px-4 bg-gray-800/20 rounded-lg hover:bg-gray-800/30 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge variant={getBetStatusColor(bet.status)} size="sm">
+                              {bet.status}
+                            </Badge>
+                            <span className="text-sm text-gray-400">{bet.event.category}</span>
                           </div>
-                        )}
+                          <h4 className="font-medium text-white truncate pr-4">
+                            {bet.event.title}
+                          </h4>
+                          <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
+                            <span className="font-medium text-white">
+                              {bet.side} {bet.option && `(${bet.option.title})`}
+                            </span>
+                            <span>₺{Math.round(Number(bet.amount)).toLocaleString("en-US")}</span>
+                            <span>@ {Number(bet.price).toFixed(0)}¢</span>
+                            <span>{new Date(bet.createdAt).toLocaleDateString()}</span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <div className="text-white font-medium">
+                            {Number(bet.shares).toFixed(1)}
+                          </div>
+                          <div className="text-xs text-gray-400">shares</div>
+                          {bet.status !== "ACTIVE" && (
+                            <div
+                              className={`text-sm font-medium mt-1 ${bet.status === "WON" ? "text-green-400" : "text-red-400"}`}
+                            >
+                              {bet.status === "WON" ? "+" : "-"}₺{Math.round(Number(bet.amount)).toLocaleString("en-US")}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
-                  ))
+                    ))}
+                    {filteredBets.length > 10 && (
+                      <div className="text-center pt-3">
+                        <p className="text-sm text-gray-400">
+                          Showing 10 of {filteredBets.length} bets
+                        </p>
+                      </div>
+                    )}
+                  </div>
                 ) : (
                   <div className="text-center py-8 text-gray-400">
-                    <Target className="h-12 w-12 mx-auto mb-2" />
-                    <p>No bets placed yet</p>
+                    <Target className="h-8 w-8 mx-auto mb-2" />
+                    <p>No {betFilter !== "all" ? betFilter : ""} bets found</p>
                     <p className="text-sm">
-                      Start trading to see your bets here!
+                      {betFilter === "all" ? "Start trading to see your bets here!" : "Try changing the filter above"}
                     </p>
                   </div>
                 )}
               </div>
             ) : (
               <div className="space-y-4">
-                {(profile.createdEvents || []).length > 0 ? (
-                  (profile.createdEvents || []).map((event) => (
-                    <div
-                      key={event.id}
-                      className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Badge variant={getCategoryColor(event.category)}>
-                            {event.category}
-                          </Badge>
-                          <Badge
-                            variant={event.resolved ? "success" : "default"}
+                {/* Market Filters */}
+                <div className="flex gap-2 border-b border-gray-700 pb-3">
+                  <Button
+                    variant={marketFilter === "all" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setMarketFilter("all")}
+                  >
+                    All ({(profile.createdEvents || []).length})
+                  </Button>
+                  <Button
+                    variant={marketFilter === "active" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setMarketFilter("active")}
+                  >
+                    Active ({(profile.createdEvents || []).filter(e => e.status === "ACTIVE" && !e.resolved).length})
+                  </Button>
+                  <Button
+                    variant={marketFilter === "resolved" ? "primary" : "ghost"}
+                    size="sm"
+                    onClick={() => setMarketFilter("resolved")}
+                  >
+                    Resolved ({(profile.createdEvents || []).filter(e => e.resolved).length})
+                  </Button>
+                </div>
+
+                {/* Markets Table */}
+                {filteredMarkets.length > 0 ? (
+                  <div className="space-y-2">
+                    {filteredMarkets.slice(0, 10).map((event) => (
+                      <div
+                        key={event.id}
+                        className="flex items-center justify-between py-3 px-4 bg-gray-800/20 rounded-lg hover:bg-gray-800/30 transition-colors"
+                      >
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Badge
+                              variant={event.resolved ? "success" : "default"}
+                              size="sm"
+                            >
+                              {event.resolved ? "RESOLVED" : event.status}
+                            </Badge>
+                            <span className="text-sm text-gray-400">{event.category}</span>
+                          </div>
+                          <h4 className="font-medium text-white truncate pr-4">
+                            {event.title}
+                          </h4>
+                          <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
+                            <span>
+                              Created {new Date(event.createdAt).toLocaleDateString()}
+                            </span>
+                          </div>
+                        </div>
+                        <div className="text-right">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            onClick={() => router.push(`/market/${event.id}`)}
+                            className="text-blue-400 hover:text-blue-300"
                           >
-                            {event.status}
-                          </Badge>
-                        </div>
-                        <h4 className="font-medium text-white mb-1">
-                          {event.title}
-                        </h4>
-                        <div className="flex items-center gap-4 text-sm text-gray-400">
-                          <span className="flex items-center gap-1">
-                            <Calendar className="h-3 w-3" />
-                            Created{" "}
-                            {new Date(event.createdAt).toLocaleDateString()}
-                          </span>
+                            View →
+                          </Button>
                         </div>
                       </div>
-                      <div className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => router.push(`/market/${event.id}`)}
-                        >
-                          View Market
-                        </Button>
+                    ))}
+                    {filteredMarkets.length > 10 && (
+                      <div className="text-center pt-3">
+                        <p className="text-sm text-gray-400">
+                          Showing 10 of {filteredMarkets.length} markets
+                        </p>
                       </div>
-                    </div>
-                  ))
+                    )}
+                  </div>
                 ) : (
                   <div className="text-center py-8 text-gray-400">
-                    <Calendar className="h-12 w-12 mx-auto mb-2" />
-                    <p>No markets created yet</p>
+                    <Calendar className="h-8 w-8 mx-auto mb-2" />
+                    <p>No {marketFilter !== "all" ? marketFilter : ""} markets found</p>
                     <p className="text-sm">
-                      Create your first market to see it here!
+                      {marketFilter === "all" ? "Create your first market!" : "Try changing the filter above"}
                     </p>
                   </div>
                 )}

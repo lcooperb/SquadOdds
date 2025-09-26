@@ -295,11 +295,35 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
   const CustomTooltip = ({ active, payload, label }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload
+
+      // Get timestamp for display
+      const timestamp = data.timestamp
+      const timeDisplay = timestamp ? new Date(timestamp).toLocaleString('en-US', {
+        month: 'short',
+        day: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }) : ''
+
       return (
-        <div className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 shadow-lg">
-          <p className={`text-sm font-medium ${showYes ? 'text-blue-400' : 'text-red-400'}`}>
-            {showYes ? 'Yes' : 'No'} {showYes ? (data.yesPrice?.toFixed(0) || 0) : (data.noPrice?.toFixed(0) || 0)}%
-          </p>
+        <div className="bg-gray-800/95 border border-gray-600 rounded-lg px-3 py-2 shadow-lg backdrop-blur-sm">
+          {timeDisplay && (
+            <div className="text-gray-300 text-xs mb-2 border-b border-gray-600 pb-1">
+              {timeDisplay}
+            </div>
+          )}
+          <div className="flex items-center gap-2">
+            <div
+              className="w-3 h-3 rounded-full"
+              style={{ backgroundColor: showYes ? '#3b82f6' : '#ef4444' }}
+            />
+            <span className="text-white text-sm font-medium">
+              {showYes ? 'Yes' : 'No'}
+            </span>
+            <span className="text-white text-sm font-bold">
+              {showYes ? (data.yesPrice?.toFixed(1) || 0) : (data.noPrice?.toFixed(1) || 0)}%
+            </span>
+          </div>
         </div>
       )
     }
@@ -330,7 +354,20 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
 
   // For multiple choice markets, show option price history as line chart
   if (marketType === 'MULTIPLE' && options && options.length > 0) {
-    const colors = ['#f97316', '#3b82f6', '#eab308', '#64748b', '#3b82f6', '#06b6d4']
+    const colors = [
+      '#f97316', // orange
+      '#3b82f6', // blue
+      '#eab308', // yellow
+      '#ef4444', // red
+      '#10b981', // emerald
+      '#8b5cf6', // violet
+      '#f59e0b', // amber
+      '#06b6d4', // cyan
+      '#84cc16', // lime
+      '#ec4899', // pink
+      '#6366f1', // indigo
+      '#14b8a6'  // teal
+    ]
 
     // Calculate dynamic Y-axis max based on highest option price
     const maxPrice = Math.max(...options.map(option => Number(option.price)))
@@ -340,15 +377,43 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
       yAxisTicks.push(i)
     }
 
-    const CustomMultipleTooltip = ({ active, payload, label }: any) => {
-      if (active && payload && payload.length) {
+    const CustomMultipleTooltip = ({ active, payload, label, coordinate }: any) => {
+      if (active && payload && payload.length && coordinate) {
+        // Sort payload by value (highest to lowest)
+        const sortedPayload = [...payload].sort((a, b) => (b.value || 0) - (a.value || 0))
+
+        // Get timestamp for display
+        const timestamp = payload[0]?.payload?.timestamp
+        const timeDisplay = timestamp ? new Date(timestamp).toLocaleString('en-US', {
+          month: 'short',
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : ''
+
         return (
-          <div className="bg-gray-800 border border-gray-600 rounded-lg px-3 py-2 shadow-lg">
+          <div className="bg-gray-800/95 border border-gray-600 rounded-lg px-3 py-2 shadow-lg backdrop-blur-sm">
+            {timeDisplay && (
+              <div className="text-gray-300 text-xs mb-2 border-b border-gray-600 pb-1">
+                {timeDisplay}
+              </div>
+            )}
             <div className="space-y-1">
-              {payload.map((entry: any, index: number) => (
-                <p key={entry.dataKey} style={{ color: entry.color }} className="text-sm font-medium">
-                  {entry.dataKey} {entry.value?.toFixed(0) || 0}%
-                </p>
+              {sortedPayload.map((entry: any, index: number) => (
+                <div key={entry.dataKey} className="flex items-center justify-between gap-4">
+                  <div className="flex items-center gap-2">
+                    <div
+                      className="w-3 h-3 rounded-full"
+                      style={{ backgroundColor: entry.color }}
+                    />
+                    <span className="text-white text-sm font-medium">
+                      {entry.dataKey}
+                    </span>
+                  </div>
+                  <span className="text-white text-sm font-bold">
+                    {entry.value?.toFixed(1) || 0}%
+                  </span>
+                </div>
               ))}
             </div>
           </div>
@@ -388,7 +453,20 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
                 tickLine={false}
                 tickFormatter={(value) => `${value}%`}
               />
-              <Tooltip content={<CustomMultipleTooltip />} />
+              <Tooltip
+                content={<CustomMultipleTooltip />}
+                cursor={{
+                  stroke: '#9ca3af',
+                  strokeWidth: 2,
+                  strokeDasharray: '5 5',
+                  opacity: 0.8
+                }}
+                allowEscapeViewBox={{ x: false, y: false }}
+                position={{ x: undefined, y: undefined }}
+                shared={true}
+                trigger="hover"
+                animationDuration={0}
+              />
               {options.map((option, index) => (
                 <Line
                   key={option.id}
@@ -397,7 +475,7 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
                   stroke={colors[index % colors.length]}
                   strokeWidth={2}
                   dot={false}
-                  activeDot={{ r: 4, stroke: colors[index % colors.length], strokeWidth: 2 }}
+                  activeDot={false}
                   name={option.title}
                   connectNulls={true}
                 />
@@ -455,13 +533,27 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
               tickLine={false}
               tickFormatter={(value) => `${value}%`}
             />
-            <Tooltip content={<CustomTooltip />} />
+            <Tooltip
+              content={<CustomTooltip />}
+              cursor={{
+                stroke: '#9ca3af',
+                strokeWidth: 2,
+                strokeDasharray: '5 5',
+                opacity: 0.8
+              }}
+              allowEscapeViewBox={{ x: false, y: false }}
+              position={{ x: undefined, y: undefined }}
+              shared={true}
+              trigger="hover"
+              animationDuration={0}
+            />
             <Line
               type="stepAfter"
               dataKey={showYes ? "yesPrice" : "noPrice"}
               stroke={showYes ? "#3b82f6" : "#ef4444"}
               strokeWidth={2}
               dot={false}
+              activeDot={false}
               name={showYes ? "YES Price" : "NO Price"}
             />
           </LineChart>

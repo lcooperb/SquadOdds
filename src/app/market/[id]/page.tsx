@@ -5,6 +5,7 @@ import { useParams } from "next/navigation";
 import { useSession } from "next-auth/react";
 import BettingModal from "@/components/BettingModal";
 import BettingCard from "@/components/BettingCard";
+import EditMarketModal from "@/components/EditMarketModal";
 import { calculateUserPosition } from "@/lib/positions";
 import { cn } from "@/lib/utils";
 import AddOptionModal from "@/components/AddOptionModal";
@@ -23,6 +24,7 @@ import {
   BarChart3,
   MessageCircle,
   Plus,
+  Edit,
 } from "lucide-react";
 
 interface MarketOption {
@@ -97,6 +99,7 @@ export default function MarketPage() {
   const [binaryPriceChange, setBinaryPriceChange] = useState<number | null>(
     null
   );
+  const [showEditModal, setShowEditModal] = useState(false);
 
   // Set default option to most likely for multiple choice markets and auto-select YES
   useEffect(() => {
@@ -403,23 +406,38 @@ export default function MarketPage() {
           <div className="flex-1 max-w-4xl space-y-4 md:space-y-6">
             {/* Header */}
             <div className="space-y-2 md:space-y-3">
-              <div className="flex items-center gap-2">
-                <Badge variant={getCategoryColor(event.category)}>
-                  {event.category}
-                </Badge>
-                {event.resolved && (
-                  <Badge variant={event.outcome ? "success" : "error"}>
-                    Resolved: {event.outcome ? "YES" : "NO"}
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-2">
+                  <Badge variant={getCategoryColor(event.category)}>
+                    {event.category}
                   </Badge>
-                )}
-                {isOngoing && !event.resolved && (
-                  <Badge variant="warning">
-                    <Clock className="h-3 w-3 mr-1" />
-                    Ongoing
-                  </Badge>
-                )}
-                {!isOngoing && isExpired && !event.resolved && (
-                  <Badge variant="warning">Expired</Badge>
+                  {event.resolved && (
+                    <Badge variant={event.outcome ? "success" : "error"}>
+                      Resolved: {event.outcome ? "YES" : "NO"}
+                    </Badge>
+                  )}
+                  {isOngoing && !event.resolved && (
+                    <Badge variant="warning">
+                      <Clock className="h-3 w-3 mr-1" />
+                      Ongoing
+                    </Badge>
+                  )}
+                  {!isOngoing && isExpired && !event.resolved && (
+                    <Badge variant="warning">Expired</Badge>
+                  )}
+                </div>
+
+                {/* Edit Button - only for creators */}
+                {session?.user && event.createdBy.id === session.user.id && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowEditModal(true)}
+                    className="flex items-center gap-2 text-gray-400 hover:text-white"
+                  >
+                    <Edit className="h-4 w-4" />
+                    Edit
+                  </Button>
                 )}
               </div>
 
@@ -838,6 +856,18 @@ export default function MarketPage() {
           eventId={event.id}
           eventTitle={event.title}
           onAddOption={handleAddOption}
+        />
+      )}
+
+      {/* Edit Market Modal */}
+      {showEditModal && session?.user && event.createdBy.id === session.user.id && (
+        <EditMarketModal
+          isOpen={showEditModal}
+          onClose={() => setShowEditModal(false)}
+          event={event}
+          onEventUpdated={(updatedEvent) => {
+            setEvent(updatedEvent);
+          }}
         />
       )}
     </>
