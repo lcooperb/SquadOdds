@@ -4,19 +4,29 @@ A **Polymarket-inspired prediction market platform** for squads. Create and bet 
 
 ![Next.js](https://img.shields.io/badge/Next.js-14-black) ![TypeScript](https://img.shields.io/badge/TypeScript-blue) ![Prisma](https://img.shields.io/badge/Prisma-2D3748) ![Tailwind](https://img.shields.io/badge/Tailwind-CSS-38B2AC)
 
+## 🌟 Live Demo
+
+🚀 **[Try SquadOdds Live](https://squad-odds-49hcpv51i-lcooperbs-projects.vercel.app)**
+
+Experience the full prediction market platform with sample data and user accounts!
+
 ## ✨ Features
 
 ### 🎯 **Core Trading**
-- **Real-time Betting**: Place YES/NO bets with dynamic pricing
-- **Interactive Charts**: Live price history with Recharts
+- **Multiple Market Types**: Binary (YES/NO) and Multiple Choice markets
+- **Responsive Betting Interface**: Large, intuitive buttons with real-time price display
+- **Smart Auto-Selection**: Automatically highlights highest probability options
+- **Interactive Charts**: Live price history with Recharts integration
 - **Market Maker Algorithm**: Automatic price adjustments based on volume
-- **Virtual Money**: Start with $100, track performance
+- **Virtual Money**: Start with $100, track performance with detailed analytics
+- **Buy/Sell Modes**: Full trading capabilities with position management
 
 ### 🗣️ **Social Features**
 - **Comments System**: Threaded discussions with likes and replies
-- **User Positions**: See YES/NO positions next to usernames
-- **Top Holders**: Rankings with crown icons for leaders
-- **Activity Feed**: Real-time trading activity
+- **Enhanced User Positions**: See actual YES/NO share counts next to usernames
+- **Top Holders**: Rankings with crown icons for leaders and detailed position breakdowns
+- **Activity Feed**: Real-time trading activity with bet details
+- **User Profiles**: Comprehensive trading history and performance metrics
 
 ### 📊 **Analytics**
 - **Personal Dashboard**: Betting history and performance stats
@@ -27,7 +37,20 @@ A **Polymarket-inspired prediction market platform** for squads. Create and bet 
 - **Dropdown Search**: Real-time market search with rich previews
 - **Ongoing Events**: Support for events without end dates
 - **Category Filtering**: Organize by Career, Relationships, Personal, etc.
-- **Mobile Responsive**: Works on all devices
+- **Fully Mobile Responsive**: Desktop and mobile optimized interfaces
+- **Touch-Friendly**: Large buttons and modal-based mobile trading
+- **Admin Panel**: Market management and user administration tools
+- **Modal Animations**: Smooth slide-up and fade-in transitions
+
+## 🎉 Recent Updates
+
+### v2.0 - Enhanced Trading Experience
+- **Responsive Betting Interface**: Large, intuitive YES/NO buttons with side-by-side layout
+- **Smart Auto-Selection**: Highest probability options automatically selected on page load
+- **Mobile-First Design**: Touch-friendly buttons that open modals on mobile
+- **Enhanced Position Display**: Show actual share counts instead of just spending amounts
+- **Improved Color System**: Muted backgrounds for better visual hierarchy
+- **Modal Animations**: Smooth transitions and better UX
 
 ## 🚀 Quick Start
 
@@ -95,18 +118,32 @@ If you run the seed script, you can sign in with:
 ```
 src/
 ├── app/                    # Next.js app router pages
+│   ├── admin/             # Admin panel for user management
 │   ├── api/               # API routes
+│   │   ├── auth/          # NextAuth.js API routes
+│   │   ├── events/        # Market CRUD operations
+│   │   └── users/         # User management APIs
 │   ├── auth/              # Authentication pages
-│   ├── create/            # Market creation
+│   ├── create/            # Market creation interface
+│   ├── dashboard/         # User dashboard and portfolio
+│   ├── leaderboard/       # User rankings and stats
 │   ├── market/[id]/       # Individual market pages
-│   └── ...
+│   └── profile/           # User profile management
 ├── components/            # Reusable UI components
-│   ├── ui/               # Base UI components
+│   ├── ui/               # Base UI components (Button, Modal, etc.)
+│   ├── AddOptionModal.tsx # Multiple choice option creation
+│   ├── BettingCard.tsx   # Desktop trading interface
+│   ├── BettingModal.tsx  # Mobile trading modal
 │   ├── MarketCard.tsx    # Market display cards
-│   ├── BettingModal.tsx  # Trading interface
-│   └── ...
+│   ├── MarketComments.tsx # Comments and activity feed
+│   ├── Navigation.tsx    # App navigation header
+│   ├── PriceChart.tsx    # Interactive price charts
+│   └── SearchDropdown.tsx # Real-time market search
 ├── lib/                  # Utilities and configurations
+│   ├── positions.ts      # Position calculation utilities
+│   └── utils.ts          # General utility functions
 prisma/                   # Database schema and migrations
+scripts/                  # Database seeding and utilities
 ```
 
 ## 🎮 How to Use
