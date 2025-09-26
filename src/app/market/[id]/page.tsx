@@ -270,7 +270,8 @@ export default function MarketPage() {
     eventId: string,
     side: "YES" | "NO" | null,
     amount: number,
-    optionId?: string
+    optionId?: string,
+    type?: string
   ) => {
     try {
       const response = await fetch("/api/bets", {
@@ -283,6 +284,7 @@ export default function MarketPage() {
           side,
           amount,
           optionId,
+          type: type === 'sell' ? 'SELL' : 'BUY', // Convert lowercase to uppercase
         }),
       });
 
@@ -628,10 +630,10 @@ export default function MarketPage() {
                               <Button
                                 variant="primary"
                                 size="lg"
-                                className={`min-w-[80px] md:min-w-[120px] px-2 md:px-4 py-2 md:py-4 text-sm md:text-base font-semibold transition-all hover:scale-105 !bg-green-700/30 hover:!bg-green-600/40 !text-white !border-green-700/30 ${
+                                className={`min-w-[80px] md:min-w-[120px] px-2 md:px-4 py-2 md:py-4 text-sm md:text-base font-semibold transition-colors !bg-green-700/30 hover:!bg-green-600/50 !text-white !border-green-700/30 ${
                                   selectedOptionAndSide?.optionId === option.id &&
                                   selectedOptionAndSide?.side === "YES"
-                                    ? "md:!bg-green-500 md:ring-2 md:ring-green-400 md:ring-opacity-50 md:transform md:scale-105"
+                                    ? "md:!bg-green-500 md:ring-2 md:ring-green-400 md:ring-opacity-50"
                                     : ""
                                 }`}
                                 onClick={() => {
@@ -658,10 +660,10 @@ export default function MarketPage() {
                               <Button
                                 variant="primary"
                                 size="lg"
-                                className={`min-w-[80px] md:min-w-[120px] px-2 md:px-4 py-2 md:py-4 text-sm md:text-base font-semibold transition-all hover:scale-105 !bg-red-700/30 hover:!bg-red-600/40 !text-white !border-red-700/30 ${
+                                className={`min-w-[80px] md:min-w-[120px] px-2 md:px-4 py-2 md:py-4 text-sm md:text-base font-semibold transition-colors !bg-red-700/30 hover:!bg-red-600/50 !text-white !border-red-700/30 ${
                                   selectedOptionAndSide?.optionId === option.id &&
                                   selectedOptionAndSide?.side === "NO"
-                                    ? "md:!bg-red-500 md:ring-2 md:ring-red-400 md:ring-opacity-50 md:transform md:scale-105"
+                                    ? "md:!bg-red-500 md:ring-2 md:ring-red-400 md:ring-opacity-50"
                                     : ""
                                 }`}
                                 onClick={() => {
@@ -791,6 +793,7 @@ export default function MarketPage() {
             marketType: event.marketType,
             yesPrice: event.yesPrice,
             bets: event.bets,
+            totalVolume: event.totalVolume,
           }}
           selectedOption={selectedOption}
           selectedSide={selectedSide}
@@ -816,6 +819,7 @@ export default function MarketPage() {
             marketType: event.marketType,
             yesPrice: event.yesPrice,
             bets: event.bets,
+            totalVolume: event.totalVolume,
           }}
           selectedOption={selectedOption}
           selectedSide={selectedSide}

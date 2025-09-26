@@ -89,13 +89,18 @@ export async function GET(
           }
         }
 
+        // For sell operations (negative shares), we need to handle them differently
         if (bet.side === 'YES') {
           holding.optionPositions[optionId].yesShares += shares
         } else {
           holding.optionPositions[optionId].noShares += shares
         }
-        holding.optionPositions[optionId].amount += amount
-        holding.totalAmount += amount
+
+        // For amount calculation, only count positive amounts (purchases)
+        if (shares > 0) {
+          holding.optionPositions[optionId].amount += amount
+          holding.totalAmount += amount
+        }
       })
 
       // Convert to array and sort by total amount invested
@@ -141,15 +146,22 @@ export async function GET(
 
         const holding = holdingsMap.get(userId)!
 
+        // Handle shares (including negative shares from sells)
         if (bet.side === 'YES') {
           holding.yesShares += shares
-          holding.yesAmount += amount
         } else {
           holding.noShares += shares
-          holding.noAmount += amount
         }
 
-        holding.totalAmount += amount
+        // For amount calculation, only count positive amounts (purchases)
+        if (shares > 0) {
+          if (bet.side === 'YES') {
+            holding.yesAmount += amount
+          } else {
+            holding.noAmount += amount
+          }
+          holding.totalAmount += amount
+        }
       })
 
       // Convert to array and sort by total amount invested

@@ -353,7 +353,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
           </button>
         </div>
       </div>
-      <div className="p-6">
+      <div className="pt-6">
         {activeTab === 'comments' && (
           <div className="space-y-6">
             {/* New Comment Form */}

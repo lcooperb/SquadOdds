@@ -5,7 +5,8 @@ import { Modal } from "@/components/ui/Modal";
 import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
-import { calculateUserPosition } from "@/lib/positions";
+import { calculateUserPosition, getAllUserPositions } from "@/lib/positions";
+import { previewMarketImpact } from "@/lib/marketImpact";
 import { Calculator, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 
 interface UserPosition {
@@ -23,6 +24,7 @@ interface BettingModalProps {
     marketType: string;
     yesPrice: number;
     bets?: any[]; // Include bets for position calculation
+    totalVolume?: number;
   };
   selectedOption?: {
     id: string;
@@ -37,7 +39,8 @@ interface BettingModalProps {
     eventId: string,
     side: "YES" | "NO" | null,
     amount: number,
-    optionId?: string
+    optionId?: string,
+    type?: string
   ) => Promise<void>;
 }
 
@@ -59,6 +62,7 @@ export default function BettingModal({
   const [localSelectedSide, setSelectedSide] = useState<"YES" | "NO">(
     selectedSide
   );
+  const [selectedPosition, setSelectedPosition] = useState<UserPosition | null>(null);
 
   // Sync internal side state with prop when it changes
   useEffect(() => {
@@ -66,6 +70,11 @@ export default function BettingModal({
       setSelectedSide(selectedSide);
     }
   }, [selectedSide]);
+
+  // Reset selected position when switching modes or when bets data changes
+  useEffect(() => {
+    setSelectedPosition(null);
+  }, [mode, event.bets]);
 
   const isMultipleChoice = event.marketType === "MULTIPLE";
 
@@ -78,11 +87,20 @@ export default function BettingModal({
       )
     : null;
 
-  // Check if user has a position to enable sell mode
-  // For sell mode, we need to check if they have shares on the SAME side they want to sell
-  const hasPosition = currentPosition &&
-    currentPosition.shares > 0 &&
-    currentPosition.side === localSelectedSide;
+  // Get all user positions (both YES and NO)
+  const allUserPositions = userId && event.bets
+    ? getAllUserPositions(
+        event.bets,
+        userId,
+        isMultipleChoice ? selectedOption?.id : undefined
+      )
+    : [];
+
+  // Check if user has positions to enable sell mode
+  const hasAnyPosition = allUserPositions.length > 0;
+
+  // For selling, use the selected position or default to the first available position
+  const positionToSell = selectedPosition || allUserPositions[0] || null;
 
   // Get prices
   let yesPrice, noPrice;
@@ -94,11 +112,28 @@ export default function BettingModal({
     noPrice = 100 - yesPrice;
   }
 
-  // Calculate potential payout
+  // Calculate market impact and potential payout
   const amountNum = parseFloat(amount) || 0;
   const currentPrice = localSelectedSide === "YES" ? yesPrice : noPrice;
-  const shares = currentPrice > 0 ? (amountNum / currentPrice) * 100 : 0;
+  const totalVolume = event.totalVolume || 0;
+
+  // Use market impact calculation for better estimate
+  const marketImpact = amountNum > 0 ? previewMarketImpact(
+    amountNum,
+    currentPrice,
+    totalVolume,
+    localSelectedSide
+  ) : {
+    estimatedShares: 0,
+    estimatedAveragePrice: currentPrice,
+    priceImpact: 0,
+    estimatedFinalPrice: currentPrice
+  };
+
+  const shares = marketImpact.estimatedShares;
   const potentialPayout = shares;
+  const averagePrice = marketImpact.estimatedAveragePrice;
+  const priceImpact = marketImpact.priceImpact;
 
   // Quick amount buttons
   const quickAmounts = [1, 20, 100];
@@ -128,11 +163,13 @@ export default function BettingModal({
     setError("");
 
     try {
+      // Pass type based on the current mode
       await onPlaceBet(
         event.id,
-        localSelectedSide,
+        mode === 'sell' && positionToSell ? positionToSell.side : localSelectedSide,
         parseFloat(amount),
-        isMultipleChoice ? selectedOption?.id : undefined
+        isMultipleChoice ? selectedOption?.id : undefined,
+        mode // Pass the type as 'buy' or 'sell'
       );
       setAmount("");
       onClose();
@@ -179,115 +216,223 @@ export default function BettingModal({
           </div>
         )}
 
-        {/* YES/NO Selection */}
-        <div className="grid grid-cols-2 gap-2">
-          <Button
-            variant={localSelectedSide === "YES" ? "yes" : "outline"}
-            onClick={() => setSelectedSide("YES")}
-            className="w-full"
-          >
-            {isMultipleChoice ? "Yes" : "Yes"} {yesPrice}¢
-          </Button>
-          <Button
-            variant={localSelectedSide === "NO" ? "no" : "outline"}
-            onClick={() => setSelectedSide("NO")}
-            className="w-full"
-          >
-            {isMultipleChoice ? "No" : "No"} {noPrice}¢
-          </Button>
-        </div>
-
-        {/* Amount Input */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="text-white font-medium">Amount</label>
-            <input
-              type="number"
-              value={amount}
-              onChange={(e) => setAmount(e.target.value)}
-              placeholder="0"
-              className="text-3xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-32"
-              min="0"
-              max={userBalance}
-              step="0.01"
-            />
-          </div>
-
-          {/* Quick Amount Buttons */}
-          <div className="flex gap-2">
-            {quickAmounts.map((value) => (
+        {mode === "buy" ? (
+          <>
+            {/* YES/NO Selection */}
+            <div className="grid grid-cols-2 gap-2">
               <Button
-                key={value}
-                variant="outline"
-                size="sm"
-                onClick={() => handleQuickAmount(value)}
-                className="text-xs"
+                variant={localSelectedSide === "YES" ? "yes" : "outline"}
+                selected={localSelectedSide === "YES"}
+                onClick={() => setSelectedSide("YES")}
+                className="w-full"
               >
-                +₺{value}
+                {isMultipleChoice ? "Yes" : "Yes"} {yesPrice}¢
               </Button>
-            ))}
-            <Button
-              variant="outline"
-              size="sm"
-              onClick={() => handleQuickAmount("max")}
-              className="text-xs"
-            >
-              Max
-            </Button>
-          </div>
-        </div>
+              <Button
+                variant={localSelectedSide === "NO" ? "no" : "outline"}
+                selected={localSelectedSide === "NO"}
+                onClick={() => setSelectedSide("NO")}
+                className="w-full"
+              >
+                {isMultipleChoice ? "No" : "No"} {noPrice}¢
+              </Button>
+            </div>
 
-
-        {/* Potential Payout */}
-        {amountNum > 0 && (
-          <div className="bg-gray-700/30 rounded-lg p-4">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <span className="text-white font-medium">To win</span>
-                <span className="text-green-400">💸</span>
+            {/* Amount Input */}
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <label className="text-white font-medium">Amount</label>
+                <input
+                  type="number"
+                  value={amount}
+                  onChange={(e) => setAmount(e.target.value)}
+                  placeholder="0"
+                  className="text-3xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-32"
+                  min="0"
+                  max={userBalance}
+                  step="0.01"
+                />
               </div>
-              <div className="text-3xl font-bold text-green-400">
-                ₺
-                {potentialPayout.toLocaleString("en-US", {
-                  minimumFractionDigits: 2,
-                  maximumFractionDigits: 2,
-                })}
+
+              {/* Quick Amount Buttons */}
+              <div className="flex gap-2">
+                {quickAmounts.map((value) => (
+                  <Button
+                    key={value}
+                    variant="outline"
+                    size="sm"
+                    onClick={() => handleQuickAmount(value)}
+                    className="text-xs"
+                  >
+                    +₺{value}
+                  </Button>
+                ))}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => handleQuickAmount("max")}
+                  className="text-xs"
+                >
+                  Max
+                </Button>
               </div>
             </div>
-            <div className="text-sm text-gray-400 mt-1">
-              Avg. Price {currentPrice}¢ ⓘ
+
+            {/* Potential Payout */}
+            {amountNum > 0 && (
+              <div className="bg-gray-700/30 rounded-lg p-4">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <span className="text-white font-medium">To win</span>
+                    <span className="text-green-400">💸</span>
+                  </div>
+                  <div className="text-3xl font-bold text-green-400">
+                    ₺
+                    {potentialPayout.toLocaleString("en-US", {
+                      minimumFractionDigits: 2,
+                      maximumFractionDigits: 2,
+                    })}
+                  </div>
+                </div>
+                <div className="text-sm text-gray-400 mt-1">
+                  Avg. Price {averagePrice.toFixed(1)}¢
+                  {priceImpact > 0.5 && (
+                    <span className="ml-2 text-orange-400">
+                      (+{priceImpact.toFixed(1)}¢ impact)
+                    </span>
+                  )}
+                </div>
+              </div>
+            )}
+          </>
+        ) : (
+          <div className="space-y-4">
+            {/* Sell Mode - Show All Positions */}
+            <div className="bg-gray-700/30 rounded-lg p-4">
+              <div className="text-white font-medium mb-3">Your Positions</div>
+              {hasAnyPosition ? (
+                <div className="space-y-3">
+                  {allUserPositions.map((position, index) => {
+                    const isSelected = selectedPosition?.side === position.side;
+                    const currentPrice = position.side === "YES" ? yesPrice : noPrice;
+                    return (
+                      <div
+                        key={position.side}
+                        onClick={() => setSelectedPosition(position)}
+                        className={`p-3 rounded-lg border cursor-pointer transition-all ${
+                          isSelected
+                            ? "border-blue-500 bg-blue-500/20"
+                            : "border-gray-600 hover:border-gray-500"
+                        }`}
+                      >
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-white font-medium">
+                            {position.shares.toFixed(2)} {position.side} shares
+                          </span>
+                          <span className="text-gray-400 text-sm">
+                            Avg: {position.averagePrice.toFixed(1)}¢
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span className="text-gray-400">Current Value:</span>
+                          <span className="text-white">
+                            ₺{(position.shares * currentPrice / 100).toFixed(2)}
+                          </span>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              ) : (
+                <div className="text-gray-400 text-sm">
+                  {isMultipleChoice && selectedOption
+                    ? `No positions for ${selectedOption.title}`
+                    : `No positions to sell`
+                  }
+                </div>
+              )}
             </div>
+
+            {hasAnyPosition && positionToSell && (
+              <>
+                {/* Sell Amount Selection */}
+                <div>
+                  <div className="flex items-center justify-between mb-2">
+                    <label className="text-white font-medium">Shares to sell</label>
+                    <input
+                      type="number"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      placeholder="0"
+                      className="text-2xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-32"
+                      min="0"
+                      max={positionToSell.shares}
+                      step="0.01"
+                    />
+                  </div>
+
+                  {/* Quick Sell Buttons */}
+                  <div className="flex gap-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmount((positionToSell.shares * 0.25).toFixed(2))}
+                      className="text-xs"
+                    >
+                      25%
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmount((positionToSell.shares * 0.5).toFixed(2))}
+                      className="text-xs"
+                    >
+                      50%
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmount((positionToSell.shares * 0.75).toFixed(2))}
+                      className="text-xs"
+                    >
+                      75%
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => setAmount(positionToSell.shares.toString())}
+                      className="text-xs"
+                    >
+                      All
+                    </Button>
+                  </div>
+                </div>
+
+                {/* Sell Payout Preview */}
+                {amountNum > 0 && (
+                  <div className="bg-gray-700/30 rounded-lg p-4">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">You'll receive</span>
+                        <span className="text-blue-400">💰</span>
+                      </div>
+                      <div className="text-2xl font-bold text-blue-400">
+                        ₺{((amountNum * (positionToSell.side === "YES" ? yesPrice : noPrice)) / 100).toFixed(2)}
+                      </div>
+                    </div>
+                    <div className="text-sm text-gray-400 mt-1">
+                      @ {positionToSell.side === "YES" ? yesPrice : noPrice}¢ per share
+                    </div>
+                  </div>
+                )}
+              </>
+            )}
           </div>
         )}
 
         {/* Error Message */}
         {error && <div className="text-red-400 text-sm">{error}</div>}
 
-        {/* Position Info for Sell Mode */}
-        {mode === "sell" && (
-          <div className="bg-gray-700/50 rounded-lg p-3">
-            <div className="text-sm text-gray-400 mb-1">
-              Your Position{isMultipleChoice && selectedOption ? ` - ${selectedOption.title}` : ""}
-            </div>
-            {hasPosition && currentPosition ? (
-              <div className="flex justify-between items-center">
-                <span className="text-white">
-                  {currentPosition.shares.toFixed(2)} {currentPosition.side} shares
-                </span>
-                <span className="text-gray-300">
-                  Avg: {currentPosition.averagePrice.toFixed(1)}¢
-                </span>
-              </div>
-            ) : (
-              <div className="text-gray-400 text-sm">
-                {isMultipleChoice && selectedOption
-                  ? `No ${localSelectedSide} position for ${selectedOption.title}`
-                  : `No ${localSelectedSide} position to sell`
-                }
-              </div>
-            )}
-          </div>
-        )}
 
         {/* Trade Button */}
         <Button
@@ -296,7 +441,8 @@ export default function BettingModal({
             loading ||
             !amount ||
             parseFloat(amount) <= 0 ||
-            (mode === "sell" && !hasPosition)
+            (mode === "sell" && (!hasAnyPosition || !positionToSell || parseFloat(amount) > (positionToSell?.shares || 0))) ||
+            (mode === "buy" && parseFloat(amount) > userBalance)
           }
           className={`w-full py-3 text-white ${
             mode === "sell"

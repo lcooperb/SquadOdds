@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { calculateMarketImpact, calculateNewMarketPrice } from '@/lib/marketImpact'
 
 // POST /api/bets - Place a new bet
 export async function POST(request: NextRequest) {
@@ -15,11 +16,18 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    const { eventId, side, amount, optionId } = await request.json()
+    const { eventId, side, amount, optionId, type = 'BUY' } = await request.json()
 
-    if (!eventId || !side || !amount) {
+    if (!eventId || !side || !amount || !type) {
       return NextResponse.json(
-        { message: 'Event ID, side, and amount are required' },
+        { message: 'Event ID, side, amount, and type are required' },
+        { status: 400 }
+      )
+    }
+
+    if (type !== 'BUY' && type !== 'SELL') {
+      return NextResponse.json(
+        { message: 'Type must be BUY or SELL' },
         { status: 400 }
       )
     }
@@ -79,11 +87,45 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (Number(user.virtualBalance) < amount) {
+    // For BUY operations, check if user has sufficient balance
+    if (type === 'BUY' && Number(user.virtualBalance) < amount) {
       return NextResponse.json(
         { message: 'Insufficient balance' },
         { status: 400 }
       )
+    }
+
+    // For SELL operations, validate user has sufficient shares to sell
+    if (type === 'SELL') {
+      const userBets = await prisma.bet.findMany({
+        where: {
+          userId: session.user.id,
+          eventId,
+          ...(event.marketType === 'MULTIPLE' && optionId ? { optionId } : {}),
+          // Don't filter by side here - we need all bets to calculate net position
+        },
+        include: {
+          user: {
+            select: {
+              id: true,
+              displayName: true,
+              username: true,
+            },
+          },
+        },
+      })
+
+      // Calculate net shares for the side being sold using the same logic as position calculation
+      const sideShares = userBets
+        .filter(bet => bet.side === side)
+        .reduce((sum, bet) => sum + Number(bet.shares), 0)
+
+      if (sideShares < amount) {
+        return NextResponse.json(
+          { message: `Insufficient ${side} shares to sell. You have ${sideShares.toFixed(2)} shares.` },
+          { status: 400 }
+        )
+      }
     }
 
     // For multiple choice markets, validate optionId and get option price
@@ -112,19 +154,47 @@ export async function POST(request: NextRequest) {
       currentPrice = side === 'YES' ? Number(event.yesPrice) : (100 - Number(event.yesPrice))
     }
 
-    const shares = (amount / currentPrice) * 100
+    // Calculate market impact for the bet (different logic for BUY vs SELL)
+    let shares: number
+    let averagePrice: number
+    let marketImpactResult: any
+
+    if (type === 'SELL') {
+      // For SELL operations, shares = amount (selling exact number of shares)
+      // averagePrice = current market price
+      shares = amount
+      averagePrice = currentPrice
+      marketImpactResult = {
+        totalShares: shares,
+        averagePrice: currentPrice,
+        priceImpact: 0 // Calculate actual impact later if needed
+      }
+    } else {
+      // For BUY operations, use market impact calculation
+      marketImpactResult = calculateMarketImpact(
+        amount,
+        currentPrice,
+        Number(event.totalVolume),
+        side
+      )
+      shares = marketImpactResult.totalShares
+      averagePrice = marketImpactResult.averagePrice
+    }
 
     // Start transaction to place bet and update user balance and event volume
     const result = await prisma.$transaction(async (tx) => {
-      // Create the bet
+      // Calculate the payout for SELL operations
+      const sellPayout = type === 'SELL' ? (shares * averagePrice / 100) : 0
+
+      // Create the bet (negative shares for SELL operations)
       const bet = await tx.bet.create({
         data: {
           userId: session.user.id,
           eventId,
           side,
-          amount,
-          price: currentPrice,
-          shares,
+          amount: type === 'SELL' ? sellPayout : amount, // For SELL, amount is the payout received
+          price: averagePrice,
+          shares: type === 'SELL' ? -shares : shares, // Negative shares for SELL operations
           optionId: event.marketType === 'MULTIPLE' ? optionId : null,
         },
         include: {
@@ -144,22 +214,35 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // Update user balance
-      await tx.user.update({
-        where: { id: session.user.id },
-        data: {
-          virtualBalance: {
-            decrement: amount,
+      // Update user balance (different for BUY vs SELL)
+      if (type === 'SELL') {
+        // For SELL: add the payout to user balance
+        await tx.user.update({
+          where: { id: session.user.id },
+          data: {
+            virtualBalance: {
+              increment: sellPayout,
+            },
           },
-        },
-      })
+        })
+      } else {
+        // For BUY: deduct the amount from user balance
+        await tx.user.update({
+          where: { id: session.user.id },
+          data: {
+            virtualBalance: {
+              decrement: amount,
+            },
+          },
+        })
+      }
 
-      // Update event volume
+      // Update event volume (SELL decreases volume, BUY increases it)
       await tx.event.update({
         where: { id: eventId },
         data: {
           totalVolume: {
-            increment: amount,
+            [type === 'SELL' ? 'decrement' : 'increment']: type === 'SELL' ? sellPayout : amount,
           },
         },
       })
@@ -219,7 +302,7 @@ export async function POST(request: NextRequest) {
             data: {
               price: newPrice,
               totalVolume: option.id === optionId ? {
-                increment: amount,
+                [type === 'SELL' ? 'decrement' : 'increment']: type === 'SELL' ? sellPayout : amount,
               } : undefined,
             },
           })
@@ -229,7 +312,12 @@ export async function POST(request: NextRequest) {
             data: {
               optionId: option.id,
               price: newPrice,
-              volume: option.id === optionId ? Number(option.totalVolume) + amount : Number(option.totalVolume),
+              volume: option.id === optionId ?
+                (type === 'SELL' ?
+                  Number(option.totalVolume) - sellPayout :
+                  Number(option.totalVolume) + amount
+                ) :
+                Number(option.totalVolume),
               timestamp: sharedTimestamp,
             },
           })
@@ -247,11 +335,18 @@ export async function POST(request: NextRequest) {
         const noAmount = noBets.reduce((sum, b) => sum + Number(b.amount), 0)
         const totalAmount = yesAmount + noAmount
 
-        let newYesPrice = 50 // default 50/50
-        if (totalAmount > 0) {
-          newYesPrice = (yesAmount / totalAmount) * 100
-          // Ensure price stays within reasonable bounds
-          newYesPrice = Math.max(5, Math.min(95, newYesPrice))
+        // Calculate new price using market impact
+        let newYesPrice = calculateNewMarketPrice(
+          Number(event.yesPrice),
+          totalAmount - amount, // Volume before this bet
+          amount,
+          side,
+          marketImpactResult
+        )
+
+        // Fallback to traditional calculation if needed
+        if (totalAmount === 0) {
+          newYesPrice = 50 // default 50/50
         }
 
         const newNoPrice = 100 - newYesPrice
@@ -270,7 +365,9 @@ export async function POST(request: NextRequest) {
             eventId,
             yesPrice: newYesPrice,
             noPrice: newNoPrice,
-            volume: event.totalVolume + amount,
+            volume: type === 'SELL' ?
+              Number(event.totalVolume) - sellPayout :
+              Number(event.totalVolume) + amount,
           },
         })
       }

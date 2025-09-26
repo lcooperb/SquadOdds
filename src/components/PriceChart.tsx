@@ -39,6 +39,38 @@ interface PriceChartProps {
   className?: string
 }
 
+// Function to format time for X-axis to avoid duplicates
+const formatTimeForAxis = (date: Date, index: number, allData: any[]): string => {
+  const timeStr = date.toLocaleTimeString('en-US', {
+    hour: '2-digit',
+    minute: '2-digit',
+  })
+
+  // Check if this time already exists before this index
+  const duplicatesBefore = allData.slice(0, index).some(point => {
+    const pointTime = new Date(point.timestamp).toLocaleTimeString('en-US', {
+      hour: '2-digit',
+      minute: '2-digit',
+    })
+    return pointTime === timeStr
+  })
+
+  // If there are duplicates, add seconds or show empty
+  if (duplicatesBefore) {
+    // For dense data, only show every few points to reduce clutter
+    if (index % 3 === 0) {
+      return date.toLocaleTimeString('en-US', {
+        hour: '2-digit',
+        minute: '2-digit',
+        second: '2-digit',
+      })
+    }
+    return '' // Empty string hides the label but keeps the data point
+  }
+
+  return timeStr
+}
+
 export default function PriceChart({ eventId, marketType, options, currentYesPrice, className = '' }: PriceChartProps) {
   const [data, setData] = useState<PricePoint[]>([])
   const [loading, setLoading] = useState(true)
@@ -141,15 +173,12 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
         })
 
         return dataWithCurrent.map((point, index) => ({
-          time: new Date(point.timestamp).toLocaleTimeString('en-US', {
-            hour: '2-digit',
-            minute: '2-digit',
-          }),
+          time: formatTimeForAxis(new Date(point.timestamp), index, dataWithCurrent),
           fullTime: new Date(point.timestamp).toLocaleString(),
           yesPrice: Math.round(point.yesPrice || 0),
           noPrice: Math.round(point.noPrice || 0),
           volume: point.volume || 0,
-          timestamp: point.timestamp, // Keep original timestamp
+          timestamp: new Date(point.timestamp).getTime(), // Convert to number for time scale
         }))
       })()
 
@@ -183,6 +212,7 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
       return [{
         time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
         fullTime: now.toLocaleString(),
+        timestamp: now.getTime(), // Add timestamp for time scale
         ...options.reduce((acc, option, idx) => {
           acc[option.title] = Number(option.price)
           return acc
@@ -197,7 +227,7 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
       const timeKey = point.timestamp
       if (!timestampMap.has(timeKey)) {
         timestampMap.set(timeKey, {
-          time: new Date(timeKey).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+          time: '', // Will be set later with formatTimeForAxis to avoid duplicates
           fullTime: new Date(timeKey).toLocaleString(),
           timestamp: timeKey
         })
@@ -223,7 +253,7 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
     if (now.getTime() - lastTimestamp.getTime() > 60000) {
       const currentTimeKey = now.toISOString()
       timestampMap.set(currentTimeKey, {
-        time: now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' }),
+        time: '', // Will be set later with formatTimeForAxis to avoid duplicates
         fullTime: now.toLocaleString(),
         timestamp: currentTimeKey,
         ...options.reduce((acc, option) => {
@@ -245,7 +275,7 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
       lastKnownPrices[option.title] = Number(option.price)
     })
 
-    sortedData.forEach(dataPoint => {
+    sortedData.forEach((dataPoint, index) => {
       options.forEach(option => {
         if (dataPoint[option.title] !== undefined) {
           lastKnownPrices[option.title] = dataPoint[option.title]
@@ -253,8 +283,10 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
           dataPoint[option.title] = lastKnownPrices[option.title]
         }
       })
-      // Remove timestamp helper
-      delete dataPoint.timestamp
+
+      // Keep timestamp as number for time-scale axis, but also add formatted time
+      dataPoint.timestamp = new Date(dataPoint.timestamp).getTime()
+      dataPoint.time = formatTimeForAxis(new Date(dataPoint.timestamp), index, sortedData)
     })
 
     return sortedData
@@ -300,6 +332,14 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
   if (marketType === 'MULTIPLE' && options && options.length > 0) {
     const colors = ['#f97316', '#3b82f6', '#eab308', '#64748b', '#3b82f6', '#06b6d4']
 
+    // Calculate dynamic Y-axis max based on highest option price
+    const maxPrice = Math.max(...options.map(option => Number(option.price)))
+    const dynamicMax = Math.ceil(maxPrice / 10) * 10 // Round up to nearest 10%
+    const yAxisTicks = []
+    for (let i = 0; i <= dynamicMax; i += 10) {
+      yAxisTicks.push(i)
+    }
+
     const CustomMultipleTooltip = ({ active, payload, label }: any) => {
       if (active && payload && payload.length) {
         return (
@@ -321,20 +361,32 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
       <div className={`${className}`}>
         <div className="h-64 relative rounded-lg overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 5, right: 50, left: 20, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis
-                dataKey="time"
+                dataKey="timestamp"
+                domain={['dataMin', 'dataMax']}
+                scale="time"
+                type="number"
                 stroke="#9ca3af"
                 fontSize={12}
                 tickLine={false}
+                tickFormatter={(value) => {
+                  const date = new Date(value)
+                  return date.toLocaleTimeString('en-US', {
+                    hour: '2-digit',
+                    minute: '2-digit'
+                  })
+                }}
               />
               <YAxis
-                domain={[0, 100]}
+                orientation="right"
+                domain={[0, dynamicMax]}
+                ticks={yAxisTicks}
                 stroke="#9ca3af"
                 fontSize={12}
                 tickLine={false}
-                label={{ value: 'Probability (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+                tickFormatter={(value) => `${value}%`}
               />
               <Tooltip content={<CustomMultipleTooltip />} />
               {options.map((option, index) => (
@@ -376,20 +428,32 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
     <div className={`${className}`}>
       <div className="h-64 relative rounded-lg overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 30, left: 20, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 5, right: 50, left: 20, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis
-              dataKey="time"
+              dataKey="timestamp"
+              domain={['dataMin', 'dataMax']}
+              scale="time"
+              type="number"
               stroke="#9ca3af"
               fontSize={12}
               tickLine={false}
+              tickFormatter={(value) => {
+                const date = new Date(value)
+                return date.toLocaleTimeString('en-US', {
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              }}
             />
             <YAxis
+              orientation="right"
               domain={[0, 100]}
+              ticks={[0, 20, 40, 60, 80, 100]}
               stroke="#9ca3af"
               fontSize={12}
               tickLine={false}
-              label={{ value: 'Probability (%)', angle: -90, position: 'insideLeft', style: { textAnchor: 'middle' } }}
+              tickFormatter={(value) => `${value}%`}
             />
             <Tooltip content={<CustomTooltip />} />
             <Line
