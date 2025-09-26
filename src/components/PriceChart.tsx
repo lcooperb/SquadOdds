@@ -426,7 +426,7 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
       <div className={`${className}`}>
         <div className="h-64 relative rounded-lg overflow-hidden">
           <ResponsiveContainer width="100%" height="100%">
-            <LineChart data={chartData} margin={{ top: 5, right: 50, left: 20, bottom: 5 }}>
+            <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
               <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
               <XAxis
                 dataKey="timestamp"
@@ -506,7 +506,7 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
     <div className={`${className}`}>
       <div className="h-64 relative rounded-lg overflow-hidden">
         <ResponsiveContainer width="100%" height="100%">
-          <LineChart data={chartData} margin={{ top: 5, right: 50, left: 20, bottom: 5 }}>
+          <LineChart data={chartData} margin={{ top: 5, right: 5, left: 5, bottom: 5 }}>
             <CartesianGrid strokeDasharray="3 3" stroke="#374151" />
             <XAxis
               dataKey="timestamp"

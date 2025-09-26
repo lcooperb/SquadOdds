@@ -46,7 +46,7 @@ model User {
   image           String?
   hashedPassword  String?
   venmoHandle     String?   // Venmo username for payments
-  virtualBalance  Decimal   @default(100.00)
+  virtualBalance  Decimal   @default(50000.00)
   totalWinnings   Decimal   @default(0.00)
   totalLosses     Decimal   @default(0.00)
   isAdmin         Boolean   @default(false)

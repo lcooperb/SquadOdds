@@ -41,7 +41,7 @@ export async function POST(request: NextRequest) {
         displayName,
         venmoHandle: venmoHandle || null,
         hashedPassword,
-        virtualBalance: 100, // Starting balance
+        virtualBalance: 50000, // Starting balance
       },
     })
 
