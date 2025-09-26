@@ -174,7 +174,7 @@ export default function BettingModal({
         {/* Option Selection Info for Multiple Choice */}
         {isMultipleChoice && selectedOption && (
           <div className="bg-gray-700/30 rounded-lg p-3">
-            <div className="text-sm text-gray-400 mb-1">You're betting on:</div>
+            <div className="text-sm text-gray-400 mb-1">You&apos;re betting on:</div>
             <div className="text-white font-medium">{selectedOption.title}</div>
           </div>
         )}
