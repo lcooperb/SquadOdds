@@ -101,7 +101,6 @@ export default function EditMarketModal({
       isOpen={isOpen}
       onClose={onClose}
       title="Edit Market"
-      maxWidth="max-w-3xl"
     >
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Title */}

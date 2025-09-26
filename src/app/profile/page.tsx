@@ -529,7 +529,6 @@ export default function Profile() {
                           <div className="flex items-center gap-2 mb-1">
                             <Badge
                               variant={event.resolved ? "success" : "default"}
-                              size="sm"
                             >
                               {event.resolved ? "RESOLVED" : event.status}
                             </Badge>
