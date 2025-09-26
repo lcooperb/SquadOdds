@@ -6,6 +6,7 @@ import { useSession } from "next-auth/react";
 import BettingModal from "@/components/BettingModal";
 import BettingCard from "@/components/BettingCard";
 import EditMarketModal from "@/components/EditMarketModal";
+import Navigation from "@/components/Navigation";
 import { calculateUserPosition } from "@/lib/positions";
 import { cn } from "@/lib/utils";
 import AddOptionModal from "@/components/AddOptionModal";

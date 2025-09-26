@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 import Link from "next/link";
 import MarketCard from "@/components/MarketCard";
+import Navigation from "@/components/Navigation";
 import { Button } from "@/components/ui/Button";
 import { Plus, TrendingUp, DollarSign, Users } from "lucide-react";
 

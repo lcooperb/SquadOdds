@@ -440,7 +440,7 @@ export default function Profile() {
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={getBetStatusColor(bet.status)} size="sm">
+                            <Badge variant={getBetStatusColor(bet.status)}>
                               {bet.status}
                             </Badge>
                             <span className="text-sm text-gray-400">{bet.event.category}</span>
