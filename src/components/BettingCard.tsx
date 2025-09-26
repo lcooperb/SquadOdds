@@ -364,7 +364,7 @@ export default function BettingCard({
                   <div className="bg-gray-700/30 rounded-lg p-4">
                     <div className="flex items-center justify-between">
                       <div className="flex items-center gap-2">
-                        <span className="text-white font-medium">You'll receive</span>
+                        <span className="text-white font-medium">You&apos;ll receive</span>
                         <span className="text-blue-400">💰</span>
                       </div>
                       <div className="text-2xl font-bold text-blue-400">
