@@ -6,6 +6,15 @@ interface Bet {
   price: number
   shares: number
   createdAt: string
+  user: {
+    id: string
+    displayName: string
+    username: string
+  }
+  option?: {
+    id: string
+    title: string
+  } | null
 }
 
 interface UserPosition {
@@ -21,6 +30,9 @@ export function calculateUserPosition(
 ): UserPosition | null {
   // Filter bets for this user and option/event
   const userBets = bets.filter(bet => {
+    // First filter by user ID - this was missing!
+    if (bet.user.id !== userId) return false;
+
     if (optionId) {
       return bet.optionId === optionId
     } else {

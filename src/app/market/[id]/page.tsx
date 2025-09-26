@@ -6,13 +6,13 @@ import { useSession } from "next-auth/react";
 import BettingModal from "@/components/BettingModal";
 import BettingCard from "@/components/BettingCard";
 import { calculateUserPosition } from "@/lib/positions";
+import { cn } from "@/lib/utils";
 import AddOptionModal from "@/components/AddOptionModal";
 import PriceChart from "@/components/PriceChart";
 import MarketComments from "@/components/MarketComments";
 import { Button } from "@/components/ui/Button";
 import { Badge } from "@/components/ui/Badge";
 import { Progress } from "@/components/ui/Progress";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import {
   TrendingUp,
   TrendingDown,
@@ -87,6 +87,10 @@ export default function MarketPage() {
     null
   );
   const [selectedSide, setSelectedSide] = useState<"YES" | "NO">("YES");
+  const [selectedOptionAndSide, setSelectedOptionAndSide] = useState<{
+    optionId: string;
+    side: "YES" | "NO";
+  } | null>(null);
   const [optionChanges, setOptionChanges] = useState<{
     [optionId: string]: number;
   }>({});
@@ -94,23 +98,28 @@ export default function MarketPage() {
     null
   );
 
-  // Set default option to most likely for multiple choice markets
+  // Set default option to most likely for multiple choice markets and auto-select YES
   useEffect(() => {
     if (
       event &&
       event.marketType === "MULTIPLE" &&
       event.options &&
-      event.options.length > 0 &&
-      !selectedOption
+      event.options.length > 0
     ) {
       const mostLikelyOption = event.options.reduce((prev, current) =>
         prev.price > current.price ? prev : current
       );
       setSelectedOption(mostLikelyOption);
+      setSelectedSide("YES");
+      setSelectedOptionAndSide({
+        optionId: mostLikelyOption.id,
+        side: "YES"
+      });
     }
-  }, [event, selectedOption]);
+  }, [event]);
   const [userBalance, setUserBalance] = useState<number>(100);
   const [refreshChart, setRefreshChart] = useState(0);
+  const [showMobileBettingModal, setShowMobileBettingModal] = useState(false);
 
   useEffect(() => {
     if (params.id) {
@@ -381,12 +390,17 @@ export default function MarketPage() {
 
   return (
     <>
-      <main className="container mx-auto px-4 py-8 min-h-screen">
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 lg:items-start">
+      <main className={cn(
+        "container mx-auto px-4 py-4 md:py-8 min-h-screen",
+        event.marketType === "BINARY" && session && !event.resolved && (isOngoing || !isExpired)
+          ? "pb-24 lg:pb-8"
+          : ""
+      )}>
+        <div className="flex gap-6">
           {/* Left Column - Market Info */}
-          <div className="lg:col-span-2 space-y-6">
+          <div className="flex-1 max-w-4xl space-y-4 md:space-y-6">
             {/* Header */}
-            <div className="space-y-4">
+            <div className="space-y-2 md:space-y-3">
               <div className="flex items-center gap-2">
                 <Badge variant={getCategoryColor(event.category)}>
                   {event.category}
@@ -407,61 +421,66 @@ export default function MarketPage() {
                 )}
               </div>
 
-              <h1 className="text-3xl font-bold text-white leading-tight">
+              {/* Market Creator */}
+              <div className="text-sm text-gray-400">
+                Created by <span className="text-gray-300 font-medium">{event.createdBy.displayName}</span>
+              </div>
+
+              <h1 className="text-2xl md:text-3xl font-bold text-white leading-tight">
                 {event.title}
               </h1>
 
-              <p className="text-gray-300 text-lg leading-relaxed">
+              <p className="text-gray-300 leading-relaxed">
                 {event.description}
               </p>
 
               {/* Market Stats */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                  <div className="flex items-center text-gray-400 text-sm mb-1">
-                    <DollarSign className="h-4 w-4 mr-1" />
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                <div className="bg-gray-800/30 rounded-lg p-2 border border-gray-700/50">
+                  <div className="flex items-center text-gray-400 text-xs mb-1">
+                    <DollarSign className="h-3 w-3 mr-1" />
                     Volume
                   </div>
-                  <div className="text-white font-semibold">
+                  <div className="text-white font-semibold text-sm">
                     ₺{Math.round(Number(event.totalVolume)).toLocaleString("en-US")}
                   </div>
                 </div>
 
-                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                  <div className="flex items-center text-gray-400 text-sm mb-1">
-                    <Users className="h-4 w-4 mr-1" />
+                <div className="bg-gray-800/30 rounded-lg p-2 border border-gray-700/50">
+                  <div className="flex items-center text-gray-400 text-xs mb-1">
+                    <Users className="h-3 w-3 mr-1" />
                     Traders
                   </div>
-                  <div className="text-white font-semibold">
+                  <div className="text-white font-semibold text-sm">
                     {event._count.bets}
                   </div>
                 </div>
 
-                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                  <div className="flex items-center text-gray-400 text-sm mb-1">
+                <div className="bg-gray-800/30 rounded-lg p-2 border border-gray-700/50">
+                  <div className="flex items-center text-gray-400 text-xs mb-1">
                     {isOngoing ? (
                       <>
-                        <Clock className="h-4 w-4 mr-1" />
+                        <Clock className="h-3 w-3 mr-1" />
                         Status
                       </>
                     ) : (
                       <>
-                        <Calendar className="h-4 w-4 mr-1" />
+                        <Calendar className="h-3 w-3 mr-1" />
                         Ends
                       </>
                     )}
                   </div>
-                  <div className="text-white font-semibold text-sm">
+                  <div className="text-white font-semibold text-xs">
                     {isOngoing ? "Ongoing" : endDate?.toLocaleDateString()}
                   </div>
                 </div>
 
-                <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                  <div className="flex items-center text-gray-400 text-sm mb-1">
-                    <Clock className="h-4 w-4 mr-1" />
+                <div className="bg-gray-800/30 rounded-lg p-2 border border-gray-700/50">
+                  <div className="flex items-center text-gray-400 text-xs mb-1">
+                    <Clock className="h-3 w-3 mr-1" />
                     Created
                   </div>
-                  <div className="text-white font-semibold text-sm">
+                  <div className="text-white font-semibold text-xs">
                     {new Date(event.createdAt).toLocaleDateString()}
                   </div>
                 </div>
@@ -469,10 +488,10 @@ export default function MarketPage() {
             </div>
 
             {/* Price Chart */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <BarChart3 className="h-5 w-5" />
+            <div className="border-t border-gray-700 pt-4 md:pt-6">
+              <div className="flex items-center gap-2 mb-4">
+                <BarChart3 className="h-5 w-5" />
+                <h2 className="text-lg font-semibold text-white">
                   {event.marketType === "MULTIPLE" ? (
                     "Probability Over Time"
                   ) : (
@@ -496,28 +515,25 @@ export default function MarketPage() {
                         )}
                     </div>
                   )}
-                </CardTitle>
-              </CardHeader>
-              <CardContent>
-                <PriceChart
-                  eventId={event.id}
-                  marketType={event.marketType}
-                  options={event.options}
-                  currentYesPrice={event.yesPrice}
-                  key={refreshChart}
-                />
-              </CardContent>
-            </Card>
+                </h2>
+              </div>
+              <PriceChart
+                eventId={event.id}
+                marketType={event.marketType}
+                options={event.options}
+                currentYesPrice={event.yesPrice}
+                key={refreshChart}
+              />
+            </div>
 
             {/* Multiple Choice Options - Display prominently under chart */}
             {event.marketType === "MULTIPLE" && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <CardTitle className="flex items-center gap-2">
-                      <BarChart3 className="h-5 w-5" />
-                      Betting Options
-                    </CardTitle>
+              <div className="border-t border-gray-700 pt-4 md:pt-6">
+                <div className="flex items-center justify-between mb-4">
+                  <div className="flex items-center gap-2">
+                    <BarChart3 className="h-5 w-5" />
+                    <h2 className="text-lg font-semibold text-white">Betting Options</h2>
+                  </div>
                     {session?.user?.isAdmin &&
                       !event.resolved &&
                       event.bets.length === 0 && (
@@ -531,10 +547,8 @@ export default function MarketPage() {
                           Add Option
                         </Button>
                       )}
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2">
+                </div>
+                <div className="space-y-1">
                     {event.options &&
                       [...event.options]
                         .sort((a, b) => Number(b.price) - Number(a.price))
@@ -605,33 +619,71 @@ export default function MarketPage() {
                           </div>
                         </div>
 
-                        {/* Right side - Betting buttons */}
+                        {/* Right side - Large Betting buttons */}
                         <div className="flex-shrink-0">
                           {session &&
                           !event.resolved &&
                           (isOngoing || !isExpired) ? (
-                            <div className="flex gap-2">
+                            <div className="flex gap-3">
                               <Button
-                                variant="yes"
-                                size="sm"
-                                className="min-w-[60px] px-3 py-1.5 text-xs font-medium"
+                                variant="default"
+                                size="lg"
+                                className={`min-w-[80px] md:min-w-[120px] px-2 md:px-4 py-2 md:py-4 text-sm md:text-base font-semibold transition-all hover:scale-105 !bg-green-700/30 hover:!bg-green-600/40 !text-white !border-green-700/30 ${
+                                  selectedOptionAndSide?.optionId === option.id &&
+                                  selectedOptionAndSide?.side === "YES"
+                                    ? "md:!bg-green-500 md:ring-2 md:ring-green-400 md:ring-opacity-50 md:transform md:scale-105"
+                                    : ""
+                                }`}
                                 onClick={() => {
-                                  setSelectedOption(option);
-                                  setSelectedSide("YES");
+                                  // On mobile, open modal instead of selecting
+                                  if (window.innerWidth < 768) {
+                                    setSelectedOption(option);
+                                    setSelectedSide("YES");
+                                    setShowMobileBettingModal(true);
+                                  } else {
+                                    setSelectedOption(option);
+                                    setSelectedSide("YES");
+                                    setSelectedOptionAndSide({
+                                      optionId: option.id,
+                                      side: "YES"
+                                    });
+                                  }
                                 }}
                               >
-                                {Number(option.price).toFixed(1)}¢
+                                <div className="flex items-center justify-between w-full gap-1 md:gap-2">
+                                  <div className="text-xs md:text-sm">Buy Yes</div>
+                                  <div className="font-bold text-sm md:text-lg">{Number(option.price).toFixed(1)}¢</div>
+                                </div>
                               </Button>
                               <Button
-                                variant="no"
-                                size="sm"
-                                className="min-w-[60px] px-3 py-1.5 text-xs font-medium"
+                                variant="default"
+                                size="lg"
+                                className={`min-w-[80px] md:min-w-[120px] px-2 md:px-4 py-2 md:py-4 text-sm md:text-base font-semibold transition-all hover:scale-105 !bg-red-700/30 hover:!bg-red-600/40 !text-white !border-red-700/30 ${
+                                  selectedOptionAndSide?.optionId === option.id &&
+                                  selectedOptionAndSide?.side === "NO"
+                                    ? "md:!bg-red-500 md:ring-2 md:ring-red-400 md:ring-opacity-50 md:transform md:scale-105"
+                                    : ""
+                                }`}
                                 onClick={() => {
-                                  setSelectedOption(option);
-                                  setSelectedSide("NO");
+                                  // On mobile, open modal instead of selecting
+                                  if (window.innerWidth < 768) {
+                                    setSelectedOption(option);
+                                    setSelectedSide("NO");
+                                    setShowMobileBettingModal(true);
+                                  } else {
+                                    setSelectedOption(option);
+                                    setSelectedSide("NO");
+                                    setSelectedOptionAndSide({
+                                      optionId: option.id,
+                                      side: "NO"
+                                    });
+                                  }
                                 }}
                               >
-                                {(100 - Number(option.price)).toFixed(1)}¢
+                                <div className="flex items-center justify-between w-full gap-1 md:gap-2">
+                                  <div className="text-xs md:text-sm">Buy No</div>
+                                  <div className="font-bold text-sm md:text-lg">{(100 - Number(option.price)).toFixed(1)}¢</div>
+                                </div>
                               </Button>
                             </div>
                           ) : !session ? (
@@ -649,35 +701,34 @@ export default function MarketPage() {
                         </div>
                       </div>
                     ))}
-                  </div>
+                </div>
 
-                  {(!session ||
-                    event.resolved ||
-                    (!isOngoing && isExpired)) && (
-                    <div className="text-center py-6 text-gray-400">
-                      {event.resolved
-                        ? "Market Resolved"
-                        : !isOngoing
-                          ? "Market Expired"
-                          : "Market Inactive"}
-                    </div>
-                  )}
-                </CardContent>
-              </Card>
+                {(!session ||
+                  event.resolved ||
+                  (!isOngoing && isExpired)) && (
+                  <div className="text-center py-6 text-gray-400">
+                    {event.resolved
+                      ? "Market Resolved"
+                      : !isOngoing
+                        ? "Market Expired"
+                        : "Market Inactive"}
+                  </div>
+                )}
+              </div>
             )}
 
             {/* Market Discussion */}
             <MarketComments eventId={event.id} activity={event.bets} />
           </div>
 
-          {/* Right Column - Trading Interface */}
+          {/* Right Column - Trading Interface (Desktop only) */}
           {(event.marketType === "BINARY" ||
             event.marketType === "MULTIPLE") && (
-            <div className="space-y-6 sticky top-24 self-start">
-              {/* Multiple Choice Betting Card */}
-              {event.marketType === "MULTIPLE" ? (
+            <div className="w-80 flex-shrink-0 hidden lg:block">
+              <div className="sticky top-8">
+                {/* Betting Card */}
                 <BettingCard
-                  selectedOption={selectedOption}
+                  selectedOption={event.marketType === "MULTIPLE" ? selectedOption : null}
                   selectedSide={selectedSide}
                   event={{
                     id: event.id,
@@ -689,72 +740,40 @@ export default function MarketPage() {
                   userPosition={userPosition}
                   onPlaceBet={handlePlaceBet}
                 />
-              ) : (
-                <>
-                  {/* Binary Market Betting Card */}
-                  <BettingCard
-                    selectedOption={null}
-                    event={{
-                      id: event.id,
-                      title: event.title,
-                      marketType: event.marketType,
-                      yesPrice: event.yesPrice,
-                    }}
-                    userBalance={userBalance}
-                    userPosition={userPosition}
-                    onPlaceBet={handlePlaceBet}
-                  />
-
-                  {/* Market Info */}
-                  <Card>
-                    <CardHeader>
-                      <CardTitle className="text-lg">Market Info</CardTitle>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Created by</span>
-                        <span className="text-white">
-                          {event.createdBy.displayName}
-                        </span>
-                      </div>
-                      {!isOngoing && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">End date</span>
-                          <span className="text-white">
-                            {endDate?.toLocaleDateString()}
-                          </span>
-                        </div>
-                      )}
-                      {isOngoing && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Type</span>
-                          <Badge variant="warning">
-                            <Clock className="h-3 w-3 mr-1" />
-                            Ongoing
-                          </Badge>
-                        </div>
-                      )}
-                      <div className="flex justify-between">
-                        <span className="text-gray-400">Status</span>
-                        <span className="text-white capitalize">
-                          {event.status.toLowerCase()}
-                        </span>
-                      </div>
-                      {event.resolved && (
-                        <div className="flex justify-between">
-                          <span className="text-gray-400">Outcome</span>
-                          <Badge variant={event.outcome ? "success" : "error"}>
-                            {event.outcome ? "YES" : "NO"}
-                          </Badge>
-                        </div>
-                      )}
-                    </CardContent>
-                  </Card>
-                </>
-              )}
+              </div>
             </div>
           )}
         </div>
+
+        {/* Mobile Betting Bar for Binary Markets */}
+        {event.marketType === "BINARY" && session && !event.resolved && (isOngoing || !isExpired) && (
+          <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-gray-900/95 backdrop-blur-sm border-t border-gray-700 p-4 z-50">
+            <div className="flex gap-3 max-w-md mx-auto">
+              <Button
+                variant="yes"
+                size="lg"
+                className="flex-1 py-3 font-semibold"
+                onClick={() => {
+                  setSelectedSide("YES");
+                  setShowMobileBettingModal(true);
+                }}
+              >
+                Buy Yes {yesPrice}¢
+              </Button>
+              <Button
+                variant="no"
+                size="lg"
+                className="flex-1 py-3 font-semibold"
+                onClick={() => {
+                  setSelectedSide("NO");
+                  setShowMobileBettingModal(true);
+                }}
+              >
+                Buy No {noPrice}¢
+              </Button>
+            </div>
+          </div>
+        )}
       </main>
 
       {/* Betting Modal */}
@@ -771,10 +790,38 @@ export default function MarketPage() {
             title: event.title,
             marketType: event.marketType,
             yesPrice: event.yesPrice,
+            bets: event.bets,
           }}
           selectedOption={selectedOption}
           selectedSide={selectedSide}
           userBalance={userBalance}
+          userPosition={userPosition}
+          userId={session?.user?.id}
+          onPlaceBet={handlePlaceBet}
+        />
+      )}
+
+      {/* Mobile Betting Modal */}
+      {showMobileBettingModal && session && (
+        <BettingModal
+          isOpen={showMobileBettingModal}
+          onClose={() => {
+            setShowMobileBettingModal(false);
+            setSelectedOption(null);
+            setSelectedSide("YES");
+          }}
+          event={{
+            id: event.id,
+            title: event.title,
+            marketType: event.marketType,
+            yesPrice: event.yesPrice,
+            bets: event.bets,
+          }}
+          selectedOption={selectedOption}
+          selectedSide={selectedSide}
+          userBalance={userBalance}
+          userPosition={userPosition}
+          userId={session?.user?.id}
           onPlaceBet={handlePlaceBet}
         />
       )}

@@ -44,12 +44,13 @@ interface Holder {
     username: string
     image?: string
   }
-  yesShares: number
-  noShares: number
-  yesAmount: number
-  noAmount: number
+  yesShares?: number
+  noShares?: number
+  yesAmount?: number
+  noAmount?: number
   totalAmount: number
-  position: 'YES' | 'NO' | 'NEUTRAL'
+  position: 'YES' | 'NO' | 'NEUTRAL' | 'MULTIPLE'
+  optionPositions?: { [optionId: string]: { optionTitle: string, yesShares: number, noShares: number, amount: number } }
 }
 
 interface Activity {
@@ -63,6 +64,10 @@ interface Activity {
     id: string
     displayName: string
     username: string
+  }
+  option?: {
+    id: string
+    title: string
   }
 }
 
@@ -220,88 +225,90 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
     const isExpanded = expandedReplies.has(comment.id)
 
     return (
-      <div key={comment.id} className={`${isReply ? 'ml-8 border-l border-gray-700 pl-4' : ''}`}>
-        <div className="bg-gray-800/30 rounded-lg p-4">
-          <div className="flex items-start justify-between mb-2">
-            <div className="flex items-center gap-2">
-              <div className="w-8 h-8 bg-purple-600 rounded-full flex items-center justify-center">
-                <span className="text-white text-sm font-medium">
-                  {comment.user.displayName.charAt(0).toUpperCase()}
-                </span>
-              </div>
-              <div>
-                <div className="flex items-center gap-2">
-                  <span className="text-white font-medium">{comment.user.displayName}</span>
-                  {userPosition && getPositionBadge(userPosition.position)}
-                  {userPosition?.rank === 1 && <Crown className="h-3 w-3 text-yellow-400" />}
-                </div>
-                <span className="text-gray-400 text-sm">@{comment.user.username}</span>
-              </div>
-            </div>
-            <span className="text-gray-400 text-sm">
-              {new Date(comment.createdAt).toLocaleString()}
+      <div key={comment.id} className={`${isReply ? 'ml-8 border-l border-gray-700 pl-4' : ''} space-y-3`}>
+        <div className="flex items-start gap-3">
+          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
+            <span className="text-white text-sm font-medium">
+              {comment.user.displayName.charAt(0).toUpperCase()}
             </span>
           </div>
 
-          <p className="text-gray-300 mb-3">{comment.content}</p>
+          <div className="flex-1 min-w-0">
+            <div className="flex items-center gap-2 mb-1">
+              <span className="text-white font-medium">{comment.user.displayName}</span>
+              {userPosition && getPositionBadge(userPosition.position)}
+              {userPosition?.rank === 1 && <Crown className="h-3 w-3 text-yellow-400" />}
+              <span className="text-gray-400 text-sm">
+                {new Date(comment.createdAt).toLocaleTimeString([], {
+                  hour: '2-digit',
+                  minute: '2-digit',
+                  hour12: false
+                })}
+              </span>
+            </div>
 
-          <div className="flex items-center gap-4">
-            <button
-              onClick={() => handleLikeComment(comment.id)}
-              disabled={!session}
-              className={`flex items-center gap-1 text-sm transition-colors ${
-                isLikedByUser(comment)
-                  ? 'text-red-400 hover:text-red-300'
-                  : 'text-gray-400 hover:text-white'
-              } disabled:opacity-50 disabled:cursor-not-allowed`}
-            >
-              <Heart className={`h-4 w-4 ${isLikedByUser(comment) ? 'fill-current' : ''}`} />
-              <span>{comment._count.likes}</span>
-            </button>
+            <div className="text-gray-300 break-words" style={{ wordWrap: 'break-word', overflowWrap: 'break-word' }}>
+              {comment.content}
+            </div>
 
-            {!isReply && (
+            <div className="flex items-center gap-4 mt-2">
               <button
-                onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                onClick={() => handleLikeComment(comment.id)}
                 disabled={!session}
-                className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                className={`flex items-center gap-1 text-sm transition-colors ${
+                  isLikedByUser(comment)
+                    ? 'text-red-400 hover:text-red-300'
+                    : 'text-gray-400 hover:text-white'
+                } disabled:opacity-50 disabled:cursor-not-allowed`}
               >
-                <Reply className="h-4 w-4" />
-                <span>Reply</span>
+                <Heart className={`h-4 w-4 ${isLikedByUser(comment) ? 'fill-current' : ''}`} />
+                <span>{comment._count.likes}</span>
               </button>
-            )}
 
-            {!isReply && comment.replies && comment.replies.length > 0 && (
-              <button
-                onClick={() => toggleReplies(comment.id)}
-                className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
-              >
-                {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
-                <span>{comment._count.replies} {comment._count.replies === 1 ? 'reply' : 'replies'}</span>
-              </button>
+              {!isReply && (
+                <button
+                  onClick={() => setReplyingTo(replyingTo === comment.id ? null : comment.id)}
+                  disabled={!session}
+                  className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                >
+                  <Reply className="h-4 w-4" />
+                  <span>Reply</span>
+                </button>
+              )}
+
+              {!isReply && comment.replies && comment.replies.length > 0 && (
+                <button
+                  onClick={() => toggleReplies(comment.id)}
+                  className="flex items-center gap-1 text-sm text-gray-400 hover:text-white transition-colors"
+                >
+                  {isExpanded ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+                  <span>{comment._count.replies} {comment._count.replies === 1 ? 'reply' : 'replies'}</span>
+                </button>
+              )}
+            </div>
+
+            {replyingTo === comment.id && (
+              <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-3">
+                <div className="flex gap-2">
+                  <textarea
+                    value={replyContent}
+                    onChange={(e) => setReplyContent(e.target.value)}
+                    placeholder="Write a reply..."
+                    className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
+                    rows={2}
+                    maxLength={1000}
+                  />
+                  <Button type="submit" size="sm" disabled={!replyContent.trim()}>
+                    <Send className="h-4 w-4" />
+                  </Button>
+                </div>
+              </form>
             )}
           </div>
-
-          {replyingTo === comment.id && (
-            <form onSubmit={(e) => handleSubmitReply(e, comment.id)} className="mt-3">
-              <div className="flex gap-2">
-                <textarea
-                  value={replyContent}
-                  onChange={(e) => setReplyContent(e.target.value)}
-                  placeholder="Write a reply..."
-                  className="flex-1 px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  rows={2}
-                  maxLength={1000}
-                />
-                <Button type="submit" size="sm" disabled={!replyContent.trim()}>
-                  <Send className="h-4 w-4" />
-                </Button>
-              </div>
-            </form>
-          )}
         </div>
 
         {!isReply && isExpanded && comment.replies && (
-          <div className="mt-4 space-y-4">
+          <div className="ml-8 space-y-4">
             {comment.replies.map(reply => renderComment(reply, true))}
           </div>
         )}
@@ -310,63 +317,69 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
   }
 
   return (
-    <Card>
-      <CardHeader>
-        <div className="flex items-center justify-between">
-          <CardTitle className="flex items-center gap-2">
-            <MessageCircle className="h-5 w-5" />
-            Discussion
-          </CardTitle>
-          <div className="flex gap-2">
-            <Button
-              variant={activeTab === 'comments' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('comments')}
-            >
-              Comments
-            </Button>
-            <Button
-              variant={activeTab === 'holders' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('holders')}
-            >
-              <Users className="h-4 w-4 mr-1" />
-              Top Holders
-            </Button>
-            <Button
-              variant={activeTab === 'activity' ? 'primary' : 'ghost'}
-              size="sm"
-              onClick={() => setActiveTab('activity')}
-            >
-              <Activity className="h-4 w-4 mr-1" />
-              Activity
-            </Button>
-          </div>
+    <div>
+      {/* Tab Navigation */}
+      <div className="border-b border-gray-700">
+        <div className="flex">
+          <button
+            onClick={() => setActiveTab('comments')}
+            className={`px-6 py-4 text-left font-medium transition-colors relative ${
+              activeTab === 'comments'
+                ? 'text-white border-b-2 border-blue-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Comments ({comments.length})
+          </button>
+          <button
+            onClick={() => setActiveTab('holders')}
+            className={`px-6 py-4 text-left font-medium transition-colors relative ${
+              activeTab === 'holders'
+                ? 'text-white border-b-2 border-blue-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Top Holders
+          </button>
+          <button
+            onClick={() => setActiveTab('activity')}
+            className={`px-6 py-4 text-left font-medium transition-colors relative ${
+              activeTab === 'activity'
+                ? 'text-white border-b-2 border-blue-500'
+                : 'text-gray-400 hover:text-white'
+            }`}
+          >
+            Activity
+          </button>
         </div>
-      </CardHeader>
-      <CardContent>
+      </div>
+      <div className="p-6">
         {activeTab === 'comments' && (
           <div className="space-y-6">
             {/* New Comment Form */}
             {session ? (
-              <form onSubmit={handleSubmitComment} className="space-y-3">
-                <textarea
-                  value={newComment}
-                  onChange={(e) => setNewComment(e.target.value)}
-                  placeholder="Share your thoughts on this market..."
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:border-transparent resize-none"
-                  rows={3}
-                  maxLength={1000}
-                />
-                <div className="flex items-center justify-between">
-                  <span className="text-gray-400 text-sm">
-                    {1000 - newComment.length} characters remaining
-                  </span>
-                  <Button type="submit" disabled={!newComment.trim()}>
-                    Post Comment
-                  </Button>
-                </div>
-              </form>
+              <div className="bg-gray-800/30 rounded-lg border border-gray-700 p-4">
+                <form onSubmit={handleSubmitComment} className="space-y-3">
+                  <textarea
+                    value={newComment}
+                    onChange={(e) => setNewComment(e.target.value)}
+                    placeholder="Add a comment"
+                    className="w-full px-3 py-3 bg-transparent border-0 text-white placeholder-gray-500 focus:outline-none resize-none text-base"
+                    rows={1}
+                    maxLength={1000}
+                    style={{ minHeight: '44px', wordWrap: 'break-word' }}
+                  />
+                  <div className="flex items-center justify-end">
+                    <Button
+                      type="submit"
+                      disabled={!newComment.trim()}
+                      className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 text-sm font-medium"
+                    >
+                      Post
+                    </Button>
+                  </div>
+                </form>
+              </div>
             ) : (
               <div className="text-center py-4 text-gray-400">
                 <MessageCircle className="h-12 w-12 mx-auto mb-2" />
@@ -375,17 +388,23 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
             )}
 
             {/* Sort Options */}
-            <div className="flex items-center gap-2">
-              <span className="text-gray-400 text-sm">Sort by:</span>
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value)}
-                className="px-2 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-purple-500"
-              >
-                <option value="newest">Newest</option>
-                <option value="oldest">Oldest</option>
-                <option value="most_liked">Most Liked</option>
-              </select>
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="text-gray-400 text-sm">Sort by:</span>
+                <select
+                  value={sortBy}
+                  onChange={(e) => setSortBy(e.target.value)}
+                  className="px-3 py-1 bg-gray-800 border border-gray-600 rounded text-white text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="newest">Newest</option>
+                  <option value="oldest">Oldest</option>
+                  <option value="most_liked">Most Liked</option>
+                </select>
+                <label className="flex items-center gap-2 text-gray-400 text-sm ml-4">
+                  <input type="checkbox" className="rounded border-gray-600 bg-gray-800" />
+                  Holders
+                </label>
+              </div>
             </div>
 
             {/* Comments List */}
@@ -411,32 +430,70 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
               <div className="text-center py-8 text-gray-400">Loading holders...</div>
             ) : holders.length > 0 ? (
               holders.map((holder) => (
-                <div key={holder.user.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
-                  <div className="flex items-center gap-3">
-                    <div className="flex items-center justify-center w-8 h-8 bg-gray-700 rounded-full">
-                      {holder.rank <= 3 ? (
-                        <Crown className={`h-4 w-4 ${
-                          holder.rank === 1 ? 'text-yellow-400' :
-                          holder.rank === 2 ? 'text-gray-300' : 'text-orange-400'
-                        }`} />
-                      ) : (
-                        <span className="text-gray-400 font-bold text-sm">#{holder.rank}</span>
-                      )}
-                    </div>
-                    <div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-white font-medium">{holder.user.displayName}</span>
-                        {getPositionBadge(holder.position)}
+                <div key={holder.user.id} className="bg-gray-800/30 rounded-lg">
+                  <div className="flex items-center justify-between p-4">
+                    <div className="flex items-center gap-3">
+                      <div className="flex items-center justify-center w-8 h-8 bg-gray-700 rounded-full">
+                        {holder.rank <= 3 ? (
+                          <Crown className={`h-4 w-4 ${
+                            holder.rank === 1 ? 'text-yellow-400' :
+                            holder.rank === 2 ? 'text-gray-300' : 'text-orange-400'
+                          }`} />
+                        ) : (
+                          <span className="text-gray-400 font-bold text-sm">#{holder.rank}</span>
+                        )}
                       </div>
-                      <span className="text-gray-400 text-sm">@{holder.user.username}</span>
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-medium">{holder.user.displayName}</span>
+                          {getPositionBadge(holder.position)}
+                        </div>
+                        <span className="text-gray-400 text-sm">@{holder.user.username}</span>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <div className="text-white font-medium">₺{Math.round(holder.totalAmount).toLocaleString("en-US")}</div>
+                      <div className="text-gray-400 text-sm">
+                        {holder.position === 'MULTIPLE' ? (
+                          `${Object.keys(holder.optionPositions || {}).length} positions`
+                        ) : (
+                          `${(holder.yesShares || 0).toFixed(0)} YES, ${(holder.noShares || 0).toFixed(0)} NO`
+                        )}
+                      </div>
                     </div>
                   </div>
-                  <div className="text-right">
-                    <div className="text-white font-medium">₺{Math.round(holder.totalAmount).toLocaleString("en-US")}</div>
-                    <div className="text-gray-400 text-sm">
-                      {holder.yesShares.toFixed(0)} YES, {holder.noShares.toFixed(0)} NO
+
+                  {/* Show detailed positions for multiple choice markets */}
+                  {holder.position === 'MULTIPLE' && holder.optionPositions && (
+                    <div className="border-t border-gray-700/50 px-4 pb-4">
+                      <div className="grid gap-2 mt-3">
+                        {Object.entries(holder.optionPositions)
+                          .filter(([_, position]) => position.yesShares > 0 || position.noShares > 0) // Show positions they actually hold (YES or NO)
+                          .sort((a, b) => b[1].amount - a[1].amount) // Sort by amount invested
+                          .slice(0, 5) // Show top 5 positions to avoid clutter
+                          .map(([optionId, position]) => (
+                          <div key={optionId} className="flex justify-between items-center text-sm">
+                            <span className="text-gray-300 truncate flex-1 mr-2">
+                              {position.optionTitle}
+                            </span>
+                            <span className="text-gray-400 text-xs">
+                              {position.yesShares > 0 && position.noShares > 0
+                                ? `${Math.round(position.yesShares)} YES, ${Math.round(position.noShares)} NO`
+                                : position.yesShares > 0
+                                ? `${Math.round(position.yesShares)} YES`
+                                : `${Math.round(position.noShares)} NO`
+                              }
+                            </span>
+                          </div>
+                        ))}
+                        {Object.entries(holder.optionPositions || {}).filter(([_, position]) => position.yesShares > 0 || position.noShares > 0).length > 5 && (
+                          <div className="text-xs text-gray-500 text-center mt-1">
+                            +{Object.entries(holder.optionPositions || {}).filter(([_, position]) => position.yesShares > 0 || position.noShares > 0).length - 5} more positions
+                          </div>
+                        )}
+                      </div>
                     </div>
-                  </div>
+                  )}
                 </div>
               ))
             ) : (
@@ -457,7 +514,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
                     <div className={`w-2 h-2 rounded-full ${bet.side === 'YES' ? 'bg-green-400' : bet.side === 'NO' ? 'bg-red-400' : 'bg-gray-400'}`} />
                     <div>
                       <div className="text-white font-medium">
-                        {bet.user.displayName} bought {bet.side || 'UNKNOWN'}
+                        {bet.user.displayName} bought {bet.side || 'UNKNOWN'}{bet.option ? ` on ${bet.option.title}` : ''}
                       </div>
                       <div className="text-gray-400 text-sm">
                         {new Date(bet.createdAt).toLocaleString()}
@@ -480,7 +537,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
             )}
           </div>
         )}
-      </CardContent>
-    </Card>
+      </div>
+    </div>
   )
 }

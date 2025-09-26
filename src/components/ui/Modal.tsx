@@ -11,9 +11,10 @@ interface ModalProps {
   title?: string
   children: ReactNode
   className?: string
+  isBottomSheet?: boolean
 }
 
-export function Modal({ isOpen, onClose, title, children, className }: ModalProps) {
+export function Modal({ isOpen, onClose, title, children, className, isBottomSheet = false }: ModalProps) {
   useEffect(() => {
     const handleEscape = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
@@ -35,16 +36,24 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
   if (!isOpen) return null
 
   return createPortal(
-    <div className="fixed inset-0 z-50 flex items-center justify-center">
+    <div className={cn(
+      "fixed inset-0 z-50",
+      isBottomSheet
+        ? "flex items-end justify-center md:items-center md:justify-center"
+        : "flex items-center justify-center"
+    )}>
       {/* Backdrop */}
       <div
-        className="absolute inset-0 bg-black/50 backdrop-blur-sm"
+        className="absolute inset-0 bg-black/50 backdrop-blur-sm transition-opacity duration-300"
         onClick={onClose}
       />
 
       {/* Modal */}
       <div className={cn(
-        'relative z-10 w-full max-w-md mx-4 bg-gray-800 rounded-lg border border-gray-700 shadow-xl',
+        'relative z-10 w-full bg-gray-800 border border-gray-700 shadow-xl transition-all duration-300 ease-out',
+        isBottomSheet
+          ? 'max-w-full rounded-t-2xl md:max-w-md md:mx-4 md:rounded-lg transform animate-slide-up md:animate-none'
+          : 'max-w-md mx-4 rounded-lg transform animate-fade-in',
         className
       )}>
         {title && (
@@ -59,7 +68,10 @@ export function Modal({ isOpen, onClose, title, children, className }: ModalProp
           </div>
         )}
 
-        <div className="p-6">
+        <div className={cn(
+          "p-6",
+          isBottomSheet && "pb-8 max-h-[80vh] overflow-y-auto"
+        )}>
           {children}
         </div>
       </div>
