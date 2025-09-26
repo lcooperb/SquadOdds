@@ -626,7 +626,7 @@ export default function MarketPage() {
                           (isOngoing || !isExpired) ? (
                             <div className="flex gap-3">
                               <Button
-                                variant="default"
+                                variant="primary"
                                 size="lg"
                                 className={`min-w-[80px] md:min-w-[120px] px-2 md:px-4 py-2 md:py-4 text-sm md:text-base font-semibold transition-all hover:scale-105 !bg-green-700/30 hover:!bg-green-600/40 !text-white !border-green-700/30 ${
                                   selectedOptionAndSide?.optionId === option.id &&
@@ -656,7 +656,7 @@ export default function MarketPage() {
                                 </div>
                               </Button>
                               <Button
-                                variant="default"
+                                variant="primary"
                                 size="lg"
                                 className={`min-w-[80px] md:min-w-[120px] px-2 md:px-4 py-2 md:py-4 text-sm md:text-base font-semibold transition-all hover:scale-105 !bg-red-700/30 hover:!bg-red-600/40 !text-white !border-red-700/30 ${
                                   selectedOptionAndSide?.optionId === option.id &&
