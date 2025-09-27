@@ -62,6 +62,7 @@ interface EventDetail {
     optionId: string | null;
     amount: number;
     price: number;
+    shares: number;
     positionSize: number; // Database 'shares' field stores position values in AMM
     createdAt: string;
     user: {
