@@ -90,7 +90,7 @@ export async function PUT(
       console.log('Payment approved and balance updated', { paymentId: params.id, newBalance: result.user.virtualBalance })
 
       return NextResponse.json({
-        message: `Payment approved! $${Number(payment.amount).toFixed(2)} added to ${result.user.displayName}'s account.`,
+        message: `Payment approved! $${Number(payment.amount).toFixed(2)} added to ${result.user.name}'s account.`,
         payment: result.payment,
         user: result.user,
       })
