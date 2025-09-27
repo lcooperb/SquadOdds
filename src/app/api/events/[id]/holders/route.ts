@@ -149,7 +149,7 @@ export async function GET(
           const profitLoss = totalCurrentValue - holding.totalAmount
 
           // Find primary position (largest position by value)
-          let primaryOption = null
+          let primaryOption: { optionId: string; title: string; value: number; amount: number } | null = null
           let primaryValue = 0
           Object.entries(enhancedOptionPositions).forEach(([optionId, position]) => {
             if (position.currentValue > primaryValue) {
