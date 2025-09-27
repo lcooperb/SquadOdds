@@ -196,7 +196,7 @@ async function processAutoPayment(data: AutoPaymentData) {
       })
     })
 
-    console.log(`Auto-processed payment: ${amount} USD added to balance for ${user.displayName}`)
+    console.log(`Auto-processed payment: ${amount} USD added to balance for ${user.name}`)
 
     // Optional: Send notification to user about token deposit
     // await sendPaymentConfirmationEmail(user, amount, tokensToAdd)

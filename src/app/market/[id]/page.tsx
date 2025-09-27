@@ -53,7 +53,7 @@ interface EventDetail {
   options?: MarketOption[];
   createdBy: {
     id: string;
-    displayName: string;
+    name: string;
     username: string;
   };
   bets: Array<{
@@ -66,7 +66,7 @@ interface EventDetail {
     createdAt: string;
     user: {
       id: string;
-      displayName: string;
+      name: string;
       username: string;
     };
     option?: {
@@ -444,7 +444,7 @@ export default function MarketPage() {
 
               {/* Market Creator */}
               <div className="text-sm text-gray-400">
-                Created by <span className="text-gray-300 font-medium">{event.createdBy.displayName}</span>
+                Created by <span className="text-gray-300 font-medium">{event.createdBy.name}</span>
               </div>
 
               <h1 className="text-2xl md:text-3xl font-bold text-white leading-tight">

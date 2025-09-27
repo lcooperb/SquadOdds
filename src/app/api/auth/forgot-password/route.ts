@@ -39,7 +39,7 @@ export async function POST(request: NextRequest) {
       to: email,
       subject: 'Reset your SquadOdds password',
       html: `
-        <p>Hello${user.displayName ? ' ' + user.displayName : ''},</p>
+        <p>Hello${user.name ? ' ' + user.name : ''},</p>
         <p>We received a request to reset your password. Click the link below to set a new password:</p>
         <p><a href="${resetUrl}">Reset your password</a></p>
         <p>This link will expire in 1 hour. If you did not request this, you can ignore this email.</p>

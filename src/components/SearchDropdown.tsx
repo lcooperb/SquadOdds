@@ -30,7 +30,7 @@ interface SearchResult {
 interface UserSearchResult {
   id: string;
   username: string;
-  displayName: string;
+  name: string;
   virtualBalance: number;
   totalWinnings: number;
   _count?: {
