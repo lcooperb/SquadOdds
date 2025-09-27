@@ -25,8 +25,7 @@ import {
 interface User {
   id: string;
   email: string;
-  username: string;
-  displayName: string;
+  name: string;
   virtualBalance: number;
   isAdmin: boolean;
   createdAt: string;
@@ -51,8 +50,7 @@ interface Event {
   winningOptionId: string | null;
   createdAt: string;
   createdBy: {
-    displayName: string;
-    username: string;
+    name: string;
   };
   options?: Array<{
     id: string;
@@ -75,7 +73,7 @@ interface Payment {
   verifiedAt: string | null;
   user: {
     email: string;
-    displayName: string;
+    name: string;
   };
 }
 
