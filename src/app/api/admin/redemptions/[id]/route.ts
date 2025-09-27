@@ -59,7 +59,7 @@ export async function PUT(
       })
 
       return NextResponse.json({
-        message: `Redemption completed! Funds were already held at request time for ${redemption.user.displayName}.`
+        message: `Redemption completed! Funds were already held at request time for ${redemption.user.name}.`
       })
     } else if (action === 'reject') {
       // Refund held funds back to user and mark as rejected
@@ -82,7 +82,7 @@ export async function PUT(
       ])
 
       return NextResponse.json({
-        message: `Redemption rejected and $${Number(redemption.dollarAmount).toFixed(2)} refunded to ${redemption.user.displayName}.`
+        message: `Redemption rejected and $${Number(redemption.dollarAmount).toFixed(2)} refunded to ${redemption.user.name}.`
       })
     }
 
