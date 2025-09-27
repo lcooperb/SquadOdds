@@ -167,9 +167,7 @@ export async function GET(
           })
 
           // Simple position description
-          const positionDescription = primaryOption?.amount && primaryOption?.title
-            ? `Betting $${Math.round(primaryOption.amount)} on "${primaryOption.title}"`
-            : `Multiple positions`
+          const positionDescription = `Multiple positions`
 
           return {
             user: holding.user,
