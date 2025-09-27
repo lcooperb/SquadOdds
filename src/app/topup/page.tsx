@@ -31,6 +31,13 @@ export default function TopUp() {
   // Preset amounts in USD
   const predefinedAmounts: number[] = [5, 10, 25, 50, 100, 200];
 
+  // Redirect unauthenticated users to sign-in without running during render
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
   if (status === "loading") {
     return (
       <>
@@ -40,13 +47,6 @@ export default function TopUp() {
       </>
     );
   }
-
-  // Redirect unauthenticated users to sign-in without running during render
-  useEffect(() => {
-    if (status === "unauthenticated") {
-      router.push("/auth/signin");
-    }
-  }, [status, router]);
 
   if (status === "unauthenticated") {
     return null;
@@ -311,7 +311,7 @@ export default function TopUp() {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}<br/>
-                        5. Include "{session?.user?.email}" in the message
+                        5. Include &quot;{session?.user?.email}&quot; in the message
                       </p>
                     </div>
                   </div>
