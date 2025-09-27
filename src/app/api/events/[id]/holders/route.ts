@@ -138,7 +138,10 @@ export async function GET(
             totalCurrentValue += positionCurrentValue
 
             enhancedOptionPositions[optionId] = {
-              ...position,
+              optionTitle: position.optionTitle,
+              yesPosition: position.yesPosition,
+              noPosition: position.noPosition,
+              amount: position.amount,
               currentValue: positionCurrentValue,
               yesAvgPrice: position.yesPosition > 0 ? position.amount / position.yesPosition : 0,
               noAvgPrice: position.noPosition > 0 ? position.amount / position.noPosition : 0,
