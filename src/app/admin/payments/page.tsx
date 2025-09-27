@@ -25,7 +25,7 @@ interface Payment {
   verifiedAt: string | null;
   user: {
     email: string;
-    displayName: string;
+    name: string;
   };
 }
 
