@@ -172,7 +172,6 @@ export async function POST() {
         data: {
           id: user.id,
           email: user.email,
-          username: user.username,
           name: user.name,
           hashedPassword: user.hashedPassword,
           virtualBalance: user.virtualBalance,
