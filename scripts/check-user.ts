@@ -12,7 +12,7 @@ async function checkUser() {
       select: {
         id: true,
         email: true,
-        displayName: true,
+        name: true,
         virtualBalance: true,
         isAdmin: true
       }

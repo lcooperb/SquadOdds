@@ -9,8 +9,9 @@ import { ChevronDown } from "lucide-react";
 
 interface UserPosition {
   side: "YES" | "NO";
-  shares: number;
+  positionValue: number;
   averagePrice: number;
+  potentialPayout: number;
 }
 
 interface BettingCardProps {
@@ -60,7 +61,7 @@ export default function BettingCard({
   }, [selectedSide]);
 
   // Check if user has a position to enable sell mode
-  const hasPosition = userPosition && userPosition.shares > 0;
+  const hasPosition = userPosition && userPosition.positionValue > 0;
 
   const isMultipleChoice = event.marketType === "MULTIPLE";
 
@@ -86,16 +87,18 @@ export default function BettingCard({
     totalVolume,
     side
   ) : {
-    estimatedShares: 0,
+    estimatedPosition: 0,
     estimatedAveragePrice: currentPrice,
     priceImpact: 0,
     estimatedFinalPrice: currentPrice
   };
 
-  const shares = marketImpact.estimatedShares;
-  const potentialPayout = shares;
+  const positionValue = marketImpact.estimatedPosition;
   const averagePrice = marketImpact.estimatedAveragePrice;
   const priceImpact = marketImpact.priceImpact;
+
+  // Calculate actual potential payout: what you win if your side wins
+  const potentialPayout = averagePrice > 0 ? positionValue / (averagePrice / 100) : positionValue;
 
   // Quick amount buttons
   const quickAmounts = [1, 20, 100];
@@ -236,7 +239,7 @@ export default function BettingCard({
                     onClick={() => handleQuickAmount(value)}
                     className="text-xs"
                   >
-                    +₺{value}
+                    +${value}
                   </Button>
                 ))}
                 <Button
@@ -259,7 +262,7 @@ export default function BettingCard({
                     <span className="text-green-400">💸</span>
                   </div>
                   <div className="text-3xl font-bold text-green-400">
-                    ₺
+                    $
                     {potentialPayout.toLocaleString("en-US", {
                       minimumFractionDigits: 2,
                       maximumFractionDigits: 2,
@@ -286,16 +289,16 @@ export default function BettingCard({
                 <div className="space-y-3">
                   <div className="flex justify-between items-center">
                     <span className="text-gray-300">
-                      {userPosition!.shares.toFixed(2)} {userPosition!.side} shares
+                      ${userPosition!.positionValue.toFixed(2)} {userPosition!.side} position
                     </span>
                     <span className="text-gray-400 text-sm">
                       Avg: {userPosition!.averagePrice.toFixed(1)}¢
                     </span>
                   </div>
                   <div className="flex justify-between items-center text-sm">
-                    <span className="text-gray-400">Current Value:</span>
-                    <span className="text-white">
-                      ₺{(userPosition!.shares * (userPosition!.side === "YES" ? yesPrice : noPrice) / 100).toFixed(2)}
+                    <span className="text-gray-400">Potential Payout:</span>
+                    <span className="text-green-400 font-medium">
+                      ${userPosition!.potentialPayout.toFixed(2)}
                     </span>
                   </div>
                 </div>
@@ -309,7 +312,7 @@ export default function BettingCard({
                 {/* Sell Amount Selection */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-white font-medium">Shares to sell</label>
+                    <label className="text-white font-medium">Position to sell</label>
                     <input
                       type="number"
                       value={amount}
@@ -317,7 +320,7 @@ export default function BettingCard({
                       placeholder="0"
                       className="text-2xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-32"
                       min="0"
-                      max={userPosition!.shares}
+                      max={userPosition!.positionValue}
                       step="0.01"
                     />
                   </div>
@@ -327,7 +330,7 @@ export default function BettingCard({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setAmount((userPosition!.shares * 0.25).toFixed(2))}
+                      onClick={() => setAmount((userPosition!.positionValue * 0.25).toFixed(2))}
                       className="text-xs"
                     >
                       25%
@@ -335,7 +338,7 @@ export default function BettingCard({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setAmount((userPosition!.shares * 0.5).toFixed(2))}
+                      onClick={() => setAmount((userPosition!.positionValue * 0.5).toFixed(2))}
                       className="text-xs"
                     >
                       50%
@@ -343,7 +346,7 @@ export default function BettingCard({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setAmount((userPosition!.shares * 0.75).toFixed(2))}
+                      onClick={() => setAmount((userPosition!.positionValue * 0.75).toFixed(2))}
                       className="text-xs"
                     >
                       75%
@@ -351,7 +354,7 @@ export default function BettingCard({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setAmount(userPosition!.shares.toString())}
+                      onClick={() => setAmount(userPosition!.positionValue.toString())}
                       className="text-xs"
                     >
                       All
@@ -368,11 +371,11 @@ export default function BettingCard({
                         <span className="text-blue-400">💰</span>
                       </div>
                       <div className="text-2xl font-bold text-blue-400">
-                        ₺{((amountNum * (userPosition!.side === "YES" ? yesPrice : noPrice)) / 100).toFixed(2)}
+                        ${amountNum.toFixed(2)}
                       </div>
                     </div>
                     <div className="text-sm text-gray-400 mt-1">
-                      @ {userPosition!.side === "YES" ? yesPrice : noPrice}¢ per share
+                      Selling ${amountNum.toFixed(2)} of your ${userPosition!.positionValue.toFixed(2)} position
                     </div>
                   </div>
                 )}
@@ -392,7 +395,7 @@ export default function BettingCard({
             loading ||
             !amount ||
             parseFloat(amount) <= 0 ||
-            (mode === "sell" && (!hasPosition || parseFloat(amount) > (userPosition?.shares || 0))) ||
+            (mode === "sell" && (!hasPosition || parseFloat(amount) > (userPosition?.positionValue || 0))) ||
             (mode === "buy" && parseFloat(amount) > userBalance)
           }
           className={`w-full py-3 text-white ${

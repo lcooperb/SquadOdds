@@ -15,8 +15,7 @@ export async function GET(
         createdBy: {
           select: {
             id: true,
-            displayName: true,
-            username: true,
+            name: true,
           },
         },
         options: true,
@@ -25,9 +24,8 @@ export async function GET(
             user: {
               select: {
                 id: true,
-                displayName: true,
-                username: true,
-              },
+                name: true,
+                  },
             },
             option: {
               select: {
@@ -155,8 +153,7 @@ export async function PUT(
         createdBy: {
           select: {
             id: true,
-            displayName: true,
-            username: true,
+            name: true,
           },
         },
         options: true,

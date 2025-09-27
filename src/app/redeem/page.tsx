@@ -18,9 +18,8 @@ import {
 interface UserProfile {
   id: string;
   email: string;
-  username: string;
-  displayName: string;
-  venmoHandle: string | null;
+  name: string;
+  appleCashEmail: string | null;
   virtualBalance: number;
 }
 
@@ -28,7 +27,7 @@ interface Redemption {
   id: string;
   tokenAmount: number;
   dollarAmount: number;
-  venmoHandle: string;
+  appleCashEmail: string;
   status: string;
   requestedAt: string;
   processedAt: string | null;
@@ -43,8 +42,10 @@ export default function RedeemPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [redeemAmount, setRedeemAmount] = useState("");
-  const [venmoHandle, setVenmoHandle] = useState("");
-  
+  const [appleCashEmail, setAppleCashEmail] = useState("");
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
+
 
   useEffect(() => {
     if (status === "loading") return;
@@ -65,7 +66,7 @@ export default function RedeemPage() {
       if (profileRes.ok) {
         const userData = await profileRes.json();
         setProfile(userData);
-        setVenmoHandle(userData.venmoHandle || "");
+        setAppleCashEmail(userData.appleCashEmail || "");
       }
 
       if (redemptionsRes.ok) {
@@ -81,19 +82,22 @@ export default function RedeemPage() {
 
   const handleRedeem = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!venmoHandle.trim()) {
-      alert("Please enter your Venmo handle");
+    setError(null);
+    setSuccessMessage(null);
+
+    if (!appleCashEmail.trim()) {
+      setError("Please enter your Apple Cash email");
       return;
     }
 
-    const tokens = parseInt(redeemAmount);
-    if (tokens < 100) {
-      alert("Minimum redemption is 100 tokens");
+    const dollars = parseFloat(redeemAmount);
+    if (isNaN(dollars) || dollars < 1) {
+      setError("Minimum redemption is $1");
       return;
     }
 
-    if (!profile || tokens > profile.virtualBalance) {
-      alert("Insufficient token balance");
+    if (!profile || dollars > Number(profile.virtualBalance)) {
+      setError("Insufficient balance");
       return;
     }
 
@@ -105,24 +109,24 @@ export default function RedeemPage() {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          tokenAmount: tokens,
-          venmoHandle: venmoHandle.trim(),
+          dollarAmount: dollars,
+          appleCashEmail: appleCashEmail.trim(),
         }),
       });
 
       if (response.ok) {
-        alert(
+        setSuccessMessage(
           "Redemption request submitted successfully! Admin will process your request."
         );
         setRedeemAmount("");
         fetchUserData();
       } else {
-        const error = await response.json();
-        alert(error.message || "Failed to submit redemption request");
+        const errorData = await response.json();
+        setError(errorData.message || "Failed to submit redemption request");
       }
     } catch (error) {
       console.error("Error submitting redemption:", error);
-      alert("An error occurred while submitting your request");
+      setError("An error occurred while submitting your request");
     } finally {
       setSubmitting(false);
     }
@@ -170,7 +174,7 @@ export default function RedeemPage() {
     );
   }
 
-  const dollarValue = profile.virtualBalance / 100;
+  const dollarValue = Number(profile.virtualBalance);
   const heldAmount = redemptions
     .filter((r) => r.status === "PENDING")
     .reduce((sum, r) => sum + Number(r.tokenAmount), 0);
@@ -178,9 +182,47 @@ export default function RedeemPage() {
   return (
     <main className="container mx-auto px-4 py-8 max-w-4xl">
       <div className="mb-8">
-        <h1 className="text-3xl font-bold text-white mb-2">Redeem Tokens</h1>
-        <p className="text-gray-400">Convert your tokens to real money via Venmo</p>
+        <h1 className="text-3xl font-bold text-white mb-2">Redeem Funds</h1>
+        <p className="text-gray-400">Cash out your balance via Apple Cash</p>
       </div>
+
+      {/* Success Message */}
+      {successMessage && (
+        <div className="mb-6 bg-green-600/10 border border-green-500/20 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-green-400 font-medium mb-1">Success!</h4>
+              <p className="text-green-300 text-sm">{successMessage}</p>
+            </div>
+            <button
+              onClick={() => setSuccessMessage(null)}
+              className="text-green-400 hover:text-green-300 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* Error Message */}
+      {error && (
+        <div className="mb-6 bg-red-600/10 border border-red-500/20 rounded-lg p-4">
+          <div className="flex items-start gap-3">
+            <AlertCircle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+            <div className="flex-1">
+              <h4 className="text-red-400 font-medium mb-1">Error</h4>
+              <p className="text-red-300 text-sm">{error}</p>
+            </div>
+            <button
+              onClick={() => setError(null)}
+              className="text-red-400 hover:text-red-300 transition-colors"
+            >
+              <X className="h-4 w-4" />
+            </button>
+          </div>
+        </div>
+      )}
 
       {/* Current Balance */}
       <Card className="mb-6">
@@ -193,18 +235,15 @@ export default function RedeemPage() {
         <CardContent>
           <div className="text-center p-4 bg-gray-800/30 rounded-lg">
             <div className="text-3xl font-bold text-green-400 mb-2">
-              ₺{Math.round(profile.virtualBalance).toLocaleString("en-US")}
+              ${Number(profile.virtualBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
             <div className="text-gray-400">
               Available Balance ($
-              {dollarValue.toLocaleString("en-US", {
-                minimumFractionDigits: 2,
-                maximumFractionDigits: 2,
-              })} USD)
+              {dollarValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })} USD)
             </div>
             {heldAmount > 0 && (
               <div className="text-sm text-yellow-300 mt-1">
-                Held (pending): ₺{Math.round(heldAmount).toLocaleString("en-US")}
+                Held (pending): ${Number(heldAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
               </div>
             )}
           </div>
@@ -223,22 +262,22 @@ export default function RedeemPage() {
             <form onSubmit={handleRedeem} className="space-y-4">
               <div>
                 <label
-                  htmlFor="venmoHandle"
+                  htmlFor="appleCashEmail"
                   className="block text-sm font-medium text-white mb-2"
                 >
-                  Venmo Handle *
+                  Apple Cash Email *
                 </label>
                 <input
-                  type="text"
-                  id="venmoHandle"
-                  value={venmoHandle}
-                  onChange={(e) => setVenmoHandle(e.target.value)}
-                  placeholder="@your-venmo-handle"
+                  type="email"
+                  id="appleCashEmail"
+                  value={appleCashEmail}
+                  onChange={(e) => setAppleCashEmail(e.target.value)}
+                  placeholder="your-email@example.com"
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
                 <p className="mt-1 text-xs text-gray-400">
-                  Admin will send payment to this Venmo handle
+                  Payment will be sent to this email via Apple Cash
                 </p>
               </div>
 
@@ -247,32 +286,32 @@ export default function RedeemPage() {
                   htmlFor="redeemAmount"
                   className="block text-sm font-medium text-white mb-2"
                 >
-                  Token Amount *
+                  Amount (USD) *
                 </label>
                 <input
                   type="number"
                   id="redeemAmount"
                   value={redeemAmount}
                   onChange={(e) => setRedeemAmount(e.target.value)}
-                  placeholder="Enter token amount (minimum 100)"
-                  min="100"
-                  max={profile.virtualBalance}
+                  placeholder="Enter amount in USD (minimum $1)"
+                  min="1"
+                  max={Number(profile.virtualBalance)}
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
                   required
                 />
                 <div className="flex justify-between mt-1 text-xs text-gray-400">
-                  <span>Minimum: 100 tokens</span>
+                  <span>Minimum: $1</span>
                   <span>
-                    Available: ₺{Math.round(profile.virtualBalance).toLocaleString("en-US")}
+                    Available: ${Number(profile.virtualBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
                 {/* Quick-select partial redemption buttons */}
                 <div className="flex flex-wrap gap-2 mt-2">
                   {[
-                    { label: "25%", value: Math.floor(profile.virtualBalance * 0.25) },
-                    { label: "50%", value: Math.floor(profile.virtualBalance * 0.5) },
-                    { label: "75%", value: Math.floor(profile.virtualBalance * 0.75) },
-                    { label: "Max", value: profile.virtualBalance },
+                    { label: "25%", value: Math.floor(Number(profile.virtualBalance) * 0.25) },
+                    { label: "50%", value: Math.floor(Number(profile.virtualBalance) * 0.5) },
+                    { label: "75%", value: Math.floor(Number(profile.virtualBalance) * 0.75) },
+                    { label: "Max", value: Number(profile.virtualBalance) },
                   ].map((opt) => (
                     <button
                       key={opt.label}
@@ -286,17 +325,15 @@ export default function RedeemPage() {
                 </div>
               </div>
 
-              {redeemAmount && parseInt(redeemAmount) >= 100 && (
+              {redeemAmount && parseFloat(redeemAmount) >= 1 && (
                 <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <span className="text-white">You will redeem:</span>
                     <div className="text-right">
                       <div className="font-bold text-green-400">
-                        ₺{Math.round(parseInt(redeemAmount || "0")).toLocaleString("en-US")}
+                        ${Number(redeemAmount || "0").toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                       </div>
-                      <div className="text-xs text-gray-300">
-                        ≈ ${((parseInt(redeemAmount || "0") || 0) / 100).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                      </div>
+                      
                     </div>
                   </div>
                 </div>
@@ -306,23 +343,9 @@ export default function RedeemPage() {
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-gray-300">
-                    <p className="mb-2">
-                      <strong>How it works:</strong>
+                    <p>
+                      Requests are reviewed within 1-2 business days. Payment sent via Apple Cash.
                     </p>
-                    <ul className="space-y-1 text-gray-400">
-                      <li>
-                        • Your redemption request will be reviewed by an admin
-                      </li>
-                      <li>• Processing typically takes 1-2 business days</li>
-                      <li>
-                        • Payment will be sent via Venmo to the handle you
-                        provide
-                      </li>
-                      <li>
-                        • Funds will be removed from your available balance
-                        until approved
-                      </li>
-                    </ul>
                   </div>
                 </div>
               </div>
@@ -332,8 +355,8 @@ export default function RedeemPage() {
                 disabled={
                   submitting ||
                   !redeemAmount ||
-                  !venmoHandle.trim() ||
-                  parseInt(redeemAmount) < 100
+                  !appleCashEmail.trim() ||
+                  parseFloat(redeemAmount) < 1
                 }
                 className="w-full"
               >
@@ -383,7 +406,7 @@ export default function RedeemPage() {
                         })}
                       </span>
                       <span className="text-gray-400">
-                        to {redemption.venmoHandle}
+                        to {redemption.appleCashEmail}
                       </span>
                       <span className="text-gray-400">
                         {new Date(redemption.requestedAt).toLocaleDateString()}

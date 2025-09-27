@@ -41,12 +41,11 @@ model User {
   id              String    @id @default(cuid())
   email           String    @unique
   emailVerified   DateTime?
-  username        String    @unique
-  displayName     String
+  name            String    // User's name
   image           String?
   hashedPassword  String?
-  venmoHandle     String?   // Venmo username for payments
-  virtualBalance  Decimal   @default(50000.00)
+  appleCashEmail  String?   // Apple Cash email for payments
+  virtualBalance  Decimal   @default(500.00)
   totalWinnings   Decimal   @default(0.00)
   totalLosses     Decimal   @default(0.00)
   isAdmin         Boolean   @default(false)
@@ -217,7 +216,7 @@ model Redemption {
   userId        String
   tokenAmount   Decimal  // Tokens to redeem
   dollarAmount  Decimal  // Dollar equivalent (typically tokenAmount / 100)
-  venmoHandle   String   // User's Venmo handle
+  appleCashEmail String   // User's Apple Cash email
   status        String   @default("PENDING") // PENDING, APPROVED, COMPLETED, REJECTED
   requestedAt   DateTime @default(now())
   processedAt   DateTime?

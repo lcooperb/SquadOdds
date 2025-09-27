@@ -20,7 +20,7 @@ export default function SignIn() {
 
     try {
       const result = await signIn('credentials', {
-        email,
+        email: email.toLowerCase(),
         password,
         redirect: false,
       })

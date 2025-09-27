@@ -68,7 +68,6 @@ interface Event {
 interface Payment {
   id: string;
   amount: number;
-  tokens: number;
   transactionId: string;
   paymentMethod: string;
   status: string;
@@ -84,15 +83,14 @@ interface Redemption {
   id: string;
   tokenAmount: number;
   dollarAmount: number;
-  venmoHandle: string;
+  appleCashEmail: string;
   status: string;
   requestedAt: string;
   processedAt: string | null;
   adminNotes: string | null;
   user: {
     email: string;
-    displayName: string;
-    username: string;
+    name: string;
   };
 }
 
@@ -310,7 +308,7 @@ export default function AdminPanel() {
       if (response.ok) {
         const result = await response.json();
         alert(
-          `Success! Added ${result.tokensAdded} tokens to ${result.user.displayName}'s account`
+          `Success! Added $${Number(result.dollarsAdded).toFixed(2)} to ${result.user.name}'s account`
         );
 
         // Reset form
@@ -469,7 +467,7 @@ export default function AdminPanel() {
             }`}
           >
             <TrendingUp className="inline h-4 w-4 mr-2" />
-            Events ({events.length})
+            Events ({events.filter(e => !e.resolved).length})
           </button>
           <button
             onClick={() => setActiveTab("users")}
@@ -491,7 +489,7 @@ export default function AdminPanel() {
             }`}
           >
             <DollarSign className="inline h-4 w-4 mr-2" />
-            Payments
+            Payments ({payments.filter(p => p.status === "PENDING").length})
           </button>
           <button
             onClick={() => setActiveTab("redemptions")}
@@ -502,12 +500,7 @@ export default function AdminPanel() {
             }`}
           >
             <ArrowDownCircle className="inline h-4 w-4 mr-2" />
-            Redemptions ({redemptions.length})
-            {redemptions.filter((r) => r.status === "PENDING").length > 0 && (
-              <Badge variant="warning" className="ml-2">
-                {redemptions.filter((r) => r.status === "PENDING").length} Pending
-              </Badge>
-            )}
+            Redemptions ({redemptions.filter(r => r.status === "PENDING").length})
           </button>
         </div>
 
@@ -572,7 +565,7 @@ export default function AdminPanel() {
                       </div>
                     </div>
                     <div className="text-right text-sm text-gray-400">
-                      <div>by @{event.createdBy.username}</div>
+                      <div>by {event.createdBy.name}</div>
                       <div>{event._count.bets} bets</div>
                       <div>
                         $
@@ -717,18 +710,18 @@ export default function AdminPanel() {
                               {r.status === "REJECTED" && <AlertCircle className="h-3 w-3 mr-1" />}
                               {r.status}
                             </Badge>
-                            <Badge variant="secondary">@{r.user.username}</Badge>
                           </div>
                           <div className="text-sm text-gray-400 flex gap-4 flex-wrap">
-                            <span className="text-white font-medium">{r.user.displayName} ({r.user.email})</span>
-                            <span>Venmo: {r.venmoHandle}</span>
+                            <span className="text-white font-medium">{r.user.name} ({r.user.email})</span>
+                            <span>Apple Cash: {r.appleCashEmail}</span>
                             <span>{new Date(r.requestedAt).toLocaleString()}</span>
                           </div>
                         </div>
                         <div className="text-right flex items-center gap-3">
                           <div>
-                            <div className="text-white font-semibold">₺{Math.round(r.tokenAmount).toLocaleString("en-US")}</div>
-                            <div className="text-xs text-gray-400">≈ ${r.dollarAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                            <div className="text-white font-semibold">$
+                              {Number(r.dollarAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                            </div>
                           </div>
                           {r.status === "PENDING" && (
                             <div className="flex gap-2">
@@ -779,14 +772,14 @@ export default function AdminPanel() {
                     <div className="flex items-center justify-between">
                       <div>
                         <h3 className="font-medium text-white">
-                          {user.displayName}
+                          {user.name}
                         </h3>
                         <p className="text-gray-400 text-sm">
-                          @{user.username} • {user.email}
+                          {user.email}
                         </p>
                         <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
                           <span className="flex items-center gap-1">
-                            ₺{Math.round(Number(user.virtualBalance)).toLocaleString("en-US")}
+                            ${Number(user.virtualBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
                           <span>{user._count.bets} bets</span>
                           <span>{user._count.createdEvents} markets</span>
@@ -902,9 +895,9 @@ export default function AdminPanel() {
                   {amount && (
                     <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-white">Tokens to add:</span>
+                        <span className="text-white">Amount to add:</span>
                         <span className="font-bold text-green-400">
-                          {(Number(amount) * 100).toLocaleString()} tokens
+                          ${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                         </span>
                       </div>
                     </div>
@@ -995,7 +988,7 @@ export default function AdminPanel() {
                           </div>
                           <div className="flex items-center gap-4 text-sm">
                             <span className="text-white font-medium">
-                              {payment.user.displayName} ({payment.user.email})
+                              {payment.user.name} ({payment.user.email})
                             </span>
                             <span className="text-gray-400">
                               ID: {payment.transactionId}
@@ -1008,14 +1001,18 @@ export default function AdminPanel() {
                         <div className="text-right flex items-center gap-3">
                           <div>
                             <div className="text-white font-semibold">
-                              $
-                              {Number(payment.amount).toLocaleString("en-US", {
+                              ${Number(payment.amount).toLocaleString("en-US", {
                                 minimumFractionDigits: 2,
                                 maximumFractionDigits: 2,
                               })}
                             </div>
                             <div className="text-sm text-green-400">
-                              +{payment.tokens.toLocaleString()} tokens
+                              +$
+                              {Number(payment.amount).toLocaleString("en-US", {
+                                minimumFractionDigits: 2,
+                                maximumFractionDigits: 2,
+                              })}{" "}
+                              added
                             </div>
                           </div>
                           {payment.status === "PENDING" && (

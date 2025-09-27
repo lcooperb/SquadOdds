@@ -19,8 +19,7 @@ import {
 interface UserProfile {
   id: string;
   email: string;
-  username: string;
-  displayName: string;
+  name: string;
   virtualBalance: number;
   isAdmin: boolean;
   createdAt: string;
@@ -144,22 +143,12 @@ export default function Settings() {
             </CardTitle>
           </CardHeader>
           <CardContent className="space-y-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Display Name
-                </label>
-                <div className="text-gray-300 bg-gray-800 px-3 py-2 rounded-md">
-                  {profile.displayName}
-                </div>
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-white mb-2">
-                  Username
-                </label>
-                <div className="text-gray-300 bg-gray-800 px-3 py-2 rounded-md">
-                  @{profile.username}
-                </div>
+            <div>
+              <label className="block text-sm font-medium text-white mb-2">
+                Name
+              </label>
+              <div className="text-gray-300 bg-gray-800 px-3 py-2 rounded-md">
+                {profile.name}
               </div>
             </div>
 
@@ -201,7 +190,7 @@ export default function Settings() {
             <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
               <div>
                 <div className="text-2xl font-bold text-green-400">
-                  ₺{Math.round(profile.virtualBalance).toLocaleString("en-US")}
+                  ${Math.round(profile.virtualBalance).toLocaleString("en-US")}
                 </div>
                 <div className="text-sm text-gray-400">Current Balance</div>
               </div>

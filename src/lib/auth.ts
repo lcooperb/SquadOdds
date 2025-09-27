@@ -20,7 +20,7 @@ export const authOptions: NextAuthOptions = {
 
         const user = await prisma.user.findUnique({
           where: {
-            email: credentials.email
+            email: credentials.email.toLowerCase()
           }
         })
 
@@ -40,8 +40,7 @@ export const authOptions: NextAuthOptions = {
         return {
           id: user.id,
           email: user.email,
-          username: user.username,
-          displayName: user.displayName,
+          name: user.name,
           image: user.image,
           isAdmin: user.isAdmin,
         }
@@ -54,8 +53,7 @@ export const authOptions: NextAuthOptions = {
   callbacks: {
     async jwt({ token, user }) {
       if (user) {
-        token.username = user.username
-        token.displayName = user.displayName
+        token.name = user.name
         token.isAdmin = user.isAdmin
       }
       return token
@@ -63,8 +61,7 @@ export const authOptions: NextAuthOptions = {
     async session({ session, token }) {
       if (token) {
         session.user.id = token.sub!
-        session.user.username = token.username as string
-        session.user.displayName = token.displayName as string
+        session.user.name = token.name as string
         session.user.isAdmin = token.isAdmin as boolean
       }
       return session

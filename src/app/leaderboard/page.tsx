@@ -18,8 +18,7 @@ import {
 
 interface LeaderboardUser {
   id: string;
-  username: string;
-  displayName: string;
+  name: string;
   image?: string;
   virtualBalance: number;
   totalWinnings: number;
@@ -141,7 +140,7 @@ export default function Leaderboard() {
               <CardContent className="p-4 text-center">
                 <DollarSign className="h-8 w-8 text-blue-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white">
-                  ₺{Math.round(data.meta.totalVolume).toLocaleString("en-US")}
+                  ${Math.round(data.meta.totalVolume).toLocaleString("en-US")}
                 </div>
                 <div className="text-sm text-gray-400">Total Volume</div>
               </CardContent>
@@ -210,18 +209,12 @@ export default function Leaderboard() {
                               router.push(`/profile?id=${user.id}`)
                             }
                           >
-                            {user.displayName}
+                            {user.name}
                           </h3>
                           <Badge variant={getRankBadge(user.rank)}>
                             #{user.rank}
                           </Badge>
                         </div>
-                        <p
-                          className="text-gray-400 text-sm cursor-pointer hover:text-blue-400 transition-colors"
-                          onClick={() => router.push(`/profile?id=${user.id}`)}
-                        >
-                          @{user.username}
-                        </p>
                         <div className="flex items-center gap-4 mt-2 text-sm">
                           <span className="text-gray-400">
                             Joined{" "}
@@ -241,7 +234,7 @@ export default function Leaderboard() {
                               : "text-red-400"
                           }`}
                         >
-                          {user.stats.netProfit >= 0 ? "+" : "-"}₺
+                          {user.stats.netProfit >= 0 ? "+" : "-"}$
                           {Math.round(Math.abs(user.stats.netProfit)).toLocaleString("en-US")}
                         </div>
                         <div className="text-xs text-gray-400">Net Profit</div>
@@ -279,7 +272,7 @@ export default function Leaderboard() {
                     {/* Right: Current Balance */}
                     <div className="text-right">
                       <div className="text-xl font-bold text-white">
-                        ₺{Math.round(user.virtualBalance).toLocaleString()}
+                        ${Math.round(user.virtualBalance).toLocaleString()}
                       </div>
                       <div className="text-sm text-gray-400">
                         Current Balance

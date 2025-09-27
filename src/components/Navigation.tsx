@@ -125,7 +125,7 @@ export default function Navigation() {
                 <div className="text-sm text-gray-300 whitespace-nowrap">
                   <span className="text-green-400 font-semibold">
                     {userBalance !== null
-                      ? `₺${Math.round(userBalance).toLocaleString("en-US")}`
+                      ? `$${Number(userBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                       : "..."}
                   </span>
                 </div>
@@ -137,7 +137,7 @@ export default function Navigation() {
                     className="flex items-center space-x-2 text-gray-300 hover:text-white transition-colors"
                   >
                     <User className="h-5 w-5" />
-                    <span className="text-sm font-medium">{session.user.displayName}</span>
+                    <span className="text-sm font-medium">{session.user.name}</span>
                   </button>
 
                   {/* Dropdown */}
@@ -207,7 +207,7 @@ export default function Navigation() {
               <div className="text-sm text-gray-300 whitespace-nowrap">
                 <span className="text-green-400 font-semibold">
                   {userBalance !== null
-                    ? `₺${Math.round(userBalance).toLocaleString("en-US")}`
+                    ? `$${Number(userBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
                     : "..."}
                 </span>
               </div>

@@ -34,7 +34,7 @@ export async function PUT(
         user: {
           select: {
             id: true,
-            displayName: true,
+            name: true,
             email: true,
             virtualBalance: true,
           }
@@ -57,7 +57,8 @@ export async function PUT(
     }
 
     if (action === 'approve') {
-      // Approve payment and add tokens
+      // Approve payment and add USD to user balance
+      console.log('Approving payment', { paymentId: params.id, userId: payment.userId, amount: payment.amount });
       const result = await prisma.$transaction(async (tx) => {
         // Update payment status
         const updatedPayment = await tx.payment.update({
@@ -68,26 +69,28 @@ export async function PUT(
           }
         })
 
-        // Add tokens to user's balance
+        // Add USD amount to user's balance (use amount, not tokens)
         const updatedUser = await tx.user.update({
           where: { id: payment.userId },
           data: {
             virtualBalance: {
-              increment: Number(payment.tokens),
+              // Use Decimal directly to avoid any Number() conversion issues
+              increment: payment.amount as any,
             },
           },
           select: {
             virtualBalance: true,
-            displayName: true,
+            name: true,
             email: true,
           }
         })
 
         return { payment: updatedPayment, user: updatedUser }
       })
+      console.log('Payment approved and balance updated', { paymentId: params.id, newBalance: result.user.virtualBalance })
 
       return NextResponse.json({
-        message: `Payment approved! ${payment.tokens} tokens added to ${result.user.displayName}'s account.`,
+        message: `Payment approved! $${Number(payment.amount).toFixed(2)} added to ${result.user.displayName}'s account.`,
         payment: result.payment,
         user: result.user,
       })

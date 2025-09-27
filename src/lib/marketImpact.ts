@@ -8,11 +8,11 @@
 interface BetSlice {
   amount: number;
   price: number;
-  shares: number;
+  positionSize: number;
 }
 
 interface MarketImpactResult {
-  totalShares: number;
+  totalPositions: number;
   averagePrice: number;
   priceSlices: BetSlice[];
   finalPrice: number;
@@ -27,84 +27,112 @@ export function calculateMarketImpact(
   totalLiquidity: number,
   side: 'YES' | 'NO'
 ): MarketImpactResult {
-  // Base liquidity multiplier - determines how much volume moves price
-  const liquidityMultiplier = Math.max(50, totalLiquidity * 0.5); // Minimum 50 for small markets
+  // Improved AMM formula for realistic price discovery
+  // Price impact based on bet size relative to market depth
 
-  // Impact threshold - orders larger than this percentage of liquidity get sliced
-  const impactThreshold = liquidityMultiplier * 0.1; // 10% of effective liquidity
+  // Virtual liquidity that scales proportionally with market activity
+  // Smaller markets should have proportionally less depth for more responsive pricing
+  const baseK = Math.max(30, totalLiquidity * 0.8); // Reduced from 1.5 to 0.8 for more responsiveness
 
-  // If bet is small relative to liquidity, execute at single price
-  if (betAmount <= impactThreshold) {
-    const shares = (betAmount / startingPrice) * 100;
+  // Adjust liquidity based on how far from 50% the price is (less liquid near extremes for bigger moves)
+  const distanceFrom50 = Math.abs(startingPrice - 50);
+  const liquidityMultiplier = 1 + (distanceFrom50 / 200); // Reduced from 100 to 200 for less dampening
+  const k = baseK * liquidityMultiplier;
+
+  // Simplified prediction market AMM formula
+  // Price impact based on bet size relative to market depth
+  const impactFactor = betAmount / k;
+
+  // Calculate slippage: how much more expensive it gets for the user
+  const rawSlippage = impactFactor * startingPrice * 0.4; // Increased from 30% to 40% for more movement
+  const slippage = Math.sqrt(rawSlippage) * 12; // Increased from 8 to 12 for more visible impact
+
+  // Calculate the user's execution price (what they actually pay)
+  // Buying always makes it more expensive for the user due to slippage
+  const userExecutionPrice = Math.min(95, startingPrice + slippage);
+
+  // Calculate new market price after the trade
+  const newMarketPrice = side === 'YES' ?
+    Math.min(95, startingPrice + slippage * 0.9) : // Increased from 0.7 to 0.9 for more market movement
+    Math.max(5, startingPrice - slippage * 0.9);   // NO market price decrease (YES increases)
+
+  const maxPriceMove = Math.abs(newMarketPrice - startingPrice);
+  const finalPrice = newMarketPrice;
+
+  // Calculate liquidity impact ratio (bet size relative to total market liquidity)
+  const liquidityRatio = betAmount / k;
+
+  // For micro trades (< 0.05% of total liquidity), execute at user execution price
+  if (liquidityRatio < 0.0005) { // Reduced from 0.001 to 0.0005 so more trades get slippage
+    const positionSize = betAmount;
     return {
-      totalShares: shares,
-      averagePrice: startingPrice,
+      totalPositions: positionSize,
+      averagePrice: userExecutionPrice, // What the user actually pays
       priceSlices: [{
         amount: betAmount,
-        price: startingPrice,
-        shares: shares
+        price: userExecutionPrice,
+        positionSize: positionSize
       }],
-      finalPrice: startingPrice
+      finalPrice: finalPrice
     };
   }
 
-  // Large bet - split across multiple price levels
+  // For small trades (< 1% of total liquidity), single execution with start→user averaging
+  if (liquidityRatio < 0.01) { // Reduced from 0.02 to 0.01 for more multi-slice execution
+    const avgPrice = (startingPrice + userExecutionPrice) / 2;
+    const positionSize = betAmount; // Position size = bet amount in AMM
+
+    return {
+      totalPositions: positionSize,
+      averagePrice: avgPrice,
+      priceSlices: [{
+        amount: betAmount,
+        price: avgPrice,
+        positionSize: positionSize
+      }],
+      finalPrice: finalPrice
+    };
+  }
+
+  // For large trades (≥ 2% of total liquidity), split execution across price levels
+  // Scale slices based on liquidity impact: more slices for bigger relative impact
+  const numSlices = Math.min(5, Math.max(2, Math.ceil(liquidityRatio * 50)));
   const priceSlices: BetSlice[] = [];
   let remainingAmount = betAmount;
   let currentPrice = startingPrice;
-  let totalShares = 0;
+  let totalPositionSize = 0;
   let totalCost = 0;
 
-  // Calculate how many slices we need (more slices for larger impact)
-  const impactRatio = betAmount / liquidityMultiplier;
-  const numSlices = Math.min(10, Math.max(3, Math.ceil(impactRatio * 5)));
-
-  // Price movement per slice (asymptotic - gets harder to move price)
-  const maxPriceMove = Math.min(20, impactRatio * 15); // Cap at 20% price move
-
   for (let i = 0; i < numSlices && remainingAmount > 0; i++) {
-    // Amount for this slice (decreasing sizes as price moves)
-    const sliceAmount = Math.min(
-      remainingAmount,
-      betAmount / numSlices * (1.5 - (i / numSlices)) // Front-load the slices
-    );
+    const sliceAmount = Math.min(remainingAmount, betAmount / numSlices);
+    const progress = i / (numSlices - 1);
 
-    // Calculate price for this slice
-    if (side === 'YES') {
-      // Buying YES pushes price up
-      const priceIncrease = (maxPriceMove / numSlices) * Math.pow(1.2, i);
-      currentPrice = Math.min(95, startingPrice + priceIncrease);
-    } else {
-      // Buying NO pushes NO price up (YES price down)
-      const priceDecrease = (maxPriceMove / numSlices) * Math.pow(1.2, i);
-      currentPrice = Math.max(5, startingPrice - priceDecrease);
-    }
+    // Progressive price movement for user's execution price (always gets more expensive)
+    const sliceSlippage = slippage * Math.pow(progress, 1.3);
+    currentPrice = Math.min(95, startingPrice + sliceSlippage);
 
-    // Calculate shares for this slice
-    const sliceShares = (sliceAmount / currentPrice) * 100;
+    const slicePositionSize = sliceAmount; // 1:1 in AMM model
 
     priceSlices.push({
       amount: sliceAmount,
       price: currentPrice,
-      shares: sliceShares
+      positionSize: slicePositionSize
     });
 
-    totalShares += sliceShares;
+    totalPositionSize += slicePositionSize;
     totalCost += sliceAmount;
     remainingAmount -= sliceAmount;
   }
 
-  // Calculate weighted average price
-  const averagePrice = totalCost / (totalShares / 100);
-
-  // Final price after all slices (for market update)
-  const finalPrice = currentPrice;
+  // Calculate weighted average price based on actual execution prices
+  const totalWeightedPrice = priceSlices.reduce((sum, slice) => sum + (slice.price * slice.positionSize), 0);
+  const averagePrice = totalPositionSize > 0 ? totalWeightedPrice / totalPositionSize : 0;
 
   return {
-    totalShares,
-    averagePrice,
+    totalPositions: totalPositionSize,
+    averagePrice: averagePrice,
     priceSlices,
-    finalPrice
+    finalPrice: finalPrice
   };
 }
 
@@ -118,20 +146,9 @@ export function calculateNewMarketPrice(
   side: 'YES' | 'NO',
   marketImpactResult: MarketImpactResult
 ): number {
-  // Use the final price from market impact calculation
-  let newPrice = marketImpactResult.finalPrice;
-
-  // Apply additional volume-based price movement
-  const volumeImpact = betAmount / Math.max(100, totalVolumeBeforeBet);
-  const volumePriceMove = volumeImpact * 5; // 5% move per 100% volume increase
-
-  if (side === 'YES') {
-    newPrice = Math.min(95, newPrice + volumePriceMove);
-  } else {
-    newPrice = Math.max(5, newPrice - volumePriceMove);
-  }
-
-  return Math.round(newPrice * 10) / 10; // Round to 1 decimal
+  // Use the final price from market impact calculation directly
+  // No additional price movement - the market impact calculation handles everything
+  return Math.round(marketImpactResult.finalPrice * 10) / 10; // Round to 1 decimal
 }
 
 /**
@@ -143,7 +160,7 @@ export function previewMarketImpact(
   totalLiquidity: number,
   side: 'YES' | 'NO'
 ): {
-  estimatedShares: number;
+  estimatedPosition: number;
   estimatedAveragePrice: number;
   priceImpact: number;
   estimatedFinalPrice: number;
@@ -153,7 +170,7 @@ export function previewMarketImpact(
   const priceImpact = Math.abs(result.finalPrice - startingPrice);
 
   return {
-    estimatedShares: Math.round(result.totalShares * 100) / 100,
+    estimatedPosition: Math.round(result.totalPositions * 100) / 100, // Position value in AMM
     estimatedAveragePrice: Math.round(result.averagePrice * 10) / 10,
     priceImpact: Math.round(priceImpact * 10) / 10,
     estimatedFinalPrice: Math.round(result.finalPrice * 10) / 10

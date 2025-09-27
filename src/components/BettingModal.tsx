@@ -11,8 +11,9 @@ import { Calculator, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 
 interface UserPosition {
   side: "YES" | "NO";
-  shares: number;
+  positionValue: number;
   averagePrice: number;
+  potentialPayout: number;
 }
 
 interface BettingModalProps {
@@ -124,16 +125,18 @@ export default function BettingModal({
     totalVolume,
     localSelectedSide
   ) : {
-    estimatedShares: 0,
+    estimatedPosition: 0,
     estimatedAveragePrice: currentPrice,
     priceImpact: 0,
     estimatedFinalPrice: currentPrice
   };
 
-  const shares = marketImpact.estimatedShares;
-  const potentialPayout = shares;
+  const positionValue = marketImpact.estimatedPosition;
   const averagePrice = marketImpact.estimatedAveragePrice;
   const priceImpact = marketImpact.priceImpact;
+
+  // Calculate actual potential payout: what you win if your side wins
+  const potentialPayout = averagePrice > 0 ? positionValue / (averagePrice / 100) : positionValue;
 
   // Quick amount buttons
   const quickAmounts = [1, 20, 100];
@@ -264,7 +267,7 @@ export default function BettingModal({
                     onClick={() => handleQuickAmount(value)}
                     className="text-xs"
                   >
-                    +₺{value}
+                    +${value}
                   </Button>
                 ))}
                 <Button
@@ -280,28 +283,61 @@ export default function BettingModal({
 
             {/* Potential Payout */}
             {amountNum > 0 && (
-              <div className="bg-gray-700/30 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <span className="text-white font-medium">To win</span>
-                    <span className="text-green-400">💸</span>
+              <div className="space-y-3">
+                <div className="bg-gray-700/30 rounded-lg p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-white font-medium">To win</span>
+                      <span className="text-green-400">💸</span>
+                    </div>
+                    <div className="text-3xl font-bold text-green-400">
+                      $
+                      {potentialPayout.toLocaleString("en-US", {
+                        minimumFractionDigits: 2,
+                        maximumFractionDigits: 2,
+                      })}
+                    </div>
                   </div>
-                  <div className="text-3xl font-bold text-green-400">
-                    ₺
-                    {potentialPayout.toLocaleString("en-US", {
-                      minimumFractionDigits: 2,
-                      maximumFractionDigits: 2,
-                    })}
+                  <div className="text-sm text-gray-400 mt-1">
+                    Avg. Price {averagePrice.toFixed(1)}¢
+                    {priceImpact > 0.5 && (
+                      <span className="ml-2 text-orange-400">
+                        (+{priceImpact.toFixed(1)}¢ impact)
+                      </span>
+                    )}
                   </div>
                 </div>
-                <div className="text-sm text-gray-400 mt-1">
-                  Avg. Price {averagePrice.toFixed(1)}¢
-                  {priceImpact > 0.5 && (
-                    <span className="ml-2 text-orange-400">
-                      (+{priceImpact.toFixed(1)}¢ impact)
-                    </span>
-                  )}
-                </div>
+
+                {/* Market Impact Preview */}
+                {priceImpact > 0.1 && (
+                  <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-3">
+                    <div className="flex items-center gap-2 mb-2">
+                      <span className="text-blue-400 text-sm font-medium">Market Impact</span>
+                      <span className="text-blue-400">📈</span>
+                    </div>
+                    <div className="text-sm text-gray-300">
+                      Market will move from <span className="font-semibold text-white">{currentPrice}¢</span> → <span className="font-semibold text-white">{marketImpact.estimatedFinalPrice}¢</span>
+                    </div>
+                    <div className="text-xs text-gray-400 mt-1">
+                      Your bet moves the {localSelectedSide} price by {priceImpact.toFixed(1)}¢
+                    </div>
+                  </div>
+                )}
+
+                {/* Position Size Info */}
+                {positionValue !== amountNum && (
+                  <div className="bg-gray-700/20 rounded-lg p-3">
+                    <div className="text-sm text-gray-400 mb-1">Position Details</div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-300">Amount invested:</span>
+                      <span className="text-white font-medium">${amountNum.toFixed(2)}</span>
+                    </div>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-300">Position value:</span>
+                      <span className="text-white font-medium">${positionValue.toFixed(2)}</span>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -327,16 +363,16 @@ export default function BettingModal({
                       >
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-white font-medium">
-                            {position.shares.toFixed(2)} {position.side} shares
+                            ${position.positionValue.toFixed(2)} {position.side} position
                           </span>
                           <span className="text-gray-400 text-sm">
                             Avg: {position.averagePrice.toFixed(1)}¢
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-400">Current Value:</span>
-                          <span className="text-white">
-                            ₺{(position.shares * currentPrice / 100).toFixed(2)}
+                          <span className="text-gray-400">Potential Payout:</span>
+                          <span className="text-green-400 font-medium">
+                            ${position.potentialPayout.toFixed(2)}
                           </span>
                         </div>
                       </div>
@@ -358,7 +394,7 @@ export default function BettingModal({
                 {/* Sell Amount Selection */}
                 <div>
                   <div className="flex items-center justify-between mb-2">
-                    <label className="text-white font-medium">Shares to sell</label>
+                    <label className="text-white font-medium">Position to sell</label>
                     <input
                       type="number"
                       value={amount}
@@ -366,7 +402,7 @@ export default function BettingModal({
                       placeholder="0"
                       className="text-2xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-32"
                       min="0"
-                      max={positionToSell.shares}
+                      max={positionToSell.positionValue}
                       step="0.01"
                     />
                   </div>
@@ -376,7 +412,7 @@ export default function BettingModal({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setAmount((positionToSell.shares * 0.25).toFixed(2))}
+                      onClick={() => setAmount((positionToSell.positionValue * 0.25).toFixed(2))}
                       className="text-xs"
                     >
                       25%
@@ -384,7 +420,7 @@ export default function BettingModal({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setAmount((positionToSell.shares * 0.5).toFixed(2))}
+                      onClick={() => setAmount((positionToSell.positionValue * 0.5).toFixed(2))}
                       className="text-xs"
                     >
                       50%
@@ -392,7 +428,7 @@ export default function BettingModal({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setAmount((positionToSell.shares * 0.75).toFixed(2))}
+                      onClick={() => setAmount((positionToSell.positionValue * 0.75).toFixed(2))}
                       className="text-xs"
                     >
                       75%
@@ -400,7 +436,7 @@ export default function BettingModal({
                     <Button
                       variant="outline"
                       size="sm"
-                      onClick={() => setAmount(positionToSell.shares.toString())}
+                      onClick={() => setAmount(positionToSell.positionValue.toString())}
                       className="text-xs"
                     >
                       All
@@ -417,11 +453,11 @@ export default function BettingModal({
                         <span className="text-blue-400">💰</span>
                       </div>
                       <div className="text-2xl font-bold text-blue-400">
-                        ₺{((amountNum * (positionToSell.side === "YES" ? yesPrice : noPrice)) / 100).toFixed(2)}
+                        ${amountNum.toFixed(2)}
                       </div>
                     </div>
                     <div className="text-sm text-gray-400 mt-1">
-                      @ {positionToSell.side === "YES" ? yesPrice : noPrice}¢ per share
+                      Selling ${amountNum.toFixed(2)} of your ${positionToSell.positionValue.toFixed(2)} position
                     </div>
                   </div>
                 )}
@@ -441,7 +477,7 @@ export default function BettingModal({
             loading ||
             !amount ||
             parseFloat(amount) <= 0 ||
-            (mode === "sell" && (!hasAnyPosition || !positionToSell || parseFloat(amount) > (positionToSell?.shares || 0))) ||
+            (mode === "sell" && (!hasAnyPosition || !positionToSell || parseFloat(amount) > (positionToSell?.positionValue || 0))) ||
             (mode === "buy" && parseFloat(amount) > userBalance)
           }
           className={`w-full py-3 text-white ${

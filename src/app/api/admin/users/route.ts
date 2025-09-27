@@ -32,8 +32,7 @@ export async function GET(request: NextRequest) {
       select: {
         id: true,
         email: true,
-        username: true,
-        displayName: true,
+        name: true,
         virtualBalance: true,
         isAdmin: true,
         createdAt: true,

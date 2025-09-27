@@ -17,9 +17,9 @@ export async function POST(request: NextRequest) {
 
     const { amount, transactionId, paymentMethod = 'manual' } = await request.json()
 
-    if (!amount || !transactionId) {
+    if (!amount) {
       return NextResponse.json(
-        { message: 'Amount and transaction ID are required' },
+        { message: 'Amount is required' },
         { status: 400 }
       )
     }
@@ -33,9 +33,14 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Determine transactionId: use provided or auto-generate one for manual payments
+    const txId = (transactionId?.trim?.() as string | undefined) && transactionId.trim() !== ''
+      ? transactionId.trim()
+      : `manual-${Date.now()}-${session.user.id.substring(0, 6)}`
+
     // Check if transaction ID has been used before (prevent double-spending)
     const existingPayment = await prisma.payment.findUnique({
-      where: { transactionId: transactionId.trim() }
+      where: { transactionId: txId }
     })
 
     if (existingPayment) {
@@ -45,8 +50,8 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate tokens (100 tokens per $1)
-    const tokensToAdd = paymentAmount * 100
+    // USD-based wallet: keep legacy tokens field equal to USD amount for compatibility
+    const tokensToAdd = paymentAmount
 
     // Create pending payment record for admin approval
     const payment = await prisma.payment.create({
@@ -54,7 +59,7 @@ export async function POST(request: NextRequest) {
         userId: session.user.id,
         amount: paymentAmount,
         tokens: tokensToAdd,
-        transactionId: transactionId.trim(),
+        transactionId: txId,
         paymentMethod,
         status: 'PENDING', // Requires admin approval
       }
@@ -63,7 +68,7 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({
       message: 'Payment request submitted successfully. An admin will review and approve your payment shortly.',
       payment: payment,
-      tokensRequested: tokensToAdd,
+      dollarsRequested: tokensToAdd,
     })
   } catch (error) {
     console.error('Error verifying payment:', error)

@@ -37,8 +37,7 @@ export async function GET(
         user: {
           select: {
             id: true,
-            displayName: true,
-            username: true,
+            name: true,
             image: true,
           },
         },
@@ -52,9 +51,8 @@ export async function GET(
             user: {
               select: {
                 id: true,
-                displayName: true,
-                username: true,
-                image: true,
+                name: true,
+                    image: true,
               },
             },
             likes: {
@@ -174,8 +172,7 @@ export async function POST(
         user: {
           select: {
             id: true,
-            displayName: true,
-            username: true,
+            name: true,
             image: true,
           },
         },

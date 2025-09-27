@@ -18,7 +18,6 @@ import {
 interface Payment {
   id: string;
   amount: number;
-  tokens: number;
   transactionId: string;
   paymentMethod: string;
   status: string;
@@ -92,7 +91,7 @@ export default function AdminPayments() {
       if (response.ok) {
         const result = await response.json();
         alert(
-          `Success! Added ${result.tokensAdded} tokens to ${result.user.displayName}'s account`
+          `Success! Added $${Number(result.dollarsAdded).toFixed(2)} to ${result.user.name}'s account`
         );
 
         // Reset form
@@ -278,9 +277,9 @@ export default function AdminPayments() {
             {amount && (
               <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
                 <div className="flex items-center justify-between">
-                  <span className="text-white">Tokens to add:</span>
+                  <span className="text-white">Amount to add:</span>
                   <span className="font-bold text-green-400">
-                    {(Number(amount) * 100).toLocaleString()} tokens
+                    ${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                   </span>
                 </div>
               </div>
@@ -340,7 +339,7 @@ export default function AdminPayments() {
                     </div>
                     <div className="flex items-center gap-4 text-sm">
                       <span className="text-white font-medium">
-                        {payment.user.displayName} ({payment.user.email})
+                        {payment.user.name} ({payment.user.email})
                       </span>
                       <span className="text-gray-400">
                         ID: {payment.transactionId}
@@ -360,7 +359,12 @@ export default function AdminPayments() {
                         })}
                       </div>
                       <div className="text-sm text-green-400">
-                        +{payment.tokens.toLocaleString()} tokens
+                        +$
+                        {Number(payment.amount).toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                        {" "}added
                       </div>
                     </div>
                     {payment.status === "PENDING" && (

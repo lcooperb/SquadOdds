@@ -9,9 +9,7 @@ import { TrendingUp } from 'lucide-react'
 export default function SignUp() {
   const [formData, setFormData] = useState({
     email: '',
-    username: '',
-    displayName: '',
-    venmoHandle: '',
+    name: '',
     password: '',
     confirmPassword: '',
   })
@@ -44,10 +42,8 @@ export default function SignUp() {
           'Content-Type': 'application/json',
         },
         body: JSON.stringify({
-          email: formData.email,
-          username: formData.username,
-          displayName: formData.displayName,
-          venmoHandle: formData.venmoHandle,
+          email: formData.email.toLowerCase(),
+          name: formData.name,
           password: formData.password,
         }),
       })
@@ -55,7 +51,7 @@ export default function SignUp() {
       if (response.ok) {
         // Auto sign-in after successful registration
         const result = await signIn('credentials', {
-          email: formData.email,
+          email: formData.email.toLowerCase(),
           password: formData.password,
           redirect: false,
         })
@@ -108,51 +104,19 @@ export default function SignUp() {
               />
             </div>
             <div>
-              <label htmlFor="username" className="block text-sm font-medium text-gray-300">
-                Username
+              <label htmlFor="name" className="block text-sm font-medium text-gray-300">
+                Name
               </label>
               <input
-                id="username"
-                name="username"
+                id="name"
+                name="name"
                 type="text"
                 required
-                value={formData.username}
+                value={formData.name}
                 onChange={handleChange}
                 className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Choose a username"
+                placeholder="Enter your name"
               />
-            </div>
-            <div>
-              <label htmlFor="displayName" className="block text-sm font-medium text-gray-300">
-                Display Name
-              </label>
-              <input
-                id="displayName"
-                name="displayName"
-                type="text"
-                required
-                value={formData.displayName}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="Your display name"
-              />
-            </div>
-            <div>
-              <label htmlFor="venmoHandle" className="block text-sm font-medium text-gray-300">
-                Venmo Handle (Optional)
-              </label>
-              <input
-                id="venmoHandle"
-                name="venmoHandle"
-                type="text"
-                value={formData.venmoHandle}
-                onChange={handleChange}
-                className="mt-1 block w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                placeholder="@your-venmo-handle"
-              />
-              <p className="mt-1 text-xs text-gray-400">
-                Used for token redemptions and payment verification
-              </p>
             </div>
             <div>
               <label htmlFor="password" className="block text-sm font-medium text-gray-300">

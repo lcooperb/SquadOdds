@@ -4,12 +4,11 @@ interface Bet {
   optionId: string | null
   amount: number
   price: number
-  shares: number
+  shares: number // Database field: stores position values in AMM model
   createdAt: string
   user: {
     id: string
-    displayName: string
-    username: string
+    name: string
   }
   option?: {
     id: string
@@ -19,8 +18,9 @@ interface Bet {
 
 interface UserPosition {
   side: 'YES' | 'NO'
-  shares: number
+  positionValue: number
   averagePrice: number
+  potentialPayout: number
 }
 
 export function calculateUserPosition(
@@ -45,13 +45,14 @@ export function calculateUserPosition(
   }
 
   // Group by side and calculate totals
-  // With negative shares for SELL operations, we can just sum all shares for each side
+  // With negative position values for SELL operations, we can just sum all position values for each side
   const yesBets = userBets.filter(bet => bet.side === 'YES')
   const noBets = userBets.filter(bet => bet.side === 'NO')
 
-  // Sum all shares (including negative ones from sells)
-  const yesShares = yesBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
-  const noShares = noBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
+  // Sum all position values (including negative ones from sells)
+  // Note: bet.shares field stores position values in our AMM model
+  const yesPositionValue = yesBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
+  const noPositionValue = noBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
 
   // For average price calculation, only count positive purchases
   const yesPurchases = yesBets.filter(bet => Number(bet.shares) > 0)
@@ -60,21 +61,25 @@ export function calculateUserPosition(
   const yesAmount = yesPurchases.reduce((sum, bet) => sum + Number(bet.amount), 0)
   const noAmount = noPurchases.reduce((sum, bet) => sum + Number(bet.amount), 0)
 
-  const yesSharesForAvg = yesPurchases.reduce((sum, bet) => sum + Number(bet.shares), 0)
-  const noSharesForAvg = noPurchases.reduce((sum, bet) => sum + Number(bet.shares), 0)
+  const yesPositionForAvg = yesPurchases.reduce((sum, bet) => sum + Number(bet.shares), 0)
+  const noPositionForAvg = noPurchases.reduce((sum, bet) => sum + Number(bet.shares), 0)
 
-  // Return position for whichever side has positive net shares
-  if (yesShares > 0) {
+  // Return position for whichever side has positive net position value
+  if (yesPositionValue > 0) {
+    const avgPrice = yesPositionForAvg > 0 ? yesAmount / yesPositionForAvg * 100 : 0
     return {
       side: 'YES',
-      shares: yesShares,
-      averagePrice: yesSharesForAvg > 0 ? yesAmount / yesSharesForAvg * 100 : 0
+      positionValue: yesPositionValue,
+      averagePrice: avgPrice,
+      potentialPayout: avgPrice > 0 ? yesPositionValue / (avgPrice / 100) : 0
     }
-  } else if (noShares > 0) {
+  } else if (noPositionValue > 0) {
+    const avgPrice = noPositionForAvg > 0 ? noAmount / noPositionForAvg * 100 : 0
     return {
       side: 'NO',
-      shares: noShares,
-      averagePrice: noSharesForAvg > 0 ? noAmount / noSharesForAvg * 100 : 0
+      positionValue: noPositionValue,
+      averagePrice: avgPrice,
+      potentialPayout: avgPrice > 0 ? noPositionValue / (avgPrice / 100) : 0
     }
   }
 
@@ -105,9 +110,10 @@ export function getAllUserPositions(
   const yesBets = userBets.filter(bet => bet.side === 'YES')
   const noBets = userBets.filter(bet => bet.side === 'NO')
 
-  // Sum all shares (including negative ones from sells)
-  const yesShares = yesBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
-  const noShares = noBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
+  // Sum all position values (including negative ones from sells)
+  // Note: bet.shares field stores position values in our AMM model
+  const yesPositionValue = yesBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
+  const noPositionValue = noBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
 
   // For average price calculation, only count positive purchases
   const yesPurchases = yesBets.filter(bet => Number(bet.shares) > 0)
@@ -116,26 +122,30 @@ export function getAllUserPositions(
   const yesAmount = yesPurchases.reduce((sum, bet) => sum + Number(bet.amount), 0)
   const noAmount = noPurchases.reduce((sum, bet) => sum + Number(bet.amount), 0)
 
-  const yesSharesForAvg = yesPurchases.reduce((sum, bet) => sum + Number(bet.shares), 0)
-  const noSharesForAvg = noPurchases.reduce((sum, bet) => sum + Number(bet.shares), 0)
+  const yesPositionForAvg = yesPurchases.reduce((sum, bet) => sum + Number(bet.shares), 0)
+  const noPositionForAvg = noPurchases.reduce((sum, bet) => sum + Number(bet.shares), 0)
 
   const positions: UserPosition[] = []
 
-  // Add YES position if user has positive shares
-  if (yesShares > 0) {
+  // Add YES position if user has positive position value
+  if (yesPositionValue > 0) {
+    const avgPrice = yesPositionForAvg > 0 ? yesAmount / yesPositionForAvg * 100 : 0
     positions.push({
       side: 'YES',
-      shares: yesShares,
-      averagePrice: yesSharesForAvg > 0 ? yesAmount / yesSharesForAvg * 100 : 0
+      positionValue: yesPositionValue,
+      averagePrice: avgPrice,
+      potentialPayout: avgPrice > 0 ? yesPositionValue / (avgPrice / 100) : 0
     })
   }
 
-  // Add NO position if user has positive shares
-  if (noShares > 0) {
+  // Add NO position if user has positive position value
+  if (noPositionValue > 0) {
+    const avgPrice = noPositionForAvg > 0 ? noAmount / noPositionForAvg * 100 : 0
     positions.push({
       side: 'NO',
-      shares: noShares,
-      averagePrice: noSharesForAvg > 0 ? noAmount / noSharesForAvg * 100 : 0
+      positionValue: noPositionValue,
+      averagePrice: avgPrice,
+      potentialPayout: avgPrice > 0 ? noPositionValue / (avgPrice / 100) : 0
     })
   }
 

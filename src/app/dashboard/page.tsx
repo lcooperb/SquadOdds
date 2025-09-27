@@ -91,7 +91,7 @@ export default function Dashboard() {
       {/* Welcome Header */}
       <div className="mb-8">
         <h1 className="text-3xl font-bold text-white mb-2">
-          Welcome back, {session.user.displayName}!
+          Welcome back, {session.user.name}!
         </h1>
         <p className="text-gray-400">
           Explore prediction markets and place your bets
@@ -105,7 +105,7 @@ export default function Dashboard() {
             <div>
               <p className="text-gray-400 text-sm">Your Balance</p>
               <p className="text-2xl font-bold text-green-400 text-numbers">
-                ₺{Math.round(userBalance).toLocaleString("en-US")}
+                ${Math.round(userBalance).toLocaleString("en-US")}
               </p>
             </div>
             <DollarSign className="h-8 w-8 text-green-400" />
@@ -127,7 +127,7 @@ export default function Dashboard() {
             <div>
               <p className="text-gray-400 text-sm">Total Volume</p>
               <p className="text-2xl font-bold text-white text-numbers">
-                ₺{Math.round(
+                ${Math.round(
                   events.reduce((sum, e) => sum + Number(e.totalVolume), 0)
                 ).toLocaleString("en-US")}
               </p>

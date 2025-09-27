@@ -24,8 +24,7 @@ interface Comment {
   createdAt: string
   user: {
     id: string
-    displayName: string
-    username: string
+    name: string
     image?: string
   }
   likes: Array<{ userId: string }>
@@ -40,17 +39,34 @@ interface Holder {
   rank: number
   user: {
     id: string
-    displayName: string
-    username: string
+    name: string
     image?: string
   }
-  yesShares?: number
-  noShares?: number
-  yesAmount?: number
-  noAmount?: number
   totalAmount: number
+  currentValue: number
+  profitLoss: number
+  positionDescription: string
   position: 'YES' | 'NO' | 'NEUTRAL' | 'MULTIPLE'
-  optionPositions?: { [optionId: string]: { optionTitle: string, yesShares: number, noShares: number, amount: number } }
+  // Optional detailed data for expand/collapse
+  yesPosition?: number
+  noPosition?: number
+  primarySide?: 'YES' | 'NO'
+  primaryPosition?: number
+  primaryOption?: {
+    optionId: string,
+    title: string,
+    value: number,
+    amount: number
+  }
+  optionPositions?: { [optionId: string]: {
+    optionTitle: string,
+    yesPosition: number,
+    noPosition: number,
+    amount: number,
+    currentValue: number,
+    yesAvgPrice: number,
+    noAvgPrice: number
+  } }
 }
 
 interface Activity {
@@ -58,12 +74,11 @@ interface Activity {
   side: string | null
   amount: number
   price: number
-  shares: number
+  positionSize: number
   createdAt: string
   user: {
     id: string
-    displayName: string
-    username: string
+    name: string
   }
   option?: {
     id: string
@@ -229,13 +244,13 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
         <div className="flex items-start gap-3">
           <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
             <span className="text-white text-sm font-medium">
-              {comment.user.displayName.charAt(0).toUpperCase()}
+              {comment.user.name.charAt(0).toUpperCase()}
             </span>
           </div>
 
           <div className="flex-1 min-w-0">
             <div className="flex items-center gap-2 mb-1">
-              <span className="text-white font-medium">{comment.user.displayName}</span>
+              <span className="text-white font-medium">{comment.user.name}</span>
               {userPosition && getPositionBadge(userPosition.position)}
               {userPosition?.rank === 1 && <Crown className="h-3 w-3 text-yellow-400" />}
               <span className="text-gray-400 text-sm">
@@ -443,57 +458,26 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
                           <span className="text-gray-400 font-bold text-sm">#{holder.rank}</span>
                         )}
                       </div>
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <span className="text-white font-medium">{holder.user.displayName}</span>
-                          {getPositionBadge(holder.position)}
+                      <div className="flex-1">
+                        <div className="flex items-center gap-2 mb-1">
+                          <span className="text-white font-medium">{holder.user.name}</span>
                         </div>
-                        <span className="text-gray-400 text-sm">@{holder.user.username}</span>
+                        <div className="text-gray-300 text-sm">
+                          {holder.positionDescription}
+                        </div>
                       </div>
                     </div>
                     <div className="text-right">
-                      <div className="text-white font-medium">₺{Math.round(holder.totalAmount).toLocaleString("en-US")}</div>
-                      <div className="text-gray-400 text-sm">
-                        {holder.position === 'MULTIPLE' ? (
-                          `${Object.keys(holder.optionPositions || {}).length} positions`
-                        ) : (
-                          `${(holder.yesShares || 0).toFixed(0)} YES, ${(holder.noShares || 0).toFixed(0)} NO`
-                        )}
+                      <div className={`text-lg font-medium ${
+                        holder.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'
+                      }`}>
+                        {holder.profitLoss >= 0 ? '✅ Up' : '❌ Down'} ${Math.abs(holder.profitLoss).toFixed(0)}
+                      </div>
+                      <div className="text-gray-400 text-xs">
+                        Portfolio: ${Math.round(holder.currentValue).toLocaleString("en-US")}
                       </div>
                     </div>
                   </div>
-
-                  {/* Show detailed positions for multiple choice markets */}
-                  {holder.position === 'MULTIPLE' && holder.optionPositions && (
-                    <div className="border-t border-gray-700/50 px-4 pb-4">
-                      <div className="grid gap-2 mt-3">
-                        {Object.entries(holder.optionPositions)
-                          .filter(([_, position]) => position.yesShares > 0 || position.noShares > 0) // Show positions they actually hold (YES or NO)
-                          .sort((a, b) => b[1].amount - a[1].amount) // Sort by amount invested
-                          .slice(0, 5) // Show top 5 positions to avoid clutter
-                          .map(([optionId, position]) => (
-                          <div key={optionId} className="flex justify-between items-center text-sm">
-                            <span className="text-gray-300 truncate flex-1 mr-2">
-                              {position.optionTitle}
-                            </span>
-                            <span className="text-gray-400 text-xs">
-                              {position.yesShares > 0 && position.noShares > 0
-                                ? `${Math.round(position.yesShares)} YES, ${Math.round(position.noShares)} NO`
-                                : position.yesShares > 0
-                                ? `${Math.round(position.yesShares)} YES`
-                                : `${Math.round(position.noShares)} NO`
-                              }
-                            </span>
-                          </div>
-                        ))}
-                        {Object.entries(holder.optionPositions || {}).filter(([_, position]) => position.yesShares > 0 || position.noShares > 0).length > 5 && (
-                          <div className="text-xs text-gray-500 text-center mt-1">
-                            +{Object.entries(holder.optionPositions || {}).filter(([_, position]) => position.yesShares > 0 || position.noShares > 0).length - 5} more positions
-                          </div>
-                        )}
-                      </div>
-                    </div>
-                  )}
                 </div>
               ))
             ) : (
@@ -514,7 +498,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
                     <div className={`w-2 h-2 rounded-full ${bet.side === 'YES' ? 'bg-green-400' : bet.side === 'NO' ? 'bg-red-400' : 'bg-gray-400'}`} />
                     <div>
                       <div className="text-white font-medium">
-                        {bet.user.displayName} bought {bet.side || 'UNKNOWN'}{bet.option ? ` on ${bet.option.title}` : ''}
+                        {bet.user.name} bought {bet.side || 'UNKNOWN'}{bet.option ? ` on ${bet.option.title}` : ''}
                       </div>
                       <div className="text-gray-400 text-sm">
                         {new Date(bet.createdAt).toLocaleString()}
@@ -522,7 +506,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
                     </div>
                   </div>
                   <div className="text-right">
-                    <div className="text-white font-medium">₺{Math.round(Number(bet.amount)).toLocaleString("en-US")}</div>
+                    <div className="text-white font-medium">${Math.round(Number(bet.amount)).toLocaleString("en-US")}</div>
                     <div className="text-gray-400 text-sm">
                       @ {Number(bet.price).toFixed(0)}¢
                     </div>

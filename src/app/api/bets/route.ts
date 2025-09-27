@@ -95,34 +95,23 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // For SELL operations, validate user has sufficient shares to sell
+    // For SELL operations, validate user has sufficient position to sell
     if (type === 'SELL') {
       const userBets = await prisma.bet.findMany({
         where: {
           userId: session.user.id,
           eventId,
+          side, // Only get bets for the side being sold
           ...(event.marketType === 'MULTIPLE' && optionId ? { optionId } : {}),
-          // Don't filter by side here - we need all bets to calculate net position
-        },
-        include: {
-          user: {
-            select: {
-              id: true,
-              displayName: true,
-              username: true,
-            },
-          },
         },
       })
 
-      // Calculate net shares for the side being sold using the same logic as position calculation
-      const sideShares = userBets
-        .filter(bet => bet.side === side)
-        .reduce((sum, bet) => sum + Number(bet.shares), 0)
+      // Calculate net position value for the side being sold
+      const netPosition = userBets.reduce((sum, bet) => sum + Number(bet.shares), 0)
 
-      if (sideShares < amount) {
+      if (netPosition < amount) {
         return NextResponse.json(
-          { message: `Insufficient ${side} shares to sell. You have ${sideShares.toFixed(2)} shares.` },
+          { message: `Insufficient ${side} position to sell. You have $${netPosition.toFixed(2)} position.` },
           { status: 400 }
         )
       }
@@ -155,38 +144,38 @@ export async function POST(request: NextRequest) {
     }
 
     // Calculate market impact for the bet (different logic for BUY vs SELL)
-    let shares: number
+    let positionSize: number
     let averagePrice: number
     let marketImpactResult: any
 
     if (type === 'SELL') {
-      // For SELL operations, shares = amount (selling exact number of shares)
+      // For SELL operations, position size = amount (selling position value)
       // averagePrice = current market price
-      shares = amount
+      positionSize = amount
       averagePrice = currentPrice
       marketImpactResult = {
-        totalShares: shares,
+        totalPositions: positionSize,
         averagePrice: currentPrice,
-        priceImpact: 0 // Calculate actual impact later if needed
+        priceImpact: 0
       }
     } else {
-      // For BUY operations, use market impact calculation
+      // For BUY operations, use simplified AMM calculation
       marketImpactResult = calculateMarketImpact(
         amount,
         currentPrice,
         Number(event.totalVolume),
         side
       )
-      shares = marketImpactResult.totalShares
+      positionSize = marketImpactResult.totalPositions // This is now position value, not shares
       averagePrice = marketImpactResult.averagePrice
     }
 
     // Start transaction to place bet and update user balance and event volume
     const result = await prisma.$transaction(async (tx) => {
       // Calculate the payout for SELL operations
-      const sellPayout = type === 'SELL' ? (shares * averagePrice / 100) : 0
+      const sellPayout = type === 'SELL' ? positionSize : 0
 
-      // Create the bet (negative shares for SELL operations)
+      // Create the bet record with position size (simplified from shares)
       const bet = await tx.bet.create({
         data: {
           userId: session.user.id,
@@ -194,15 +183,14 @@ export async function POST(request: NextRequest) {
           side,
           amount: type === 'SELL' ? sellPayout : amount, // For SELL, amount is the payout received
           price: averagePrice,
-          shares: type === 'SELL' ? -shares : shares, // Negative shares for SELL operations
+          shares: type === 'SELL' ? -positionSize : positionSize, // Position value (was shares)
           optionId: event.marketType === 'MULTIPLE' ? optionId : null,
         },
         include: {
           user: {
             select: {
               id: true,
-              displayName: true,
-              username: true,
+              name: true,
             },
           },
           event: {
@@ -323,31 +311,11 @@ export async function POST(request: NextRequest) {
           })
         }
       } else {
-        // Binary market price calculation
-        const allBets = await tx.bet.findMany({
-          where: { eventId },
-        })
+        // Binary market price calculation - use market impact result directly
+        let newYesPrice = marketImpactResult.finalPrice
 
-        const yesBets = allBets.filter(b => b.side === 'YES')
-        const noBets = allBets.filter(b => b.side === 'NO')
-
-        const yesAmount = yesBets.reduce((sum, b) => sum + Number(b.amount), 0)
-        const noAmount = noBets.reduce((sum, b) => sum + Number(b.amount), 0)
-        const totalAmount = yesAmount + noAmount
-
-        // Calculate new price using market impact
-        let newYesPrice = calculateNewMarketPrice(
-          Number(event.yesPrice),
-          totalAmount - amount, // Volume before this bet
-          amount,
-          side,
-          marketImpactResult
-        )
-
-        // Fallback to traditional calculation if needed
-        if (totalAmount === 0) {
-          newYesPrice = 50 // default 50/50
-        }
+        // Ensure price is within bounds
+        newYesPrice = Math.max(5, Math.min(95, newYesPrice))
 
         const newNoPrice = 100 - newYesPrice
 

@@ -33,6 +33,7 @@ export default function CreateMarket() {
   const [options, setOptions] = useState<string[]>([""]);
   const [newOption, setNewOption] = useState("");
   const [binaryOdds, setBinaryOdds] = useState({ yes: 50, no: 50 });
+  const [investment, setInvestment] = useState(10);
   const [multipleOdds, setMultipleOdds] = useState<{ [index: number]: number }>(
     {}
   );
@@ -83,13 +84,12 @@ export default function CreateMarket() {
     setOptions((prev) => prev.map((opt, i) => (i === index ? value : opt)));
   };
 
-  const updateBinaryOdds = (side: "yes" | "no", value: number) => {
-    const constrainedValue = Math.max(1, Math.min(99, value));
-    const otherSide = side === "yes" ? "no" : "yes";
+  const updateBinaryOdds = (yesPercentage: number) => {
+    const constrainedValue = Math.max(1, Math.min(99, yesPercentage));
     setBinaryOdds({
-      [side]: constrainedValue,
-      [otherSide]: 100 - constrainedValue,
-    } as { yes: number; no: number });
+      yes: constrainedValue,
+      no: 100 - constrainedValue,
+    });
   };
 
   const updateMultipleOdds = (index: number, value: number) => {
@@ -144,7 +144,7 @@ export default function CreateMarket() {
               : undefined,
           initialOdds:
             formData.marketType === "BINARY" ? binaryOdds : multipleOdds,
-          investment: 1000, // 1000 tokens ($10) investment from creator
+          investment: investment, // Investment amount from creator
         }),
       });
 
@@ -303,84 +303,105 @@ export default function CreateMarket() {
               </p>
             </CardHeader>
             <CardContent className="space-y-6">
-              {/* Initial Investment Notice */}
-              <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
-                <div className="flex items-start gap-3">
-                  <div className="bg-blue-600 rounded-full p-1">
-                    <Info className="h-4 w-4 text-white" />
+              {/* Initial Investment */}
+              <div>
+                <label className="block text-sm font-medium text-white mb-2">
+                  Initial Investment *
+                </label>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                    <span className="text-gray-400 text-sm">$</span>
                   </div>
-                  <div>
-                    <h4 className="text-white font-medium mb-1">
-                      Initial Investment Required
-                    </h4>
-                    <p className="text-gray-300 text-sm mb-2">
-                      Creating a market requires a{" "}
-                      <strong>1,000 tokens</strong> ($10) to set
-                      initial odds. This investment will be automatically
-                      distributed across the options based on your specified
-                      probabilities.
-                    </p>
-                    <p className="text-gray-400 text-xs">
-                      This ensures market creators set realistic odds and
-                      provides initial liquidity for traders.
-                    </p>
+                  <input
+                    type="number"
+                    min="10"
+                    max="1000"
+                    step="1"
+                    value={investment}
+                    onChange={(e) => setInvestment(Math.max(10, parseInt(e.target.value) || 10))}
+                    className="w-full pl-8 pr-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    placeholder="10"
+                  />
+                </div>
+                <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-3 mt-3">
+                  <div className="flex items-start gap-2">
+                    <div className="bg-blue-600 rounded-full p-1">
+                      <Info className="h-3 w-3 text-white" />
+                    </div>
+                    <div>
+                      <p className="text-gray-300 text-sm">
+                        Your initial investment provides liquidity and sets realistic odds.
+                        This amount will be distributed across options based on your specified probabilities.
+                      </p>
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* Binary Market Odds */}
+              {/* Binary Market Odds - Slider */}
               {formData.marketType === "BINARY" && (
                 <div className="bg-gray-800/50 rounded-lg p-4">
-                  <label className="block text-sm font-medium text-white mb-3">
+                  <label className="block text-sm font-medium text-white mb-4">
                     Set Initial Odds *
                   </label>
-                  <div className="grid grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">
-                        YES Probability (%)
-                      </label>
-                      <input
-                        type="number"
-                        min="1"
-                        max="99"
-                        value={binaryOdds.yes}
-                        onChange={(e) =>
-                          updateBinaryOdds("yes", parseInt(e.target.value) || 0)
-                        }
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                      <div className="text-xs text-gray-400 mt-1">
-                        Investment: {((binaryOdds.yes / 100) * 1000).toLocaleString()} tokens
-                      </div>
+
+                  {/* Slider Container */}
+                  <div className="relative mb-6">
+                    <div className="flex justify-between text-xs text-gray-400 mb-2">
+                      <span>More likely NO</span>
+                      <span>50/50</span>
+                      <span>More likely YES</span>
                     </div>
-                    <div>
-                      <label className="block text-xs text-gray-400 mb-1">
-                        NO Probability (%)
-                      </label>
+
+                    {/* Custom Slider */}
+                    <div className="relative">
                       <input
-                        type="number"
+                        type="range"
                         min="1"
                         max="99"
                         value={binaryOdds.no}
-                        onChange={(e) =>
-                          updateBinaryOdds("no", parseInt(e.target.value) || 0)
-                        }
-                        className="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        onChange={(e) => updateBinaryOdds(100 - parseInt(e.target.value))}
+                        className="w-full h-2 bg-gray-700 rounded-lg appearance-none cursor-pointer slider"
+                        style={{
+                          background: `linear-gradient(to right, #ef4444 0%, #ef4444 ${binaryOdds.no}%, #10b981 ${binaryOdds.no}%, #10b981 100%)`
+                        }}
                       />
-                      <div className="text-xs text-gray-400 mt-1">
-                        Investment: {((binaryOdds.no / 100) * 1000).toLocaleString()} tokens
+                      {/* Slider thumb styling handled by CSS */}
+                    </div>
+
+                    {/* Current Value Display */}
+                    <div className="flex justify-center mt-3">
+                      <div className="bg-gray-700 rounded-lg px-4 py-2 text-center">
+                        <div className="text-white font-medium text-lg">
+                          {binaryOdds.no}% NO / {binaryOdds.yes}% YES
+                        </div>
+                        <div className="text-gray-400 text-sm mt-1">
+                          {binaryOdds.yes > 50 ? 'Favoring YES' : binaryOdds.yes < 50 ? 'Favoring NO' : 'Even odds'}
+                        </div>
                       </div>
                     </div>
                   </div>
-                  <div className="mt-3 text-center">
-                    <span
-                      className={`text-sm ${binaryOdds.yes + binaryOdds.no === 100 ? "text-green-400" : "text-red-400"}`}
-                    >
-                      Total: {binaryOdds.yes + binaryOdds.no}%{" "}
-                      {binaryOdds.yes + binaryOdds.no === 100
-                        ? "✓"
-                        : "(must equal 100%)"}
-                    </span>
+
+                  {/* Investment Distribution */}
+                  <div className="grid grid-cols-2 gap-4">
+                    <div className="bg-red-500/10 border border-red-500/20 rounded-lg p-3">
+                      <div className="text-red-400 font-medium text-sm mb-1">NO Position</div>
+                      <div className="text-white font-semibold">
+                        ${(((binaryOdds.no || 0) / 100) * investment).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-gray-400 text-xs">
+                        {binaryOdds.no}% probability
+                      </div>
+                    </div>
+                    <div className="bg-green-500/10 border border-green-500/20 rounded-lg p-3">
+                      <div className="text-green-400 font-medium text-sm mb-1">YES Position</div>
+                      <div className="text-white font-semibold">
+                        ${(((binaryOdds.yes || 0) / 100) * investment).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-gray-400 text-xs">
+                        {binaryOdds.yes}% probability
+                      </div>
+                    </div>
                   </div>
                 </div>
               )}
@@ -439,9 +460,8 @@ export default function CreateMarket() {
                             />
                             <span className="text-xs text-gray-400">%</span>
                             <span className="text-xs text-gray-400 ml-auto">
-                              Investment: {(
-                                ((multipleOdds[index] || 0) / 100) * 1000
-                              ).toLocaleString()} tokens
+                              Investment: $
+                              {((((multipleOdds[index] || 0) as number) / 100) * investment).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </span>
                           </div>
                         </div>
@@ -637,7 +657,7 @@ export default function CreateMarket() {
                     disabled={!isFormValid || loading}
                     className="flex-1"
                   >
-                    {loading ? "Creating..." : "Create Market (1,000 tokens)"}
+                    {loading ? "Creating..." : `Create Market ($${investment})`}
                   </Button>
                 </div>
               </CardContent>

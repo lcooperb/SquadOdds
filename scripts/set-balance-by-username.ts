@@ -35,7 +35,7 @@ async function setBalanceByUsername() {
       data: { virtualBalance: targetAmount }
     })
 
-    console.log(`Updated user balance: ${updated.id} (${user.username}) now has ₺${updated.virtualBalance}`)
+    console.log(`Updated user balance: ${updated.id} (${user.username}) now has $${updated.virtualBalance}`)
   } catch (error) {
     console.error('Error updating balance:', error)
   } finally {

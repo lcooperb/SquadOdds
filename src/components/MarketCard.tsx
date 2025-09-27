@@ -129,7 +129,7 @@ export default function MarketCard({
                 </div>
                 <div className="flex items-center justify-between text-xs text-gray-400">
                   <span className="flex items-center gap-1">
-                    <DollarSign className="h-3 w-3" />₺
+                    <DollarSign className="h-3 w-3" />$
                     {formatCompactNumber(Number(event.totalVolume))}
                   </span>
                   <span className="flex items-center gap-1">
@@ -139,10 +139,14 @@ export default function MarketCard({
                 </div>
               </div>
               <div className="ml-3 text-right flex flex-col justify-center">
-                <div className="text-lg font-bold text-green-400 mb-1">
+                <div className={`text-lg font-bold mb-1 transition-colors duration-300 ${
+                  yesPercentage >= 50 ? 'text-green-400' : 'text-red-400'
+                }`}>
                   {yesPercentage}¢
                 </div>
-                <div className="text-xs text-gray-400">YES</div>
+                <div className="text-xs text-gray-400">
+                  {yesPercentage >= 50 ? 'YES' : 'NO'} {yesPercentage >= 50 ? yesPercentage : noPercentage}%
+                </div>
               </div>
             </div>
           </CardContent>
@@ -195,7 +199,7 @@ export default function MarketCard({
             <div className="flex items-center justify-between text-sm text-gray-400 mt-auto">
               <div className="flex items-center gap-1">
                 <span>
-                  ₺{formatCompactNumber(Number(event.totalVolume))} Vol.
+                  ${formatCompactNumber(Number(event.totalVolume))} Vol.
                 </span>
               </div>
               <div className="flex items-center gap-2">
@@ -261,7 +265,9 @@ export default function MarketCard({
                 </svg>
                 {/* Percentage text inside arc */}
                 <div className="absolute inset-0 flex items-center justify-center mt-4">
-                  <div className="text-base font-bold text-white">
+                  <div className={`text-base font-bold transition-colors duration-300 ${
+                    yesPercentage >= 50 ? 'text-green-400' : 'text-red-400'
+                  }`}>
                     {yesPercentage}%
                   </div>
                 </div>
@@ -269,13 +275,15 @@ export default function MarketCard({
             </div>
           </div>
 
-          {/* YES/NO Buttons */}
+          {/* YES/NO Buttons with Live Prices */}
           <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="bg-green-600/20 hover:bg-green-600/30 rounded-lg py-2 px-3 text-center transition-colors cursor-pointer border border-green-500/30">
+            <div className="bg-green-600/20 hover:bg-green-600/30 rounded-lg py-2 px-3 text-center transition-all duration-300 cursor-pointer border border-green-500/30">
               <div className="text-sm font-semibold text-green-400">Yes</div>
+              <div className="text-xs text-green-300 mt-0.5">{yesPercentage}¢</div>
             </div>
-            <div className="bg-red-600/20 hover:bg-red-600/30 rounded-lg py-2 px-3 text-center transition-colors cursor-pointer border border-red-500/30">
+            <div className="bg-red-600/20 hover:bg-red-600/30 rounded-lg py-2 px-3 text-center transition-all duration-300 cursor-pointer border border-red-500/30">
               <div className="text-sm font-semibold text-red-400">No</div>
+              <div className="text-xs text-red-300 mt-0.5">{noPercentage}¢</div>
             </div>
           </div>
 
@@ -283,7 +291,7 @@ export default function MarketCard({
           <div className="flex items-center justify-between text-sm text-gray-400 mt-auto">
             <div className="flex items-center gap-1">
               <span>
-                ₺{formatCompactNumber(Number(event.totalVolume))} Vol.
+                ${formatCompactNumber(Number(event.totalVolume))} Vol.
               </span>
             </div>
             <div className="flex items-center gap-2">

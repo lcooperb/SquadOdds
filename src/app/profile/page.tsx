@@ -23,8 +23,7 @@ import {
 interface UserProfile {
   id: string;
   email: string;
-  username: string;
-  displayName: string;
+  name: string;
   image?: string;
   virtualBalance: number;
   totalWinnings: number;
@@ -211,9 +210,8 @@ export default function Profile() {
             </div>
             <div>
               <h1 className="text-3xl font-bold text-white">
-                {profile.displayName}
+                {profile.name}
               </h1>
-              <p className="text-gray-400 text-lg">@{profile.username}</p>
               <p className="text-gray-500 text-sm">
                 Member since {new Date(profile.createdAt).toLocaleDateString()}
               </p>
@@ -226,7 +224,7 @@ export default function Profile() {
               <CardContent className="p-4 text-center">
                 <DollarSign className="h-8 w-8 text-green-400 mx-auto mb-2" />
                 <div className="text-2xl font-bold text-white text-numbers">
-                  ₺{Math.round(Number(profile.virtualBalance)).toLocaleString("en-US")}
+                  ${Math.round(Number(profile.virtualBalance)).toLocaleString("en-US")}
                 </div>
                 <div className="text-sm text-gray-400">Current Balance</div>
               </CardContent>
@@ -238,7 +236,7 @@ export default function Profile() {
                 <div
                   className={`text-2xl font-bold text-numbers ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
                 >
-                  {netProfit >= 0 ? "+" : ""}₺{Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
+                  {netProfit >= 0 ? "+" : ""}${Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
                 </div>
                 <div className="text-sm text-gray-400">Net Profit</div>
               </CardContent>
@@ -279,13 +277,13 @@ export default function Profile() {
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Winnings</span>
                 <span className="text-green-400 font-semibold">
-                  +₺{Math.round(Number(profile.totalWinnings)).toLocaleString("en-US")}
+                  +${Math.round(Number(profile.totalWinnings)).toLocaleString("en-US")}
                 </span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Losses</span>
                 <span className="text-red-400 font-semibold">
-                  -₺{Math.round(Number(profile.totalLosses)).toLocaleString("en-US")}
+                  -${Math.round(Number(profile.totalLosses)).toLocaleString("en-US")}
                 </span>
               </div>
               <div className="flex justify-between border-t border-gray-700 pt-2">
@@ -293,7 +291,7 @@ export default function Profile() {
                 <span
                   className={`font-bold ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
                 >
-                  {netProfit >= 0 ? "+" : "-"}₺{Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
+                  {netProfit >= 0 ? "+" : "-"}${Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
                 </span>
               </div>
             </CardContent>
@@ -452,7 +450,7 @@ export default function Profile() {
                             <span className="font-medium text-white">
                               {bet.side} {bet.option && `(${bet.option.title})`}
                             </span>
-                            <span>₺{Math.round(Number(bet.amount)).toLocaleString("en-US")}</span>
+                            <span>${Math.round(Number(bet.amount)).toLocaleString("en-US")}</span>
                             <span>@ {Number(bet.price).toFixed(0)}¢</span>
                             <span>{new Date(bet.createdAt).toLocaleDateString()}</span>
                           </div>
@@ -466,7 +464,7 @@ export default function Profile() {
                             <div
                               className={`text-sm font-medium mt-1 ${bet.status === "WON" ? "text-green-400" : "text-red-400"}`}
                             >
-                              {bet.status === "WON" ? "+" : "-"}₺{Math.round(Number(bet.amount)).toLocaleString("en-US")}
+                              {bet.status === "WON" ? "+" : "-"}${Math.round(Number(bet.amount)).toLocaleString("en-US")}
                             </div>
                           )}
                         </div>

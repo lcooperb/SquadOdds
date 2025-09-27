@@ -33,8 +33,7 @@ export async function GET(request: NextRequest) {
         createdBy: {
           select: {
             id: true,
-            displayName: true,
-            username: true,
+            name: true,
           },
         },
         options: {

@@ -166,8 +166,9 @@ async function processAutoPayment(data: AutoPaymentData) {
       return
     }
 
-    // Calculate tokens (100 tokens per $1)
-    const tokensToAdd = amount * 100
+    // USD-based wallet: $1 deposit = $1 balance
+    // Keep tokens field for backward compatibility by mirroring USD amount
+    const tokensToAdd = amount
 
     // Process payment in transaction
     await prisma.$transaction(async (tx) => {
@@ -184,7 +185,7 @@ async function processAutoPayment(data: AutoPaymentData) {
         }
       })
 
-      // Add tokens to user's balance
+      // Add USD to user's balance (virtualBalance is stored in USD)
       await tx.user.update({
         where: { id: user.id },
         data: {
@@ -195,7 +196,7 @@ async function processAutoPayment(data: AutoPaymentData) {
       })
     })
 
-    console.log(`Auto-processed payment: ${amount} USD -> ${tokensToAdd} tokens for ${user.displayName}`)
+    console.log(`Auto-processed payment: ${amount} USD added to balance for ${user.displayName}`)
 
     // Optional: Send notification to user about token deposit
     // await sendPaymentConfirmationEmail(user, amount, tokensToAdd)

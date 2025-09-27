@@ -26,8 +26,7 @@ export async function GET(
       select: {
         id: true,
         email: true,
-        username: true,
-        displayName: true,
+        name: true,
         image: true,
         virtualBalance: true,
         totalWinnings: true,

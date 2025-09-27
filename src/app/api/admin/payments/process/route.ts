@@ -64,8 +64,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Calculate tokens (100 tokens per $1)
-    const tokensToAdd = paymentAmount * 100
+    // USD-based wallet: $1 deposit = $1 balance
+    // Keep tokens field for backward compatibility by mirroring USD amount
+    const tokensToAdd = paymentAmount
 
     // Process payment in transaction
     const result = await prisma.$transaction(async (tx) => {
@@ -82,7 +83,7 @@ export async function POST(request: NextRequest) {
         }
       })
 
-      // Add tokens to user's balance
+      // Add USD to user's balance
       const updatedUser = await tx.user.update({
         where: { id: user.id },
         data: {
@@ -92,7 +93,7 @@ export async function POST(request: NextRequest) {
         },
         select: {
           virtualBalance: true,
-          displayName: true,
+          name: true,
           email: true,
         }
       })
@@ -104,7 +105,7 @@ export async function POST(request: NextRequest) {
       message: 'Payment processed successfully',
       payment: result.payment,
       user: result.updatedUser,
-      tokensAdded: tokensToAdd,
+      dollarsAdded: tokensToAdd,
     })
   } catch (error) {
     console.error('Error processing admin payment:', error)
@@ -133,7 +134,7 @@ export async function GET(request: NextRequest) {
         user: {
           select: {
             email: true,
-            displayName: true,
+            name: true,
           }
         }
       },

@@ -37,6 +37,7 @@ interface PriceChartProps {
   }>
   currentYesPrice?: number
   className?: string
+  refreshTrigger?: number // When this changes, chart will refresh immediately
 }
 
 // Function to format time for X-axis to avoid duplicates
@@ -71,7 +72,7 @@ const formatTimeForAxis = (date: Date, index: number, allData: any[]): string =>
   return timeStr
 }
 
-export default function PriceChart({ eventId, marketType, options, currentYesPrice, className = '' }: PriceChartProps) {
+export default function PriceChart({ eventId, marketType, options, currentYesPrice, className = '', refreshTrigger }: PriceChartProps) {
   const [data, setData] = useState<PricePoint[]>([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
@@ -81,6 +82,13 @@ export default function PriceChart({ eventId, marketType, options, currentYesPri
   useEffect(() => {
     fetchPriceHistory()
   }, [eventId, marketType])
+
+  // Refresh immediately when refreshTrigger changes (after bets)
+  useEffect(() => {
+    if (refreshTrigger) {
+      fetchPriceHistory()
+    }
+  }, [refreshTrigger])
 
   // Refresh chart every minute to show forward progression
   useEffect(() => {

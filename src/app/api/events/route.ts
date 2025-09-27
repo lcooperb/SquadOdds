@@ -32,8 +32,7 @@ export async function GET(request: NextRequest) {
         createdBy: {
           select: {
             id: true,
-            displayName: true,
-            username: true,
+            name: true,
           },
         },
         options: true,
@@ -81,7 +80,7 @@ export async function POST(request: NextRequest) {
       marketType = 'BINARY',
       options = [],
       initialOdds = {},
-      investment = 1000,
+      investment = 10,
     } = await request.json()
 
     if (!title || !description || !category) {
@@ -134,10 +133,10 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Check if user has sufficient balance for the $10 investment
+    // Check if user has sufficient balance for the initial investment
     if (Number(user.virtualBalance) < investment) {
       return NextResponse.json(
-        { message: `Insufficient balance. You need ${investment} tokens ($${(investment/100).toFixed(2)}) to create a market.` },
+        { message: `Insufficient balance. You need $${Number(investment).toFixed(2)} to create a market.` },
         { status: 400 }
       )
     }
@@ -187,15 +186,14 @@ export async function POST(request: NextRequest) {
           createdBy: {
             select: {
               id: true,
-              displayName: true,
-              username: true,
-            },
+              name: true,
+              },
           },
           options: true,
         },
       })
 
-      // Deduct $10 investment from user's balance
+      // Deduct initial investment from user's balance
       await tx.user.update({
         where: { id: session.user.id },
         data: {
@@ -211,7 +209,7 @@ export async function POST(request: NextRequest) {
         const yesAmount = investment * (yes / 100)
         const noAmount = investment * (no / 100)
 
-        // Create YES bet
+        // Create YES bet (AMM system - shares represent position values)
         if (yesAmount > 0) {
           await tx.bet.create({
             data: {
@@ -220,12 +218,12 @@ export async function POST(request: NextRequest) {
               side: 'YES',
               amount: yesAmount,
               price: yes,
-              shares: (yesAmount / (yes / 100)),
+              shares: yesAmount, // In AMM system, shares field stores position values
             },
           })
         }
 
-        // Create NO bet
+        // Create NO bet (AMM system - shares represent position values)
         if (noAmount > 0) {
           await tx.bet.create({
             data: {
@@ -234,7 +232,7 @@ export async function POST(request: NextRequest) {
               side: 'NO',
               amount: noAmount,
               price: 100 - yes, // NO price is inverse of YES price
-              shares: (noAmount / ((100 - yes) / 100)),
+              shares: noAmount, // In AMM system, shares field stores position values
             },
           })
         }
@@ -264,7 +262,7 @@ export async function POST(request: NextRequest) {
                 side: 'YES',
                 amount: optionAmount,
                 price: optionOdds,
-                shares: (optionAmount / (optionOdds / 100)),
+                shares: optionAmount, // In AMM system, shares field stores position values
               },
             })
 
@@ -290,8 +288,7 @@ export async function POST(request: NextRequest) {
         createdBy: {
           select: {
             id: true,
-            displayName: true,
-            username: true,
+            name: true,
           },
         },
         options: true,

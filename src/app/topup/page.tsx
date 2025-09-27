@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 import { Button } from "@/components/ui/Button";
@@ -11,6 +11,7 @@ import {
   CheckCircle,
   Copy,
   AlertTriangle,
+  X,
 } from "lucide-react";
 
 export default function TopUp() {
@@ -20,13 +21,15 @@ export default function TopUp() {
   const [customAmount, setCustomAmount] = useState<string>("");
   const [loading, setLoading] = useState(false);
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
-  // Venmo payment account details
+  // Apple Cash payment details
   const paymentAccount = {
-    venmo: "@leo-cooperband",
+    appleCash: "cooperband.leo@gmail.com", // Your Apple Cash email
   };
-
-  const predefinedAmounts = [5, 10, 25, 50, 100, 200];
+  // Preset amounts in USD
+  const predefinedAmounts: number[] = [5, 10, 25, 50, 100, 200];
 
   if (status === "loading") {
     return (
@@ -38,8 +41,14 @@ export default function TopUp() {
     );
   }
 
-  if (!session) {
-    router.push("/auth/signin");
+  // Redirect unauthenticated users to sign-in without running during render
+  useEffect(() => {
+    if (status === "unauthenticated") {
+      router.push("/auth/signin");
+    }
+  }, [status, router]);
+
+  if (status === "unauthenticated") {
     return null;
   }
 
@@ -67,28 +76,95 @@ export default function TopUp() {
   };
 
   const handleSubmitPayment = async () => {
+    setError(null);
+    if (!selectedAmount || selectedAmount <= 0) {
+      setError("Please select a valid amount.");
+      return;
+    }
+
     setLoading(true);
     try {
-      alert(
-        "Thanks! After your Venmo payment goes through, hit Submit. Your top-up will be approved within the next day or two."
+      const res = await fetch("/api/payments/verify", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          amount: Number(selectedAmount),
+          // no transactionId required; server will auto-generate one
+          paymentMethod: "applecash",
+        }),
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        const message = data?.message || "Failed to submit payment request";
+        setError(message);
+        return;
+      }
+
+      setSuccessMessage(
+        "Payment request submitted! An admin will review and approve your top-up shortly."
       );
-      router.push("/profile");
+
+      // Redirect after showing success message
+      setTimeout(() => {
+        router.push("/profile");
+      }, 3000);
+    } catch (e) {
+      console.error(e);
+      setError("An unexpected error occurred while submitting your payment.");
     } finally {
       setLoading(false);
     }
   };
 
-  // Tokens are no longer used; all amounts are in Lira.
+  // All amounts are in USD, using Apple Pay for payments.
 
   return (
     <>
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2">Add Lira</h1>
-          <p className="text-gray-400">
-            Add funds to your account balance in Turkish Lira (₺)
-          </p>
+          <h1 className="text-3xl font-bold text-white mb-2">Add Funds</h1>
+          <p className="text-gray-400">Add funds to your account balance (USD)</p>
         </div>
+
+        {/* Success Message */}
+        {successMessage && (
+          <div className="mb-6 bg-green-600/10 border border-green-500/20 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <CheckCircle className="h-5 w-5 text-green-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="text-green-400 font-medium mb-1">Success!</h4>
+                <p className="text-green-300 text-sm">{successMessage}</p>
+                <p className="text-green-300/70 text-xs mt-2">Redirecting to your profile...</p>
+              </div>
+              <button
+                onClick={() => setSuccessMessage(null)}
+                className="text-green-400 hover:text-green-300 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
+
+        {/* Error Message */}
+        {error && (
+          <div className="mb-6 bg-red-600/10 border border-red-500/20 rounded-lg p-4">
+            <div className="flex items-start gap-3">
+              <AlertTriangle className="h-5 w-5 text-red-400 mt-0.5 flex-shrink-0" />
+              <div className="flex-1">
+                <h4 className="text-red-400 font-medium mb-1">Error</h4>
+                <p className="text-red-300 text-sm">{error}</p>
+              </div>
+              <button
+                onClick={() => setError(null)}
+                className="text-red-400 hover:text-red-300 transition-colors"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+          </div>
+        )}
 
         {!showPaymentDetails ? (
           /* Amount Selection */
@@ -102,9 +178,7 @@ export default function TopUp() {
             <CardContent className="space-y-6">
               {/* Predefined Amounts */}
               <div>
-                <label className="block text-sm font-medium text-white mb-3">
-                  Choose Amount (₺)
-                </label>
+                <label className="block text-sm font-medium text-white mb-3">Choose Amount (USD)</label>
                 <div className="grid grid-cols-3 gap-3">
                   {predefinedAmounts.map((amount) => (
                     <button
@@ -117,13 +191,12 @@ export default function TopUp() {
                       }`}
                     >
                       <div className="text-white font-semibold">
-                        ₺
+                        $
                         {amount.toLocaleString("en-US", {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
                       </div>
-                      <div className="text-sm text-gray-400">Instant balance top-up</div>
                     </button>
                   ))}
                 </div>
@@ -135,7 +208,7 @@ export default function TopUp() {
                   htmlFor="custom-amount"
                   className="block text-sm font-medium text-white mb-2"
                 >
-                  Or Enter Custom Amount (₺)
+                  Or Enter Custom Amount (USD)
                 </label>
                 <input
                   type="number"
@@ -144,7 +217,7 @@ export default function TopUp() {
                   max="1000"
                   value={customAmount}
                   onChange={(e) => handleCustomAmountChange(e.target.value)}
-                  placeholder="Enter amount in Lira (₺)"
+                  placeholder="Enter amount in USD ($)"
                   className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                 />
               </div>
@@ -155,7 +228,7 @@ export default function TopUp() {
                   <div className="flex items-center justify-between mb-2">
                     <span className="text-white">Payment Amount:</span>
                     <span className="font-bold text-white">
-                      ₺
+                      $
                       {selectedAmount.toLocaleString("en-US", {
                         minimumFractionDigits: 2,
                         maximumFractionDigits: 2,
@@ -194,12 +267,12 @@ export default function TopUp() {
                         Payment Required
                       </h4>
                       <p className="text-yellow-300 text-sm">
-                        Send exactly <strong>₺
+                        Send <strong>$
                           {selectedAmount.toLocaleString("en-US", {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
-                        </strong> to the Venmo account below. After your payment goes through, hit Submit. Your top-up will be approved within the next day or two.
+                        </strong> via Apple Cash to the email below, then hit Submit.
                       </p>
                     </div>
                   </div>
@@ -209,26 +282,38 @@ export default function TopUp() {
                 /* Updated to reflect new Venmo handle and no verification step */}
                 <div className="space-y-4">
                   <h3 className="text-white font-medium">
-                    Send Payment via Venmo:
+                    Send Payment via Apple Cash:
                   </h3>
 
                   <div className="bg-gray-800/50 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-white font-medium">Venmo</h4>
+                      <h4 className="text-white font-medium">Apple Cash</h4>
                       <button
-                        onClick={() => copyToClipboard(paymentAccount.venmo)}
+                        onClick={() => copyToClipboard(paymentAccount.appleCash)}
                         className="text-blue-400 hover:text-blue-300 transition-colors"
                       >
                         <Copy className="h-4 w-4" />
                       </button>
                     </div>
                     <p className="text-gray-300 font-mono text-lg">
-                      {paymentAccount.venmo}
+                      {paymentAccount.appleCash}
                     </p>
                     <p className="text-sm text-gray-400 mt-2">
-                      Include your email address in the payment note so we can
-                      identify your account.
+                      Include your email ({session?.user?.email}) in the message.
                     </p>
+                    <div className="mt-3 p-3 bg-blue-600/10 border border-blue-500/20 rounded-md">
+                      <p className="text-sm text-blue-300">
+                        💡 <strong>How to send via Apple Cash:</strong><br/>
+                        1. Open Messages app<br/>
+                        2. Start new message to {paymentAccount.appleCash}<br/>
+                        3. Tap the Apple Cash button (or + → Apple Cash)<br/>
+                        4. Send ${selectedAmount.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}<br/>
+                        5. Include "{session?.user?.email}" in the message
+                      </p>
+                    </div>
                   </div>
                 </div>
               </CardContent>
@@ -244,8 +329,7 @@ export default function TopUp() {
               </CardHeader>
               <CardContent className="space-y-4">
                 <p className="text-gray-300">
-                  After your Venmo payment goes through, hit <strong>Submit</strong>. Your top-up will be
-                  approved within the next day or two.
+                  After sending payment, hit <strong>Submit</strong> for review.
                 </p>
                 <div className="flex gap-3">
                   <Button
@@ -257,7 +341,7 @@ export default function TopUp() {
                   </Button>
                   <Button
                     onClick={handleSubmitPayment}
-                    disabled={loading}
+                    disabled={loading || selectedAmount <= 0}
                     className="flex-1"
                   >
                     {loading ? "Submitting..." : "Submit"}

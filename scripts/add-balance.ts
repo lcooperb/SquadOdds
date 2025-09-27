@@ -19,7 +19,7 @@ async function addBalance() {
       data: { virtualBalance: targetAmount }
     })
 
-    console.log('Updated user balance:', user.email, 'now has ₺' + user.virtualBalance)
+    console.log('Updated user balance:', user.email, 'now has $' + user.virtualBalance)
   } catch (error) {
     console.error('Error:', error)
   } finally {

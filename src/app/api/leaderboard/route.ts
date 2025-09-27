@@ -24,8 +24,7 @@ export async function GET(request: NextRequest) {
     const users = await prisma.user.findMany({
       select: {
         id: true,
-        username: true,
-        displayName: true,
+        name: true,
         image: true,
         virtualBalance: true,
         totalWinnings: true,
@@ -69,8 +68,7 @@ export async function GET(request: NextRequest) {
 
       return {
         id: user.id,
-        username: user.username,
-        displayName: user.displayName,
+        name: user.name,
         image: user.image,
         virtualBalance: Number(user.virtualBalance),
         totalWinnings: Number(user.totalWinnings),

@@ -31,8 +31,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           email: true,
-          username: true,
-          displayName: true,
+          name: true,
           virtualBalance: true,
           totalWinnings: true,
           totalLosses: true,
@@ -59,8 +58,7 @@ export async function GET(request: NextRequest) {
         select: {
           id: true,
           email: true,
-          username: true,
-          displayName: true,
+          name: true,
           image: true,
           virtualBalance: true,
           totalWinnings: true,

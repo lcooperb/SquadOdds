@@ -49,7 +49,7 @@ export async function PUT(
         )
       }
 
-      // Tokens were already deducted (held) at request time; mark as completed only
+      // Funds were already deducted (held) at request time; mark as completed only
       await prisma.redemption.update({
         where: { id: redemptionId },
         data: {
@@ -59,16 +59,16 @@ export async function PUT(
       })
 
       return NextResponse.json({
-        message: `Redemption completed! Tokens were already held at request time for ${redemption.user.displayName}.`
+        message: `Redemption completed! Funds were already held at request time for ${redemption.user.displayName}.`
       })
     } else if (action === 'reject') {
-      // Refund held tokens back to user and mark as rejected
+      // Refund held funds back to user and mark as rejected
       await prisma.$transaction([
         prisma.user.update({
           where: { id: redemption.userId },
           data: {
             virtualBalance: {
-              increment: Number(redemption.tokenAmount)
+              increment: Number(redemption.dollarAmount)
             }
           }
         }),
@@ -82,7 +82,7 @@ export async function PUT(
       ])
 
       return NextResponse.json({
-        message: `Redemption rejected and ${redemption.tokenAmount} tokens refunded to ${redemption.user.displayName}.`
+        message: `Redemption rejected and $${Number(redemption.dollarAmount).toFixed(2)} refunded to ${redemption.user.displayName}.`
       })
     }
 

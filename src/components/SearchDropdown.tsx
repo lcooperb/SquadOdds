@@ -259,21 +259,18 @@ export default function SearchDropdown() {
               {userResults.map((user) => (
                 <Link
                   key={user.id}
-                  href={`/profile?user=${user.username}`}
+                  href={`/profile?user=${user.id}`}
                   onClick={handleResultClick}
                   className="block px-4 py-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-b-0"
                 >
                   <div className="flex items-center justify-between">
                     <div className="flex-1">
                       <h4 className="text-white font-medium text-sm mb-1">
-                        {user.displayName}
+                        {user.name}
                       </h4>
-                      <p className="text-gray-400 text-xs mb-2">
-                        @{user.username}
-                      </p>
                       <div className="flex items-center gap-4 text-xs text-gray-400">
                         <span className="flex items-center gap-1">
-                          ₺{Math.round(user.virtualBalance).toLocaleString("en-US")}
+                          ${Math.round(user.virtualBalance).toLocaleString("en-US")}
                         </span>
                         {user._count && (
                           <>
@@ -291,7 +288,7 @@ export default function SearchDropdown() {
                     </div>
                     <div className="ml-4 text-right">
                       <div className="text-green-400 font-bold text-sm">
-                        ₺{Math.round(user.totalWinnings).toLocaleString("en-US")}
+                        ${Math.round(user.totalWinnings).toLocaleString("en-US")}
                       </div>
                       <div className="text-gray-400 text-xs">winnings</div>
                     </div>

@@ -4,28 +4,26 @@ import { prisma } from '@/lib/prisma'
 
 export async function POST(request: NextRequest) {
   try {
-    const { email, username, displayName, venmoHandle, password } = await request.json()
+    const { email, name, password } = await request.json()
 
-    if (!email || !username || !displayName || !password) {
+    if (!email || !name || !password) {
       return NextResponse.json(
         { message: 'All fields are required' },
         { status: 400 }
       )
     }
 
+    // Normalize email to lowercase
+    const normalizedEmail = email.toLowerCase()
+
     // Check if user already exists
-    const existingUser = await prisma.user.findFirst({
-      where: {
-        OR: [
-          { email },
-          { username }
-        ]
-      }
+    const existingUser = await prisma.user.findUnique({
+      where: { email: normalizedEmail }
     })
 
     if (existingUser) {
       return NextResponse.json(
-        { message: 'User with this email or username already exists' },
+        { message: 'User with this email already exists' },
         { status: 400 }
       )
     }
@@ -36,10 +34,8 @@ export async function POST(request: NextRequest) {
     // Create the user
     const user = await prisma.user.create({
       data: {
-        email,
-        username,
-        displayName,
-        venmoHandle: venmoHandle || null,
+        email: normalizedEmail,
+        name,
         hashedPassword,
         virtualBalance: 50000, // Starting balance
       },

@@ -32,18 +32,18 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { tokenAmount, venmoHandle } = await request.json()
+    const { dollarAmount, appleCashEmail } = await request.json()
 
-    if (!tokenAmount || !venmoHandle) {
+    if (!dollarAmount || !appleCashEmail) {
       return NextResponse.json(
-        { message: 'Token amount and Venmo handle are required' },
+        { message: 'Dollar amount and Apple Cash email are required' },
         { status: 400 }
       )
     }
 
-    if (tokenAmount < 100) {
+    if (dollarAmount < 1) {
       return NextResponse.json(
-        { message: 'Minimum redemption is 100 tokens' },
+        { message: 'Minimum redemption is $1' },
         { status: 400 }
       )
     }
@@ -61,9 +61,9 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    if (Number(user.virtualBalance) < tokenAmount) {
+    if (Number(user.virtualBalance) < dollarAmount) {
       return NextResponse.json(
-        { message: 'Insufficient token balance' },
+        { message: 'Insufficient balance' },
         { status: 400 }
       )
     }
@@ -83,29 +83,29 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Create redemption request and HOLD tokens immediately by decrementing balance
-    const dollarAmount = tokenAmount / 100
+    // Create redemption request and HOLD funds immediately by decrementing balance
     const [redemption] = await prisma.$transaction([
       prisma.redemption.create({
         data: {
           userId: session.user.id,
-          tokenAmount,
+          // Backward compatibility: mirror USD amount into tokenAmount
+          tokenAmount: dollarAmount,
           dollarAmount,
-          venmoHandle: venmoHandle.trim(),
+          appleCashEmail: appleCashEmail.trim(),
           status: 'PENDING',
         },
       }),
       prisma.user.update({
         where: { id: session.user.id },
         data: {
-          virtualBalance: { decrement: Number(tokenAmount) },
+          virtualBalance: { decrement: Number(dollarAmount) },
         },
       }),
     ])
 
     return NextResponse.json(
       {
-        message: 'Redemption request created successfully. Tokens placed on hold.',
+        message: 'Redemption request created successfully. Funds placed on hold.',
         redemption
       },
       { status: 201 }
