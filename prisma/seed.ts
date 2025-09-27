@@ -12,8 +12,7 @@ async function main() {
     update: {},
     create: {
       email: 'admin@friendbets.com',
-      username: 'admin',
-      displayName: 'Admin User',
+      name: 'Admin User',
       hashedPassword,
       isAdmin: true,
       virtualBalance: 1000, // Give admin more money for testing
@@ -24,20 +23,17 @@ async function main() {
   const testUsers = [
     {
       email: 'alice@example.com',
-      username: 'alice',
-      displayName: 'Alice Johnson',
+      name: 'Alice Johnson',
       hashedPassword: await bcrypt.hash('password123', 12),
     },
     {
       email: 'bob@example.com',
-      username: 'bob',
-      displayName: 'Bob Smith',
+      name: 'Bob Smith',
       hashedPassword: await bcrypt.hash('password123', 12),
     },
     {
       email: 'charlie@example.com',
-      username: 'charlie',
-      displayName: 'Charlie Brown',
+      name: 'Charlie Brown',
       hashedPassword: await bcrypt.hash('password123', 12),
     },
   ]
