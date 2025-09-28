@@ -16,6 +16,7 @@ interface Event {
   yesPrice: number;
   totalVolume: number;
   endDate: string;
+  createdAt: string;
   status: string;
   _count?: {
     bets: number;

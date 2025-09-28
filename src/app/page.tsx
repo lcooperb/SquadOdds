@@ -17,6 +17,7 @@ interface Event {
   yesPrice: number;
   totalVolume: number;
   endDate: string | null;
+  createdAt: string;
   isOngoing?: boolean;
   status: string;
   _count?: {
