@@ -27,6 +27,7 @@ interface MarketCardProps {
     yesPrice: number;
     totalVolume: number;
     endDate: string | null;
+    createdAt: string;
     isOngoing?: boolean;
     status: string;
     marketType?: string;
@@ -67,6 +68,8 @@ export default function MarketCard({
     return result;
   };
   const endDate = event.endDate ? new Date(event.endDate) : null;
+  const createdAt = new Date(event.createdAt);
+  const isNew = Date.now() - createdAt.getTime() < 24 * 60 * 60 * 1000; // 24 hours
   const isExpiringSoon = endDate
     ? endDate.getTime() - Date.now() < 7 * 24 * 60 * 60 * 1000
     : false; // 7 days
@@ -111,6 +114,11 @@ export default function MarketCard({
                     >
                       {event.category}
                     </Badge>
+                    {isNew && (
+                      <Badge variant="primary" className="text-xs">
+                        New
+                      </Badge>
+                    )}
                     {isOngoing && (
                       <Badge variant="warning" className="text-xs">
                         <Clock className="h-3 w-3 mr-1" />
@@ -209,6 +217,11 @@ export default function MarketCard({
                 >
                   {event.category}
                 </Badge>
+                {isNew && (
+                  <Badge variant="primary" className="text-xs">
+                    New
+                  </Badge>
+                )}
                 {isOngoing && (
                   <Badge variant="warning" className="text-xs">
                     <Clock className="h-3 w-3 mr-1" />
@@ -301,6 +314,11 @@ export default function MarketCard({
               >
                 {event.category}
               </Badge>
+              {isNew && (
+                <Badge variant="primary" className="text-xs">
+                  New
+                </Badge>
+              )}
               {isOngoing && (
                 <Badge variant="warning" className="text-xs">
                   <Clock className="h-3 w-3 mr-1" />
