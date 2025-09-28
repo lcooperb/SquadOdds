@@ -10,15 +10,35 @@ function previewMarketImpact(
   priceImpact: number;
   estimatedFinalPrice: number;
 } {
-  // Updated AMM parameters (matching our improvements)
-  const baseK = Math.max(30, totalLiquidity * 0.8);
+  // Updated AMM parameters (matching our improved liquidity system)
+  const minLiquidity = Math.max(150, totalLiquidity * 0.3);
+
+  // Progressive scaling based on market size
+  let scaledLiquidity: number;
+  if (totalLiquidity <= 200) {
+    // Micro markets: Significant liquidity boost with logarithmic scaling
+    scaledLiquidity = minLiquidity + Math.log(totalLiquidity + 1) * 60;
+  } else if (totalLiquidity <= 500) {
+    // Small markets: Moderate boost to prevent extreme swings
+    scaledLiquidity = minLiquidity + Math.log(totalLiquidity + 1) * 40;
+  } else {
+    // Medium+ markets: Normal scaling
+    scaledLiquidity = totalLiquidity * 0.8;
+  }
+
   const distanceFrom50 = Math.abs(startingPrice - 50);
   const liquidityMultiplier = 1 + (distanceFrom50 / 200);
-  const k = baseK * liquidityMultiplier;
+  const k = scaledLiquidity * liquidityMultiplier;
 
   const impactFactor = betAmount / k;
   const rawSlippage = impactFactor * startingPrice * 0.4;
-  const slippage = Math.sqrt(rawSlippage) * 12;
+
+  // Market size-based slippage scaling
+  const marketSizeMultiplier = totalLiquidity < 500
+    ? Math.max(0.4, totalLiquidity / 1250)
+    : 1.0;
+
+  const slippage = Math.sqrt(rawSlippage) * (8 * marketSizeMultiplier);
 
   const userExecutionPrice = Math.min(95, startingPrice + slippage);
   const newMarketPrice = side === 'YES' ?
@@ -60,14 +80,14 @@ interface TestScenario {
 }
 
 const testScenarios: TestScenario[] = [
-  // Small market scenarios
+  // Small market scenarios (improved stability)
   {
     name: "Small bet in tiny market",
     betAmount: 10,
     startingPrice: 50,
     totalLiquidity: 100,
     side: 'YES',
-    expectedMinMovement: 2 // Should move at least 2¢
+    expectedMinMovement: 1 // Should move at least 1¢ (reduced from 2¢)
   },
   {
     name: "Medium bet in small market",
@@ -75,7 +95,7 @@ const testScenarios: TestScenario[] = [
     startingPrice: 30,
     totalLiquidity: 200,
     side: 'YES',
-    expectedMinMovement: 5 // Should move at least 5¢
+    expectedMinMovement: 3 // Should move at least 3¢ (reduced from 5¢)
   },
   {
     name: "Large bet in small market",
@@ -83,7 +103,7 @@ const testScenarios: TestScenario[] = [
     startingPrice: 50,
     totalLiquidity: 300,
     side: 'NO',
-    expectedMinMovement: 8 // Should move at least 8¢
+    expectedMinMovement: 5 // Should move at least 5¢ (reduced from 8¢)
   },
 
   // Medium market scenarios
@@ -199,10 +219,11 @@ function runAMMTests() {
   console.log('- Price movements should be visible but not extreme')
   console.log('- Edge cases (very high/low prices) should still be responsive')
 
-  console.log('\n💡 AMM Parameter Summary:')
-  console.log('- Base liquidity: max(30, totalLiquidity * 0.8)')
-  console.log('- Slippage factor: 40% with sqrt dampening * 12')
-  console.log('- Market movement: 90% of user slippage')
+  console.log('\n💡 Improved AMM Parameter Summary:')
+  console.log('- Liquidity floors: min(150, totalLiquidity * 0.3) with logarithmic boost')
+  console.log('- Market tiers: Micro (<$200), Small ($200-$500), Medium+ (>$500)')
+  console.log('- Slippage scaling: Market size multiplier (0.4-1.0) * 8')
+  console.log('- Enhanced stability for small markets while preserving responsiveness')
   console.log('- Micro trade threshold: < 0.05% of liquidity')
   console.log('- Small trade threshold: < 1% of liquidity')
 }

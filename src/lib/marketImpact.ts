@@ -30,22 +30,41 @@ export function calculateMarketImpact(
   // Improved AMM formula for realistic price discovery
   // Price impact based on bet size relative to market depth
 
-  // Virtual liquidity that scales proportionally with market activity
-  // Smaller markets should have proportionally less depth for more responsive pricing
-  const baseK = Math.max(30, totalLiquidity * 0.8); // Reduced from 1.5 to 0.8 for more responsiveness
+  // Adaptive liquidity system with floors for small markets
+  // Small markets get enhanced virtual liquidity to reduce extreme volatility
+  const minLiquidity = Math.max(150, totalLiquidity * 0.3); // Higher floor, lower base multiplier
+
+  // Progressive scaling based on market size
+  let scaledLiquidity: number;
+  if (totalLiquidity <= 200) {
+    // Micro markets: Significant liquidity boost with logarithmic scaling
+    scaledLiquidity = minLiquidity + Math.log(totalLiquidity + 1) * 60;
+  } else if (totalLiquidity <= 500) {
+    // Small markets: Moderate boost to prevent extreme swings
+    scaledLiquidity = minLiquidity + Math.log(totalLiquidity + 1) * 40;
+  } else {
+    // Medium+ markets: Normal scaling
+    scaledLiquidity = totalLiquidity * 0.8;
+  }
 
   // Adjust liquidity based on how far from 50% the price is (less liquid near extremes for bigger moves)
   const distanceFrom50 = Math.abs(startingPrice - 50);
   const liquidityMultiplier = 1 + (distanceFrom50 / 200); // Reduced from 100 to 200 for less dampening
-  const k = baseK * liquidityMultiplier;
+  const k = scaledLiquidity * liquidityMultiplier;
 
   // Simplified prediction market AMM formula
   // Price impact based on bet size relative to market depth
   const impactFactor = betAmount / k;
 
-  // Calculate slippage: how much more expensive it gets for the user
-  const rawSlippage = impactFactor * startingPrice * 0.4; // Increased from 30% to 40% for more movement
-  const slippage = Math.sqrt(rawSlippage) * 12; // Increased from 8 to 12 for more visible impact
+  // Calculate slippage with market size-based scaling
+  const rawSlippage = impactFactor * startingPrice * 0.4; // Base slippage factor
+
+  // Market size multiplier: reduce slippage impact for smaller markets
+  const marketSizeMultiplier = totalLiquidity < 500
+    ? Math.max(0.4, totalLiquidity / 1250)  // Caps slippage for tiny markets (0.4-1.0 range)
+    : 1.0; // Normal slippage for larger markets
+
+  const slippage = Math.sqrt(rawSlippage) * (8 * marketSizeMultiplier); // Reduced from 12, scaled by market size
 
   // Calculate the user's execution price (what they actually pay)
   // Buying always makes it more expensive for the user due to slippage
