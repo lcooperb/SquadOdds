@@ -41,11 +41,13 @@ interface MarketCardProps {
     };
   };
   compact?: boolean;
+  hideOngoingTag?: boolean;
 }
 
 export default function MarketCard({
   event,
   compact = false,
+  hideOngoingTag = false,
 }: MarketCardProps) {
   const yesPercentage = Math.round(Number(event.yesPrice));
   const noPercentage = 100 - yesPercentage;
@@ -119,7 +121,7 @@ export default function MarketCard({
                         New
                       </Badge>
                     )}
-                    {isOngoing && (
+                    {isOngoing && !hideOngoingTag && (
                       <Badge variant="warning" className="text-xs">
                         <Clock className="h-3 w-3 mr-1" />
                         Ongoing
@@ -222,7 +224,7 @@ export default function MarketCard({
                     New
                   </Badge>
                 )}
-                {isOngoing && (
+                {isOngoing && !hideOngoingTag && (
                   <Badge variant="warning" className="text-xs">
                     <Clock className="h-3 w-3 mr-1" />
                     Ongoing
@@ -319,7 +321,7 @@ export default function MarketCard({
                   New
                 </Badge>
               )}
-              {isOngoing && (
+              {isOngoing && !hideOngoingTag && (
                 <Badge variant="warning" className="text-xs">
                   <Clock className="h-3 w-3 mr-1" />
                   Ongoing

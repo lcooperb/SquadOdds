@@ -369,6 +369,8 @@ export default function MarketPage() {
   const endDate = event.endDate ? new Date(event.endDate) : null;
   const isExpired = endDate ? endDate < new Date() : false;
   const isOngoing = event.isOngoing || !endDate;
+  const createdAt = new Date(event.createdAt);
+  const isNew = Date.now() - createdAt.getTime() < 24 * 60 * 60 * 1000; // 24 hours
 
   // Calculate user position for current selection
   const userPosition =
@@ -413,6 +415,11 @@ export default function MarketPage() {
                   <Badge variant={getCategoryColor(event.category)}>
                     {event.category}
                   </Badge>
+                  {isNew && (
+                    <Badge variant="primary">
+                      New
+                    </Badge>
+                  )}
                   {event.resolved && (
                     <Badge variant={event.outcome ? "success" : "error"}>
                       Resolved: {event.outcome ? "YES" : "NO"}

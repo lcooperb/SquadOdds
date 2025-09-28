@@ -18,7 +18,7 @@ const Badge = forwardRef<HTMLDivElement, BadgeProps>(
             'bg-green-600/20 text-green-300 border border-green-500/30': variant === 'success',
             'bg-yellow-600/20 text-yellow-300 border border-yellow-500/30': variant === 'warning',
             'bg-red-600/20 text-red-300 border border-red-500/30': variant === 'error',
-            'bg-blue-600 text-blue-100 border border-blue-500': variant === 'primary',
+            'bg-blue-600 text-white border border-blue-500': variant === 'primary',
           },
           className
         )}

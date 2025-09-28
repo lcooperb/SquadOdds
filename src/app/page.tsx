@@ -217,7 +217,7 @@ export default function Home() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
             {events.map((event) => (
-              <MarketCard key={event.id} event={event} />
+              <MarketCard key={event.id} event={event} hideOngoingTag={true} />
             ))}
           </div>
         )}
