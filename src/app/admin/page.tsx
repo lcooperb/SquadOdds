@@ -455,10 +455,10 @@ export default function AdminPanel() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="flex space-x-4 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:flex gap-2 md:gap-4 mb-6">
           <button
             onClick={() => setActiveTab("events")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-sm md:text-base ${
               activeTab === "events"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -469,7 +469,7 @@ export default function AdminPanel() {
           </button>
           <button
             onClick={() => setActiveTab("users")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-sm md:text-base ${
               activeTab === "users"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -480,7 +480,7 @@ export default function AdminPanel() {
           </button>
           <button
             onClick={() => setActiveTab("payments")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-sm md:text-base ${
               activeTab === "payments"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -491,7 +491,7 @@ export default function AdminPanel() {
           </button>
           <button
             onClick={() => setActiveTab("redemptions")}
-            className={`px-4 py-2 rounded-lg font-medium transition-colors ${
+            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-sm md:text-base ${
               activeTab === "redemptions"
                 ? "bg-blue-600 text-white"
                 : "bg-gray-700 text-gray-300 hover:bg-gray-600"
@@ -505,15 +505,16 @@ export default function AdminPanel() {
         {/* Events Tab */}
         {activeTab === "events" && (
           <div className="space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold text-white mb-4">
+            <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+              <h2 className="text-xl font-semibold text-white">
                 Event Management
               </h2>
-              <div className="flex gap-2 mb-4">
+              <div className="flex flex-col md:flex-row gap-2">
                 <Button
                   variant={eventsSubTab === "active" ? "primary" : "outline"}
                   size="sm"
                   onClick={() => setEventsSubTab("active")}
+                  className="text-xs md:text-sm"
                 >
                   Active ({events.filter(e => !e.resolved).length})
                 </Button>
@@ -521,6 +522,7 @@ export default function AdminPanel() {
                   variant={eventsSubTab === "resolved" ? "primary" : "outline"}
                   size="sm"
                   onClick={() => setEventsSubTab("resolved")}
+                  className="text-xs md:text-sm"
                 >
                   Resolved ({events.filter(e => e.resolved).length})
                 </Button>
@@ -531,13 +533,13 @@ export default function AdminPanel() {
               .map((event) => (
               <Card key={event.id}>
                 <CardHeader>
-                  <div className="flex items-start justify-between">
-                    <div>
-                      <CardTitle className="text-lg">{event.title}</CardTitle>
+                  <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
+                    <div className="flex-1">
+                      <CardTitle className="text-base md:text-lg">{event.title}</CardTitle>
                       <p className="text-gray-400 text-sm mt-1">
                         {event.description}
                       </p>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Badge variant="secondary">{event.category}</Badge>
                         <Badge
                           variant={
@@ -562,10 +564,10 @@ export default function AdminPanel() {
                         )}
                       </div>
                     </div>
-                    <div className="text-right text-sm text-gray-400">
-                      <div>by {event.createdBy.name}</div>
-                      <div>{event._count.bets} bets</div>
-                      <div>
+                    <div className="md:text-right text-sm text-gray-400 flex md:flex-col gap-2 md:gap-1">
+                      <div className="text-xs md:text-sm">by {event.createdBy.name}</div>
+                      <div className="text-xs md:text-sm">{event._count.bets} bets</div>
+                      <div className="text-xs md:text-sm">
                         $
                         {Number(event.totalVolume).toLocaleString("en-US", {
                           minimumFractionDigits: 2,
@@ -582,7 +584,7 @@ export default function AdminPanel() {
                       <h4 className="font-medium text-white">Resolve Event:</h4>
 
                       {event.marketType === "BINARY" ? (
-                        <div className="flex gap-2">
+                        <div className="flex flex-col md:flex-row gap-2">
                           <Button
                             onClick={() => openResolutionModal(event.id, event.title, "YES", "YES")}
                             className="bg-green-600 hover:bg-green-700"
@@ -674,11 +676,12 @@ export default function AdminPanel() {
                       </Badge>
                     )}
                   </CardTitle>
-                  <div className="flex gap-2">
+                  <div className="flex flex-col md:flex-row gap-2">
                     <Button
                       variant={redemptionsSubTab === "pending" ? "primary" : "outline"}
                       size="sm"
                       onClick={() => setRedemptionsSubTab("pending")}
+                      className="text-xs md:text-sm"
                     >
                       Pending ({redemptions.filter(r => r.status === "PENDING").length})
                     </Button>
@@ -686,6 +689,7 @@ export default function AdminPanel() {
                       variant={redemptionsSubTab === "completed" ? "primary" : "outline"}
                       size="sm"
                       onClick={() => setRedemptionsSubTab("completed")}
+                      className="text-xs md:text-sm"
                     >
                       Completed ({redemptions.filter(r => r.status === "COMPLETED" || r.status === "REJECTED").length})
                     </Button>
@@ -698,7 +702,7 @@ export default function AdminPanel() {
                     {redemptions
                       .filter(r => redemptionsSubTab === "pending" ? r.status === "PENDING" : (r.status === "COMPLETED" || r.status === "REJECTED"))
                       .map((r) => (
-                      <div key={r.id} className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+                      <div key={r.id} className="flex flex-col md:flex-row md:items-center md:justify-between p-3 md:p-4 bg-gray-800/30 rounded-lg gap-4">
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
                             <Badge variant={getStatusColor(r.status)}>
@@ -709,23 +713,25 @@ export default function AdminPanel() {
                               {r.status}
                             </Badge>
                           </div>
-                          <div className="text-sm text-gray-400 flex gap-4 flex-wrap">
-                            <span className="text-white font-medium">{r.user.name} ({r.user.email})</span>
-                            <span>Apple Cash: {r.appleCashEmail}</span>
-                            <span>{new Date(r.requestedAt).toLocaleString()}</span>
+                          <div className="text-sm text-gray-400 space-y-1">
+                            <div className="text-white font-medium">{r.user.name} ({r.user.email})</div>
+                            <div className="text-xs md:text-sm">Apple Cash: {r.appleCashEmail}</div>
+                            <div className="text-xs md:text-sm">{new Date(r.requestedAt).toLocaleString()}</div>
                           </div>
                         </div>
-                        <div className="text-right flex items-center gap-3">
-                          <div>
-                            <div className="text-white font-semibold">$
-                              {Number(r.dollarAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+
+                        <div className="flex flex-col md:flex-row md:items-center gap-3">
+                          <div className="text-center md:text-right">
+                            <div className="text-white font-semibold text-lg">
+                              ${Number(r.dollarAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                             </div>
                           </div>
+
                           {r.status === "PENDING" && (
-                            <div className="flex gap-2">
+                            <div className="flex flex-col md:flex-row gap-2">
                               <Button
                                 size="sm"
-                                className="bg-green-600 hover:bg-green-700"
+                                className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
                                 onClick={() => handleRedemptionAction(r.id, "complete")}
                                 disabled={processingRedemptionId === r.id}
                               >
@@ -736,7 +742,7 @@ export default function AdminPanel() {
                                 variant="ghost"
                                 onClick={() => handleRedemptionAction(r.id, "reject")}
                                 disabled={processingRedemptionId === r.id}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
+                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 w-full md:w-auto"
                               >
                                 <X className="h-4 w-4 mr-1" /> Reject
                               </Button>
@@ -767,32 +773,33 @@ export default function AdminPanel() {
               {users.map((user) => (
                 <Card key={user.id}>
                   <CardContent className="p-4">
-                    <div className="flex items-center justify-between">
-                      <div>
+                    <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+                      <div className="flex-1">
                         <h3 className="font-medium text-white">
                           {user.name}
                         </h3>
                         <p className="text-gray-400 text-sm">
                           {user.email}
                         </p>
-                        <div className="flex items-center gap-4 mt-2 text-sm text-gray-400">
+                        <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 mt-2 text-sm text-gray-400">
                           <span className="flex items-center gap-1">
                             ${Number(user.virtualBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
                           </span>
-                          <span>{user._count.bets} bets</span>
-                          <span>{user._count.createdEvents} markets</span>
-                          <span>
+                          <span className="text-xs md:text-sm">{user._count.bets} bets</span>
+                          <span className="text-xs md:text-sm">{user._count.createdEvents} markets</span>
+                          <span className="text-xs md:text-sm">
                             Joined{" "}
                             {new Date(user.createdAt).toLocaleDateString()}
                           </span>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2">
+                      <div className="flex flex-col md:flex-row items-start md:items-center gap-2">
                         {user.isAdmin && <Badge variant="default">Admin</Badge>}
                         <Button
                           onClick={() => toggleUserAdmin(user.id, user.isAdmin)}
                           variant="outline"
                           size="sm"
+                          className="w-full md:w-auto text-xs md:text-sm"
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           {user.isAdmin ? "Remove Admin" : "Make Admin"}
@@ -960,7 +967,7 @@ export default function AdminPanel() {
                       .map((payment) => (
                       <div
                         key={payment.id}
-                        className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                        className="flex flex-col md:flex-row md:items-center md:justify-between p-3 md:p-4 bg-gray-800/30 rounded-lg gap-3 md:gap-0"
                       >
                         <div className="flex-1">
                           <div className="flex items-center gap-2 mb-2">
@@ -984,20 +991,17 @@ export default function AdminPanel() {
                               {payment.status}
                             </Badge>
                           </div>
-                          <div className="flex items-center gap-4 text-sm">
+                          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-sm">
                             <span className="text-white font-medium">
                               {payment.user.name} ({payment.user.email})
                             </span>
-                            <span className="text-gray-400">
-                              ID: {payment.transactionId}
-                            </span>
-                            <span className="text-gray-400">
+                            <span className="text-gray-400 text-xs md:text-sm">
                               {new Date(payment.createdAt).toLocaleString()}
                             </span>
                           </div>
                         </div>
-                        <div className="text-right flex items-center gap-3">
-                          <div>
+                        <div className="flex flex-col md:flex-row md:items-center justify-between md:justify-end gap-3">
+                          <div className="md:text-right">
                             <div className="text-white font-semibold">
                               ${Number(payment.amount).toLocaleString("en-US", {
                                 minimumFractionDigits: 2,
@@ -1014,7 +1018,7 @@ export default function AdminPanel() {
                             </div>
                           </div>
                           {payment.status === "PENDING" && (
-                            <div className="flex gap-2">
+                            <div className="flex gap-2 w-full md:w-auto justify-center md:justify-end">
                               <Button
                                 size="sm"
                                 onClick={() =>
