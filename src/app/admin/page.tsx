@@ -260,6 +260,94 @@ export default function AdminPanel() {
     }
   };
 
+  const openCancellationModal = (
+    eventId: string,
+    eventTitle: string,
+    betCount: number
+  ) => {
+    setCancellationModal({
+      isOpen: true,
+      eventId,
+      eventTitle,
+      betCount,
+    });
+  };
+
+  const closeCancellationModal = () => {
+    setCancellationModal({
+      isOpen: false,
+      eventId: "",
+      eventTitle: "",
+      betCount: 0,
+    });
+  };
+
+  const confirmCancellation = async () => {
+    try {
+      const response = await fetch(`/api/events/${cancellationModal.eventId}/cancel`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        alert(`Market cancelled successfully. ${result.refundedBets} bets refunded totaling $${result.totalRefunded.toFixed(2)}`);
+        fetchData(); // Refresh data
+        closeCancellationModal();
+      } else {
+        const error = await response.json();
+        alert(`Error cancelling market: ${error.message}`);
+      }
+    } catch (error) {
+      console.error("Error cancelling market:", error);
+      alert("Error cancelling market");
+    }
+  };
+
+  const openDeletionModal = (
+    eventId: string,
+    eventTitle: string,
+    betCount: number
+  ) => {
+    setDeletionModal({
+      isOpen: true,
+      eventId,
+      eventTitle,
+      betCount,
+    });
+  };
+
+  const closeDeletionModal = () => {
+    setDeletionModal({
+      isOpen: false,
+      eventId: "",
+      eventTitle: "",
+      betCount: 0,
+    });
+  };
+
+  const confirmDeletion = async () => {
+    try {
+      const response = await fetch(`/api/events/${deletionModal.eventId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        alert("Market deleted successfully");
+        fetchData(); // Refresh data
+        closeDeletionModal();
+      } else {
+        const error = await response.json();
+        alert(`Error deleting market: ${error.message}`);
+      }
+    } catch (error) {
+      console.error("Error deleting market:", error);
+      alert("Error deleting market");
+    }
+  };
+
   const toggleUserAdmin = async (userId: string, isAdmin: boolean) => {
     try {
       const response = await fetch(`/api/admin/users/${userId}`, {
@@ -391,6 +479,32 @@ export default function AdminPanel() {
     eventTitle: "",
     resolution: "",
     resolutionLabel: ""
+  });
+
+  // Cancellation confirmation modal state
+  const [cancellationModal, setCancellationModal] = useState<{
+    isOpen: boolean;
+    eventId: string;
+    eventTitle: string;
+    betCount: number;
+  }>({
+    isOpen: false,
+    eventId: "",
+    eventTitle: "",
+    betCount: 0,
+  });
+
+  // Deletion confirmation modal state
+  const [deletionModal, setDeletionModal] = useState<{
+    isOpen: boolean;
+    eventId: string;
+    eventTitle: string;
+    betCount: number;
+  }>({
+    isOpen: false,
+    eventId: "",
+    eventTitle: "",
+    betCount: 0,
   });
   const handleRedemptionAction = async (
     redemptionId: string,
@@ -627,25 +741,49 @@ export default function AdminPanel() {
                           </div>
                         </div>
                       )}
+
+                      <div className="pt-2 border-t border-gray-700">
+                        <Button
+                          onClick={() => openCancellationModal(event.id, event.title, event._count.bets)}
+                          className="bg-orange-600 hover:bg-orange-700 w-full md:w-auto"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Cancel & Refund Market
+                        </Button>
+                      </div>
                     </div>
                   )}
 
                   {event.resolved && (
-                    <div className="bg-gray-800/50 rounded-lg p-3">
-                      <h4 className="font-medium text-white mb-2">
-                        Resolution:
-                      </h4>
-                      {event.marketType === "BINARY" ? (
-                        <Badge variant={event.outcome ? "success" : "error"}>
-                          {event.outcome ? "YES" : "NO"}
-                        </Badge>
-                      ) : (
-                        <Badge variant="success">
-                          {event.options?.find(
-                            (opt) => opt.id === event.winningOptionId
-                          )?.title || "Unknown"}
-                        </Badge>
-                      )}
+                    <div className="space-y-3">
+                      <div className="bg-gray-800/50 rounded-lg p-3">
+                        <h4 className="font-medium text-white mb-2">
+                          Resolution:
+                        </h4>
+                        {event.marketType === "BINARY" ? (
+                          <Badge variant={event.outcome ? "success" : "error"}>
+                            {event.outcome ? "YES" : "NO"}
+                          </Badge>
+                        ) : event.status === "CANCELLED" ? (
+                          <Badge variant="secondary">CANCELLED</Badge>
+                        ) : (
+                          <Badge variant="success">
+                            {event.options?.find(
+                              (opt) => opt.id === event.winningOptionId
+                            )?.title || "Unknown"}
+                          </Badge>
+                        )}
+                      </div>
+
+                      <div className="pt-2 border-t border-gray-700">
+                        <Button
+                          onClick={() => openDeletionModal(event.id, event.title, event._count.bets)}
+                          className="bg-red-600 hover:bg-red-700 w-full md:w-auto"
+                        >
+                          <X className="h-4 w-4 mr-2" />
+                          Delete Market
+                        </Button>
+                      </div>
                     </div>
                   )}
                 </CardContent>
@@ -1119,6 +1257,135 @@ export default function AdminPanel() {
                 >
                   <CheckCircle className="h-4 w-4 mr-2" />
                   Confirm Resolution
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Cancellation Confirmation Modal */}
+        {cancellationModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertCircle className="h-6 w-6 text-orange-500" />
+                <h3 className="text-lg font-semibold text-white">
+                  Confirm Market Cancellation
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-300 mb-2">
+                    You are about to cancel this market:
+                  </p>
+                  <div className="bg-gray-700 rounded p-3">
+                    <p className="text-white font-medium">
+                      {cancellationModal.eventTitle}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-gray-300 mb-2">Impact:</p>
+                  <div className="bg-gray-700 rounded p-3">
+                    <p className="text-orange-400 font-medium">
+                      {cancellationModal.betCount} bet{cancellationModal.betCount !== 1 ? 's' : ''} will be refunded
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-orange-500/10 border border-orange-500/20 rounded p-3">
+                  <p className="text-orange-300 text-sm">
+                    ⚠️ <strong>Warning:</strong> This action cannot be undone.
+                    All bets will be refunded to users and they will receive notifications.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <Button
+                  onClick={closeCancellationModal}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmCancellation}
+                  className="flex-1 bg-orange-600 hover:bg-orange-700"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Confirm Cancellation
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Deletion Confirmation Modal */}
+        {deletionModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertCircle className="h-6 w-6 text-red-500" />
+                <h3 className="text-lg font-semibold text-white">
+                  Confirm Market Deletion
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-300 mb-2">
+                    You are about to permanently delete this market:
+                  </p>
+                  <div className="bg-gray-700 rounded p-3">
+                    <p className="text-white font-medium">
+                      {deletionModal.eventTitle}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-gray-300 mb-2">This will delete:</p>
+                  <div className="bg-gray-700 rounded p-3 space-y-1">
+                    <p className="text-red-400 text-sm">
+                      • {deletionModal.betCount} bet record{deletionModal.betCount !== 1 ? 's' : ''}
+                    </p>
+                    <p className="text-red-400 text-sm">
+                      • All price history
+                    </p>
+                    <p className="text-red-400 text-sm">
+                      • All comments and likes
+                    </p>
+                    <p className="text-red-400 text-sm">
+                      • All market options
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
+                  <p className="text-red-300 text-sm">
+                    ⚠️ <strong>Warning:</strong> This action is PERMANENT and cannot be undone.
+                    All data associated with this market will be permanently deleted from the database.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <Button
+                  onClick={closeDeletionModal}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmDeletion}
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                >
+                  <X className="h-4 w-4 mr-2" />
+                  Permanently Delete
                 </Button>
               </div>
             </div>

@@ -25,10 +25,15 @@ export const metadata: Metadata = {
   openGraph: {
     title: "SquadOdds - Call it, before life does.",
     description: "A prediction market for your squad to bet on personal life events",
-    url: "/",
+    url: "https://squadodds.vercel.app",
     siteName: "SquadOdds",
     images: [
-      { url: "/opengraph-image.png", width: 1200, height: 630 },
+      {
+        url: "/opengraph-image.png",
+        width: 1200,
+        height: 630,
+        alt: "SquadOdds - Call it, before life does."
+      },
     ],
     type: "website",
   },

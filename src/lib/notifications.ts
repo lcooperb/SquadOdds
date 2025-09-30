@@ -177,6 +177,50 @@ export async function notifyPaymentApproved(userId: string, amount: number) {
   }
 }
 
+export async function notifyMarketCancelled(eventId: string) {
+  try {
+    // Get the event and all bets
+    const event = await prisma.event.findUnique({
+      where: { id: eventId },
+      include: {
+        bets: {
+          include: {
+            user: true,
+          },
+        },
+      },
+    })
+
+    if (!event) {
+      throw new Error('Event not found')
+    }
+
+    // Create notifications for each user with bets
+    const notifications = await Promise.all(
+      event.bets.map(async (bet) => {
+        const refundAmount = Number(bet.amount)
+
+        return createNotification(
+          bet.userId,
+          'MARKET_CANCELLED',
+          'Market Cancelled',
+          `The market "${event.title}" has been cancelled by an admin. Your bet of $${refundAmount.toFixed(2)} has been refunded to your account.`,
+          {
+            eventId: event.id,
+            betId: bet.id,
+            refundAmount,
+          }
+        )
+      })
+    )
+
+    return notifications
+  } catch (error) {
+    console.error('Error notifying market cancellation:', error)
+    throw error
+  }
+}
+
 export async function notifyRedemptionUpdate(redemptionId: string, status: string, adminNotes?: string) {
   try {
     // Get the redemption details

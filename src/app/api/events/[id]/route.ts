@@ -190,7 +190,7 @@ export async function DELETE(
       )
     }
 
-    // Check if event has bets
+    // Check if event exists and get its status
     const event = await prisma.event.findUnique({
       where: { id: params.id },
       include: {
@@ -209,9 +209,12 @@ export async function DELETE(
       )
     }
 
-    if (event._count.bets > 0) {
+    // Only allow deletion if:
+    // 1. Event is resolved, OR
+    // 2. Event has no bets
+    if (!event.resolved && event._count.bets > 0) {
       return NextResponse.json(
-        { message: 'Cannot delete event with existing bets' },
+        { message: 'Cannot delete unresolved event with existing bets. Cancel the market first to refund all bets.' },
         { status: 400 }
       )
     }
