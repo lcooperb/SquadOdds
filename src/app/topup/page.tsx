@@ -270,7 +270,7 @@ export default function TopUp() {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
-                        </strong> via Apple Cash to <strong>Leo</strong>, then hit Submit. We'll review and credit your balance with the same amount.
+                        </strong> via Apple Cash to <strong>Leo</strong>, then hit Submit. We&apos;ll review and credit your balance with the same amount.
                       </p>
                     </div>
                   </div>
