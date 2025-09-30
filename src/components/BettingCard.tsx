@@ -101,16 +101,11 @@ export default function BettingCard({
   const potentialPayout = averagePrice > 0 ? positionValue / (averagePrice / 100) : positionValue;
 
   // Quick amount buttons
-  const quickAmounts = [1, 20, 100];
-  const maxAmount = Math.floor(userBalance);
+  const quickAmounts = [1, 5, 10, 20];
 
-  const handleQuickAmount = (value: number | "max") => {
-    if (value === "max") {
-      setAmount(maxAmount.toString());
-    } else {
-      const currentAmount = parseFloat(amount) || 0;
-      setAmount((currentAmount + value).toString());
-    }
+  const handleQuickAmount = (value: number) => {
+    const currentAmount = parseFloat(amount) || 0;
+    setAmount((currentAmount + value).toString());
   };
 
   const handlePlaceBet = async () => {
@@ -120,7 +115,7 @@ export default function BettingCard({
     }
 
     if (parseFloat(amount) > userBalance) {
-      setError("Insufficient balance");
+      setError("Insufficient credits");
       return;
     }
 
@@ -242,14 +237,6 @@ export default function BettingCard({
                     +${value}
                   </Button>
                 ))}
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => handleQuickAmount("max")}
-                  className="text-xs"
-                >
-                  Max
-                </Button>
               </div>
             </div>
 

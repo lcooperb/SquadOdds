@@ -34,8 +34,8 @@ export default function Home() {
   const [closedLoading, setClosedLoading] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
-  const [userBalance, setUserBalance] = useState<number>(100);
   const [portfolioValue, setPortfolioValue] = useState<number>(0);
+  const [totalBets, setTotalBets] = useState<number>(0);
   const [showSection, setShowSection] = useState<'active' | 'closed'>('active');
 
   useEffect(() => {
@@ -89,11 +89,11 @@ export default function Home() {
       const response = await fetch("/api/users");
       if (response.ok) {
         const user = await response.json();
-        setUserBalance(Number(user.virtualBalance));
         // Calculate portfolio: sum of ACTIVE bets' amount on ACTIVE events
         const activeBets = (user.bets || []).filter((b: any) => (b?.status === 'ACTIVE') && (b?.event?.status === 'ACTIVE'));
         const portfolio = activeBets.reduce((sum: number, b: any) => sum + Number(b.amount || 0), 0);
         setPortfolioValue(portfolio);
+        setTotalBets(user._count?.bets || 0);
       }
     } catch (error) {
       console.error("Error fetching user balance:", error);
@@ -125,14 +125,7 @@ export default function Home() {
 
         {/* Stats Cards - only show if logged in */}
         {session && (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-6">
-            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-green-400 mb-1">
-                ${userBalance.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </div>
-              <div className="text-sm text-gray-400">Cash</div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <div className="bg-gray-800/90 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-green-400 mb-1">
                 ${portfolioValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
@@ -152,6 +145,13 @@ export default function Home() {
                 ${events.reduce((sum, e) => sum + Number(e.totalVolume), 0).toFixed(0)}
               </div>
               <div className="text-sm text-gray-400">Total Volume</div>
+            </div>
+
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-blue-400 mb-1">
+                {totalBets}
+              </div>
+              <div className="text-sm text-gray-400">Total Bets</div>
             </div>
           </div>
         )}

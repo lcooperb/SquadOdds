@@ -37,6 +37,11 @@ export async function GET(request: NextRequest) {
             status: true,
             shares: true,
             createdAt: true,
+            event: {
+              select: {
+                status: true,
+              },
+            },
           },
         },
         _count: {
@@ -66,6 +71,10 @@ export async function GET(request: NextRequest) {
       const winRate = totalBets > 0 ? (wonBets.length / totalBets) * 100 : 0
       const roi = totalStaked > 0 ? (netProfit / totalStaked) * 100 : 0
 
+      // Calculate portfolio: sum of ACTIVE bets' amount on ACTIVE events
+      const activeBets = bets.filter(bet => bet.status === 'ACTIVE' && bet.event?.status === 'ACTIVE')
+      const portfolio = activeBets.reduce((sum, bet) => sum + Number(bet.amount), 0)
+
       return {
         id: user.id,
         name: user.name,
@@ -81,6 +90,7 @@ export async function GET(request: NextRequest) {
           winRate: Math.round(winRate * 100) / 100,
           roi: Math.round(roi * 100) / 100,
           eventsCreated: user._count.createdEvents,
+          portfolio,
         },
         rank: 0, // Will be set below
       }

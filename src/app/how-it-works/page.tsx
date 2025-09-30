@@ -26,16 +26,16 @@ interface FAQItem {
 
 const faqItems: FAQItem[] = [
   {
-    question: "How do I add money?",
-    answer: "Send $5-$200 via Apple Cash and your balance updates in minutes."
+    question: "How much can I bet?",
+    answer: "You can place individual bets up to $300 each. No need to manage a wallet balance - just bet on credit."
   },
   {
     question: "How does pricing work?",
     answer: "Prices change based on betting activity. More popular outcomes get more expensive."
   },
   {
-    question: "When do I get paid?",
-    answer: "Winnings are added immediately when markets resolve. Withdraw anytime."
+    question: "When are markets resolved?",
+    answer: "Markets are resolved when the outcome is determined. Your profit/loss is tracked immediately."
   },
   {
     question: "Can I sell before a market ends?",
@@ -43,7 +43,7 @@ const faqItems: FAQItem[] = [
   },
   {
     question: "Are there fees?",
-    answer: "No trading fees. Apple Cash may have standard transfer limits."
+    answer: "No trading fees. Bet freely up to $300 per bet."
   }
 ]
 
@@ -120,20 +120,15 @@ export default function HowItWorks() {
             <section id="getting-started" className="scroll-mt-24">
               <h2 className="text-xl font-semibold text-white mb-4 text-left">Getting Started</h2>
 
-              <div className="grid md:grid-cols-3 gap-4 mb-4">
+              <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <TutorialCard
                   title="1. Sign Up"
                   description="Create your account in seconds"
                   icon={<Target className="h-6 w-6" />}
                 />
                 <TutorialCard
-                  title="2. Add Money"
-                  description="Send cash via Apple Cash"
-                  icon={<DollarSign className="h-6 w-6" />}
-                />
-                <TutorialCard
-                  title="3. Start Betting"
-                  description="Create or join markets"
+                  title="2. Start Betting"
+                  description="Place bets up to $300 each on credit"
                   icon={<TrendingUp className="h-6 w-6" />}
                 />
               </div>
@@ -145,27 +140,27 @@ export default function HowItWorks() {
               </div>
             </section>
 
-            {/* Money */}
+            {/* Betting Limits */}
             <section id="money" className="scroll-mt-24">
-              <h2 className="text-xl font-semibold text-white mb-4 text-left">Money</h2>
+              <h2 className="text-xl font-semibold text-white mb-4 text-left">Betting Limits</h2>
 
               <div className="grid md:grid-cols-2 gap-4 mb-4">
                 <TutorialCard
-                  title="Adding Money"
-                  description="Send $5-$200 via Apple Cash. Your balance updates in minutes."
+                  title="Credit-Based System"
+                  description="Bet up to $300 per bet without needing to manage a wallet balance."
                   icon={<CreditCard className="h-6 w-6" />}
                 />
 
                 <TutorialCard
-                  title="Withdrawing"
-                  description="Request withdrawals anytime. Processed within 24 hours."
+                  title="Track Your Performance"
+                  description="View your portfolio, net profit, and win rate at any time."
                   icon={<Smartphone className="h-6 w-6" />}
                 />
               </div>
 
               <div className="bg-gray-800/90 rounded-lg p-4 md:p-5 border-0 shadow-lg text-center">
                 <p className="text-gray-300">
-                  Think of it like sending money to any friend via Apple Cash. Easy transfers, no complicated setup or verification processes.
+                  No need to deposit funds upfront. Just place bets up to $300 each and track your profit/loss over time.
                 </p>
               </div>
             </section>

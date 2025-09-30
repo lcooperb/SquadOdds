@@ -134,15 +134,6 @@ export default function Navigation() {
                         : '...'}
                     </div>
                   </div>
-                  {/* Cash */}
-                  <div className="text-right">
-                    <div className="text-xs text-gray-300">Cash</div>
-                    <div className="text-green-400 font-semibold text-sm">
-                      {userBalance !== null
-                        ? `$${Number(userBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                        : '...'}
-                    </div>
-                  </div>
                   {/* Notifications */}
                   <NotificationDropdown />
                   <div className="h-6 w-px bg-gray-700" />
@@ -187,22 +178,6 @@ export default function Navigation() {
                         >
                           <Settings className="h-4 w-4 mr-2" />
                           Settings
-                        </Link>
-                        <Link
-                          href="/topup"
-                          className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <CreditCard className="h-4 w-4 mr-2" />
-                          Top Up
-                        </Link>
-                        <Link
-                          href="/redeem"
-                          className="flex items-center px-4 py-2 text-sm text-gray-300 hover:bg-gray-700 hover:text-white transition-colors"
-                          onClick={() => setIsMenuOpen(false)}
-                        >
-                          <ArrowDownCircle className="h-4 w-4 mr-2" />
-                          Redeem
                         </Link>
                         <button
                           onClick={() => {

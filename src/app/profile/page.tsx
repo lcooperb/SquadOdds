@@ -14,7 +14,6 @@ interface UserProfile {
   email: string;
   name: string;
   image?: string;
-  virtualBalance: number;
   totalWinnings: number;
   totalLosses: number;
   isAdmin: boolean;
@@ -148,6 +147,57 @@ export default function Profile() {
     }
   });
 
+  // Consolidate bets by market
+  const consolidatedBets = filteredBets.reduce((acc, bet) => {
+    const key = bet.event.id;
+    if (!acc[key]) {
+      acc[key] = {
+        event: bet.event,
+        bets: [],
+        totalAmount: 0,
+        positions: {} as Record<string, { side: string; amount: number; avgPrice: number; count: number; option?: { id: string; title: string } }>,
+      };
+    }
+    acc[key].bets.push(bet);
+    acc[key].totalAmount += Number(bet.amount || 0);
+
+    // Track positions by side and option
+    const posKey = bet.option ? `${bet.side}-${bet.option.id}` : bet.side;
+    if (!acc[key].positions[posKey]) {
+      acc[key].positions[posKey] = {
+        side: bet.side,
+        amount: 0,
+        avgPrice: 0,
+        count: 0,
+        option: bet.option,
+        totalWeightedPrice: 0,
+      };
+    }
+    const pos = acc[key].positions[posKey];
+    const betAmount = Number(bet.amount || 0);
+    const betPrice = Number(bet.price || 0);
+    
+    // Calculate weighted average price
+    if (betPrice > 0) {
+      pos.totalWeightedPrice += betPrice * betAmount;
+    }
+    pos.amount += betAmount;
+    pos.count += 1;
+    
+    // Update average price
+    if (pos.amount > 0 && pos.totalWeightedPrice > 0) {
+      pos.avgPrice = pos.totalWeightedPrice / pos.amount;
+    }
+
+    return acc;
+  }, {} as Record<string, any>);
+
+  const consolidatedBetsArray = Object.values(consolidatedBets).sort((a: any, b: any) => {
+    const aDate = Math.max(...a.bets.map((bet: any) => new Date(bet.createdAt).getTime()));
+    const bDate = Math.max(...b.bets.map((bet: any) => new Date(bet.createdAt).getTime()));
+    return bDate - aDate;
+  });
+
   // Filter markets based on current filter
   const filteredMarkets = (profile.createdEvents || []).filter((event) => {
     switch (marketFilter) {
@@ -210,14 +260,7 @@ export default function Profile() {
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
-              <div className="text-2xl font-bold text-white mb-1">
-                ${Math.round(Number(profile.virtualBalance)).toLocaleString("en-US")}
-              </div>
-              <div className="text-sm text-gray-400">Current Balance</div>
-            </div>
-
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
             <div className="bg-gray-800/90 rounded-lg p-4 text-center">
               <div
                 className={`text-2xl font-bold mb-1 ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
@@ -383,52 +426,117 @@ export default function Profile() {
                 </div>
 
                 {/* Bets Table */}
-                {filteredBets.length > 0 ? (
-                  <div className="space-y-0 bg-gray-900/30 rounded-lg overflow-hidden">
-                    {filteredBets.slice(0, 10).map((bet, index) => (
-                      <div
-                        key={bet.id}
-                        className={`flex items-center justify-between py-4 px-4 hover:bg-gray-700/30 transition-colors ${
-                          index !== Math.min(filteredBets.length, 10) - 1 ? "border-b border-gray-700/50" : ""
-                        }`}
-                      >
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center gap-2 mb-1">
-                            <Badge variant={getBetStatusColor(bet.status)}>
-                              {bet.status}
-                            </Badge>
-                            <span className="text-sm text-gray-400">{bet.event.category}</span>
-                          </div>
-                          <h4 className="font-medium text-white truncate pr-4 mb-1">
-                            {bet.event.title}
-                          </h4>
-                          <div className="flex items-center gap-3 text-sm text-gray-400">
-                            <span className="font-medium text-white">
-                              {bet.side} {bet.option && `(${bet.option.title})`}
-                            </span>
-                            <span>${Math.round(Number(bet.amount)).toLocaleString("en-US")}</span>
-                            <span>@ {Number(bet.price).toFixed(0)}¢</span>
-                            <span>{new Date(bet.createdAt).toLocaleDateString()}</span>
-                          </div>
-                        </div>
-                        <div className="text-right">
-                          <div className="text-white font-medium">
-                            {Number(bet.shares).toFixed(1)} shares
-                          </div>
-                          {bet.status !== "ACTIVE" && (
-                            <div
-                              className={`text-sm font-medium mt-1 ${bet.status === "WON" ? "text-green-400" : "text-red-400"}`}
-                            >
-                              {bet.status === "WON" ? "+" : ""}${Math.round(Number(bet.amount)).toLocaleString("en-US")}
+                {consolidatedBetsArray.length > 0 ? (
+                  <div className="space-y-3">
+                    {consolidatedBetsArray.slice(0, 10).map((consolidated: any) => {
+                      const allStatuses = consolidated.bets.map((b: any) => b.status);
+                      const hasActive = allStatuses.includes("ACTIVE");
+                      const hasWon = allStatuses.includes("WON");
+                      const hasLost = allStatuses.includes("LOST");
+                      let overallStatus = "ACTIVE";
+                      if (!hasActive && hasWon && !hasLost) overallStatus = "WON";
+                      else if (!hasActive && !hasWon && hasLost) overallStatus = "LOST";
+                      else if (!hasActive) overallStatus = "MIXED";
+
+                      return (
+                        <div
+                          key={consolidated.event.id}
+                          className="bg-gray-900/30 rounded-lg p-4 hover:bg-gray-700/30 transition-colors cursor-pointer"
+                          onClick={() => router.push(`/market/${consolidated.event.id}`)}
+                        >
+                          <div className="flex items-start justify-between mb-3">
+                            <div className="flex-1 min-w-0">
+                              <div className="flex items-center gap-2 mb-2">
+                                <Badge variant={getBetStatusColor(overallStatus)}>
+                                  {overallStatus}
+                                </Badge>
+                                <span className="text-sm text-gray-400">{consolidated.event.category}</span>
+                              </div>
+                              <h4 className="font-medium text-white mb-1">
+                                {consolidated.event.title}
+                              </h4>
                             </div>
-                          )}
+                            <div className="text-right ml-4">
+                              <div className="text-white font-bold text-lg">
+                                ${consolidated.totalAmount.toFixed(2)}
+                              </div>
+                              <div className="text-xs text-gray-400">Total Staked</div>
+                            </div>
+                          </div>
+
+                          {/* Position Summary by Side/Option */}
+                          <div className="space-y-2 mt-3 pt-3 border-t border-gray-700/50">
+                            {Object.entries(consolidated.positions).map(([key, pos]: [string, any]) => {
+                              const positionBets = consolidated.bets.filter((b: any) => {
+                                const betPosKey = b.option ? `${b.side}-${b.option.id}` : b.side;
+                                const currentPosKey = pos.option ? `${pos.side}-${pos.option.id}` : pos.side;
+                                return betPosKey === currentPosKey;
+                              });
+                              const hasActive = positionBets.some((b: any) => b.status === "ACTIVE");
+                              const allWon = positionBets.every((b: any) => b.status === "WON");
+                              const allLost = positionBets.every((b: any) => b.status === "LOST");
+                              
+                              let statusDisplay;
+                              if (hasActive) {
+                                if (pos.avgPrice > 0) {
+                                  statusDisplay = (
+                                    <span className="text-gray-400">
+                                      @ {pos.avgPrice.toFixed(0)}¢ avg
+                                    </span>
+                                  );
+                                } else {
+                                  statusDisplay = null;
+                                }
+                              } else if (allWon) {
+                                statusDisplay = (
+                                  <Badge variant="success" className="text-xs">WON</Badge>
+                                );
+                              } else if (allLost) {
+                                statusDisplay = (
+                                  <Badge variant="error" className="text-xs">LOST</Badge>
+                                );
+                              } else {
+                                statusDisplay = (
+                                  <Badge variant="secondary" className="text-xs">MIXED</Badge>
+                                );
+                              }
+
+                              return (
+                                <div key={key} className="flex items-center justify-between text-sm py-1">
+                                  <div className="flex items-center gap-2 flex-1 min-w-0">
+                                    <span className={`font-medium ${pos.side === "YES" ? "text-green-400" : "text-red-400"}`}>
+                                      {pos.side}
+                                    </span>
+                                    {pos.option && (
+                                      <span className="text-gray-300 truncate">
+                                        • {pos.option.title}
+                                      </span>
+                                    )}
+                                    {statusDisplay}
+                                  </div>
+                                  <div className="flex items-center gap-3 ml-2">
+                                    <span className="text-white font-medium">
+                                      ${pos.amount.toFixed(2)}
+                                    </span>
+                                    <span className="text-gray-500 text-xs">
+                                      {pos.count} bet{pos.count > 1 ? 's' : ''}
+                                    </span>
+                                  </div>
+                                </div>
+                              );
+                            })}
+                          </div>
+
+                          <div className="text-xs text-gray-500 mt-3 pt-2 border-t border-gray-700/30">
+                            {consolidated.bets.length} bet{consolidated.bets.length > 1 ? 's' : ''} • Total: ${consolidated.totalAmount.toFixed(2)}
+                          </div>
                         </div>
-                      </div>
-                    ))}
-                    {filteredBets.length > 10 && (
-                      <div className="text-center py-3 border-t border-gray-700/50 bg-gray-800/30">
+                      );
+                    })}
+                    {consolidatedBetsArray.length > 10 && (
+                      <div className="text-center py-3 bg-gray-800/30 rounded-lg">
                         <p className="text-sm text-gray-400">
-                          Showing 10 of {filteredBets.length} bets
+                          Showing 10 of {consolidatedBetsArray.length} markets
                         </p>
                       </div>
                     )}

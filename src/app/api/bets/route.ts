@@ -46,11 +46,15 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Get the user and event
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-    })
+    // Check maximum bet limit
+    if (amount > 300) {
+      return NextResponse.json(
+        { message: 'Maximum bet amount is $300' },
+        { status: 400 }
+      )
+    }
 
+    // Get the event
     const event = await prisma.event.findUnique({
       where: { id: eventId },
       include: {
@@ -58,13 +62,6 @@ export async function POST(request: NextRequest) {
         options: true,
       },
     })
-
-    if (!user) {
-      return NextResponse.json(
-        { message: 'User not found' },
-        { status: 404 }
-      )
-    }
 
     if (!event) {
       return NextResponse.json(
@@ -83,14 +80,6 @@ export async function POST(request: NextRequest) {
     if (event.resolved) {
       return NextResponse.json(
         { message: 'Event is already resolved' },
-        { status: 400 }
-      )
-    }
-
-    // For BUY operations, check if user has sufficient balance
-    if (type === 'BUY' && Number(user.virtualBalance) < amount) {
-      return NextResponse.json(
-        { message: 'Insufficient balance' },
         { status: 400 }
       )
     }
@@ -202,28 +191,7 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // Update user balance (different for BUY vs SELL)
-      if (type === 'SELL') {
-        // For SELL: add the payout to user balance
-        await tx.user.update({
-          where: { id: session.user.id },
-          data: {
-            virtualBalance: {
-              increment: sellPayout,
-            },
-          },
-        })
-      } else {
-        // For BUY: deduct the amount from user balance
-        await tx.user.update({
-          where: { id: session.user.id },
-          data: {
-            virtualBalance: {
-              decrement: amount,
-            },
-          },
-        })
-      }
+      // Note: No balance operations needed - users bet on credit up to $300 per bet
 
       // Update event volume (SELL decreases volume, BUY increases it)
       await tx.event.update({

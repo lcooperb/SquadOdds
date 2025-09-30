@@ -111,16 +111,13 @@ export async function POST(
         })
 
         if (isWinner) {
-          // Calculate winnings: (bet amount / price) * 100
+          // Calculate winnings for stats tracking
           const winnings = Number(bet.shares)
 
-          // Update user balance and stats
+          // Update user stats (no balance operations)
           await tx.user.update({
             where: { id: bet.userId },
             data: {
-              virtualBalance: {
-                increment: winnings,
-              },
               totalWinnings: {
                 increment: winnings - Number(bet.amount),
               },
@@ -142,9 +139,63 @@ export async function POST(
       return resolvedEvent
     })
 
+    // Calculate payment obligations
+    const winningBets = event.bets.filter(bet => {
+      if (event.marketType === 'BINARY') {
+        return (outcome && bet.side === 'YES') || (!outcome && bet.side === 'NO')
+      } else if (event.marketType === 'MULTIPLE') {
+        return bet.optionId === winningOptionId
+      }
+      return false
+    })
+
+    const losingBets = event.bets.filter(bet => {
+      if (event.marketType === 'BINARY') {
+        return (outcome && bet.side === 'NO') || (!outcome && bet.side === 'YES')
+      } else if (event.marketType === 'MULTIPLE') {
+        return bet.optionId !== winningOptionId
+      }
+      return false
+    })
+
+    // Calculate payment matrix: who owes who
+    const payments: Array<{
+      from: { id: string; name: string }
+      to: { id: string; name: string }
+      amount: number
+    }> = []
+
+    // Total amount won by each winner
+    const totalWinningAmount = winningBets.reduce((sum, bet) => sum + Number(bet.amount), 0)
+
+    // Each loser's amount is distributed proportionally to winners
+    losingBets.forEach(losingBet => {
+      const loserAmount = Number(losingBet.amount)
+
+      // Distribute this loser's amount proportionally to each winner
+      winningBets.forEach(winningBet => {
+        const winnerShare = Number(winningBet.amount) / totalWinningAmount
+        const paymentAmount = loserAmount * winnerShare
+
+        if (paymentAmount > 0.01) { // Only include payments over 1 cent
+          payments.push({
+            from: {
+              id: losingBet.userId,
+              name: losingBet.user.name || 'Unknown'
+            },
+            to: {
+              id: winningBet.userId,
+              name: winningBet.user.name || 'Unknown'
+            },
+            amount: Math.round(paymentAmount * 100) / 100 // Round to 2 decimals
+          })
+        }
+      })
+    })
+
     // Send notifications to all users with bets on this market
     try {
-      await notifyMarketResolution(params.id, outcome, winningOptionId)
+      await notifyMarketResolution(params.id, outcome, winningOptionId, payments)
     } catch (notificationError) {
       console.error('Error sending resolution notifications:', notificationError)
       // Don't fail the resolution if notifications fail
@@ -158,6 +209,7 @@ export async function POST(
       message: 'Event resolved successfully',
       event: result,
       outcome: winnerDescription,
+      payments,
     })
   } catch (error) {
     console.error('Error resolving event:', error)

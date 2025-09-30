@@ -410,42 +410,120 @@ export default function MarketPage() {
           <div className="flex-1 max-w-4xl space-y-4 md:space-y-6">
             {/* Resolved Banner - Show prominently for resolved markets */}
             {event.resolved && (
-              <div className={`rounded-lg p-4 md:p-5 border-2 ${
-                event.marketType === 'BINARY'
-                  ? event.outcome
-                    ? 'bg-green-900/30 border-green-500/50'
-                    : 'bg-red-900/30 border-red-500/50'
-                  : 'bg-blue-900/30 border-blue-500/50'
-              }`}>
-                <div className="flex items-center justify-between">
-                  <div>
-                    <div className="text-sm font-medium text-gray-300 mb-1">Market Resolved</div>
-                    <div className={`text-2xl md:text-3xl font-bold ${
-                      event.marketType === 'BINARY'
-                        ? event.outcome ? 'text-green-400' : 'text-red-400'
-                        : 'text-blue-400'
-                    }`}>
-                      {event.marketType === 'BINARY'
-                        ? (event.outcome ? "YES" : "NO")
-                        : event.winningOptionId && event.options
-                          ? event.options.find(opt => opt.id === event.winningOptionId)?.title || 'Winner Determined'
-                          : 'Winner Determined'
-                      }
+              <>
+                <div className={`rounded-lg p-4 md:p-5 border-2 ${
+                  event.marketType === 'BINARY'
+                    ? event.outcome
+                      ? 'bg-green-900/30 border-green-500/50'
+                      : 'bg-red-900/30 border-red-500/50'
+                    : 'bg-blue-900/30 border-blue-500/50'
+                }`}>
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <div className="text-sm font-medium text-gray-300 mb-1">Market Resolved</div>
+                      <div className={`text-2xl md:text-3xl font-bold ${
+                        event.marketType === 'BINARY'
+                          ? event.outcome ? 'text-green-400' : 'text-red-400'
+                          : 'text-blue-400'
+                      }`}>
+                        {event.marketType === 'BINARY'
+                          ? (event.outcome ? "YES" : "NO")
+                          : event.winningOptionId && event.options
+                            ? event.options.find(opt => opt.id === event.winningOptionId)?.title || 'Winner Determined'
+                            : 'Winner Determined'
+                        }
+                      </div>
                     </div>
-                  </div>
-                  <div className="text-right">
-                    <div className="text-sm text-gray-400">Final Price</div>
-                    <div className="text-xl md:text-2xl font-bold text-white">
-                      {event.marketType === 'BINARY'
-                        ? `${event.outcome ? yesPrice : noPrice}¢`
-                        : event.winningOptionId && event.options
-                          ? `${Math.round(event.options.find(opt => opt.id === event.winningOptionId)?.price || 0)}¢`
-                          : '-'
-                      }
+                    <div className="text-right">
+                      <div className="text-sm text-gray-400">Final Price</div>
+                      <div className="text-xl md:text-2xl font-bold text-white">
+                        {event.marketType === 'BINARY'
+                          ? `${event.outcome ? yesPrice : noPrice}¢`
+                          : event.winningOptionId && event.options
+                            ? `${Math.round(event.options.find(opt => opt.id === event.winningOptionId)?.price || 0)}¢`
+                            : '-'
+                        }
+                      </div>
                     </div>
                   </div>
                 </div>
-              </div>
+
+                {/* Payment Breakdown */}
+                {(() => {
+                  // Calculate payments
+                  const winningBets = event.bets.filter(bet => {
+                    if (event.marketType === 'BINARY') {
+                      return (event.outcome && bet.side === 'YES') || (!event.outcome && bet.side === 'NO')
+                    } else if (event.marketType === 'MULTIPLE') {
+                      return bet.optionId === event.winningOptionId
+                    }
+                    return false
+                  })
+
+                  const losingBets = event.bets.filter(bet => {
+                    if (event.marketType === 'BINARY') {
+                      return (event.outcome && bet.side === 'NO') || (!event.outcome && bet.side === 'YES')
+                    } else if (event.marketType === 'MULTIPLE') {
+                      return bet.optionId !== event.winningOptionId
+                    }
+                    return false
+                  })
+
+                  const totalWinningAmount = winningBets.reduce((sum, bet) => sum + Number(bet.amount), 0)
+
+                  // Build payment matrix
+                  const paymentsMap = new Map<string, { from: string; to: string; amount: number }>()
+
+                  losingBets.forEach(losingBet => {
+                    const loserAmount = Number(losingBet.amount)
+                    winningBets.forEach(winningBet => {
+                      const winnerShare = Number(winningBet.amount) / totalWinningAmount
+                      const paymentAmount = loserAmount * winnerShare
+                      if (paymentAmount > 0.01) {
+                        const key = `${losingBet.user.id}-${winningBet.user.id}`
+                        paymentsMap.set(key, {
+                          from: losingBet.user.name,
+                          to: winningBet.user.name,
+                          amount: Math.round(paymentAmount * 100) / 100
+                        })
+                      }
+                    })
+                  })
+
+                  const payments = Array.from(paymentsMap.values())
+
+                  if (payments.length === 0) return null
+
+                  return (
+                    <div className="bg-gray-800/90 rounded-lg p-4 md:p-5 border border-gray-700">
+                      <h3 className="text-lg font-semibold text-white mb-3 flex items-center gap-2">
+                        <DollarSign className="h-5 w-5" />
+                        Payment Breakdown
+                      </h3>
+                      <div className="space-y-2">
+                        {payments.map((payment, idx) => (
+                          <div
+                            key={idx}
+                            className="flex items-center justify-between p-3 bg-gray-700/50 rounded-lg"
+                          >
+                            <div className="flex items-center gap-2 text-sm md:text-base">
+                              <span className="text-white font-medium">{payment.from}</span>
+                              <span className="text-gray-400">owes</span>
+                              <span className="text-white font-medium">{payment.to}</span>
+                            </div>
+                            <div className="text-green-400 font-bold text-base md:text-lg">
+                              ${payment.amount.toFixed(2)}
+                            </div>
+                          </div>
+                        ))}
+                      </div>
+                      <div className="mt-3 text-xs text-gray-400 text-center">
+                        Payments should be settled privately between users
+                      </div>
+                    </div>
+                  )
+                })()}
+              </>
             )}
 
             {/* Header */}

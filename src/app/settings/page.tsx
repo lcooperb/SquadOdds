@@ -21,7 +21,6 @@ interface UserProfile {
   id: string;
   email: string;
   name: string;
-  virtualBalance: number;
   isAdmin: boolean;
   createdAt: string;
   image?: string | null;
@@ -177,40 +176,6 @@ export default function Settings() {
                 <span className="text-gray-400 text-sm">
                   Member since {new Date(profile.createdAt).toLocaleDateString()}
                 </span>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        {/* Balance Information */}
-        <Card className="mb-6 bg-gray-800/90 border-0 shadow-lg">
-          <CardHeader className="p-4">
-            <CardTitle className="flex items-center gap-2">
-              <DollarSign className="h-5 w-5" />
-              Account Balance
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
-              <div>
-                <div className="text-2xl font-bold text-green-400">
-                  ${Math.round(profile.virtualBalance).toLocaleString("en-US")}
-                </div>
-                <div className="text-sm text-gray-400">Current Balance</div>
-              </div>
-              <div className="flex space-x-2">
-                <Button
-                  variant="ghost"
-                  onClick={() => router.push("/topup")}
-                >
-                  Add Tokens
-                </Button>
-                <Button
-                  variant="outline"
-                  onClick={() => router.push("/redeem")}
-                >
-                  Redeem
-                </Button>
               </div>
             </div>
           </CardContent>

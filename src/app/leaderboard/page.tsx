@@ -9,7 +9,6 @@ interface LeaderboardUser {
   id: string;
   name: string;
   image?: string;
-  virtualBalance: number;
   totalWinnings: number;
   totalLosses: number;
   createdAt: string;
@@ -20,6 +19,7 @@ interface LeaderboardUser {
     winRate: number;
     roi: number;
     eventsCreated: number;
+    portfolio: number;
   };
   rank: number;
 }
@@ -177,8 +177,15 @@ export default function Leaderboard() {
                   </div>
 
                   {/* Center: Stats - Desktop */}
-                  <div className="hidden md:flex items-center gap-8">
-                    <div className="text-center">
+                  <div className="hidden md:flex items-center gap-6">
+                    <div className="text-right w-24">
+                      <div className="text-lg font-bold text-green-400">
+                        ${user.stats.portfolio.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </div>
+                      <div className="text-xs text-gray-400">Portfolio</div>
+                    </div>
+
+                    <div className="text-right w-24">
                       <div
                         className={`text-lg font-bold ${
                           user.stats.netProfit >= 0 ? "text-green-400" : "text-red-400"
@@ -190,27 +197,26 @@ export default function Leaderboard() {
                       <div className="text-xs text-gray-400">Profit</div>
                     </div>
 
-                    <div className="text-center">
+                    <div className="text-right w-20">
                       <div className="text-lg font-bold text-white">
                         {user.stats.winRate.toFixed(0)}%
                       </div>
                       <div className="text-xs text-gray-400">Win Rate</div>
                     </div>
 
-                    <div className="text-center">
+                    <div className="text-right w-16">
                       <div className="text-lg font-bold text-white">
                         {user.stats.totalBets}
                       </div>
                       <div className="text-xs text-gray-400">Bets</div>
                     </div>
-                  </div>
 
-                  {/* Right: Current Balance */}
-                  <div className="text-right">
-                    <div className="text-lg md:text-xl font-bold text-white">
-                      ${Math.round(user.virtualBalance).toLocaleString()}
+                    <div className="text-right w-20">
+                      <div className="text-lg font-bold text-white">
+                        {user.stats.eventsCreated}
+                      </div>
+                      <div className="text-xs text-gray-400">Markets</div>
                     </div>
-                    <div className="text-xs md:text-sm text-gray-400">Balance</div>
                   </div>
                 </div>
               </div>

@@ -4,7 +4,7 @@ import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
 import { notifyMarketCancelled } from '@/lib/notifications'
 
-// POST /api/events/[id]/cancel - Cancel a market and refund all bets
+// POST /api/events/[id]/cancel - Cancel a market and void all bets
 export async function POST(
   request: NextRequest,
   { params }: { params: { id: string } }
@@ -48,7 +48,7 @@ export async function POST(
       )
     }
 
-    // Start a transaction to cancel the event and refund all bets
+    // Start a transaction to cancel the event and void all bets
     const result = await prisma.$transaction(async (tx) => {
       // Cancel the event
       const cancelledEvent = await tx.event.update({
@@ -60,22 +60,11 @@ export async function POST(
         },
       })
 
-      // Refund all active bets
+      // Mark all active bets as refunded (removed from portfolios, no balance operations)
       for (const bet of event.bets) {
-        // Update bet status to REFUNDED
         await tx.bet.update({
           where: { id: bet.id },
           data: { status: 'REFUNDED' },
-        })
-
-        // Refund the bet amount to the user
-        await tx.user.update({
-          where: { id: bet.userId },
-          data: {
-            virtualBalance: {
-              increment: Number(bet.amount),
-            },
-          },
         })
       }
 
@@ -93,8 +82,8 @@ export async function POST(
     return NextResponse.json({
       message: 'Market cancelled successfully',
       event: result,
-      refundedBets: event.bets.length,
-      totalRefunded: event.bets.reduce((sum, bet) => sum + Number(bet.amount), 0),
+      voidedBets: event.bets.length,
+      totalVoided: event.bets.reduce((sum, bet) => sum + Number(bet.amount), 0),
     })
   } catch (error) {
     console.error('Error cancelling market:', error)

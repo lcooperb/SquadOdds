@@ -125,26 +125,7 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    // Get user to check balance
-    const user = await prisma.user.findUnique({
-      where: { id: session.user.id },
-      select: { virtualBalance: true }
-    })
-
-    if (!user) {
-      return NextResponse.json(
-        { message: 'User not found' },
-        { status: 404 }
-      )
-    }
-
-    // Check if user has sufficient balance for the initial investment
-    if (Number(user.virtualBalance) < investment) {
-      return NextResponse.json(
-        { message: `Insufficient balance. You need $${Number(investment).toFixed(2)} to create a market.` },
-        { status: 400 }
-      )
-    }
+    // No balance check needed - market creation uses credit system
 
     // Validate odds add up to 100%
     if (marketType === 'BINARY') {
@@ -198,15 +179,7 @@ export async function POST(request: NextRequest) {
         },
       })
 
-      // Deduct initial investment from user's balance
-      await tx.user.update({
-        where: { id: session.user.id },
-        data: {
-          virtualBalance: {
-            decrement: investment,
-          },
-        },
-      })
+      // Note: No balance deduction needed - users create markets on credit
 
       // Create initial bets based on creator's odds to establish market prices
       if (marketType === 'BINARY') {

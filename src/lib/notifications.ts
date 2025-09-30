@@ -92,7 +92,16 @@ export async function notifyMarketClosed(eventId: string) {
   }
 }
 
-export async function notifyMarketResolution(eventId: string, outcome: boolean | null, winningOptionId?: string) {
+export async function notifyMarketResolution(
+  eventId: string,
+  outcome: boolean | null,
+  winningOptionId?: string,
+  payments?: Array<{
+    from: { id: string; name: string }
+    to: { id: string; name: string }
+    amount: number
+  }>
+) {
   try {
     // Get the event and all bets
     const event = await prisma.event.findUnique({
@@ -134,19 +143,43 @@ export async function notifyMarketResolution(eventId: string, outcome: boolean |
 
         const result = isWinner ? 'won' : 'lost'
         const amount = isWinner ? Number(bet.shares) : Number(bet.amount)
+
+        // Calculate payment details for this user
+        let paymentDetails = ''
+        if (payments && payments.length > 0) {
+          if (isWinner) {
+            // Find who owes this winner
+            const paymentsToUser = payments.filter(p => p.to.id === bet.userId)
+            if (paymentsToUser.length > 0) {
+              const totalReceiving = paymentsToUser.reduce((sum, p) => sum + p.amount, 0)
+              const payersList = paymentsToUser.map(p => `${p.from.name} ($${p.amount.toFixed(2)})`).join(', ')
+              paymentDetails = ` You'll receive $${totalReceiving.toFixed(2)} from: ${payersList}`
+            }
+          } else {
+            // Find who this loser owes
+            const paymentsFromUser = payments.filter(p => p.from.id === bet.userId)
+            if (paymentsFromUser.length > 0) {
+              const totalOwing = paymentsFromUser.reduce((sum, p) => sum + p.amount, 0)
+              const payeesList = paymentsFromUser.map(p => `${p.to.name} ($${p.amount.toFixed(2)})`).join(', ')
+              paymentDetails = ` You owe $${totalOwing.toFixed(2)} to: ${payeesList}`
+            }
+          }
+        }
+
         const amountText = isWinner ? `won $${amount.toFixed(2)}` : `lost $${amount.toFixed(2)}`
 
         return createNotification(
           bet.userId,
           'MARKET_RESOLVED',
           'Market Resolved',
-          `Your bet on "${event.title}" has been resolved. You ${amountText}. Winner: ${winningDescription}`,
+          `Your bet on "${event.title}" has been resolved. You ${amountText}. Winner: ${winningDescription}.${paymentDetails}`,
           {
             eventId: event.id,
             betId: bet.id,
             result,
             amount,
             outcome: winningDescription,
+            payments: payments?.filter(p => p.from.id === bet.userId || p.to.id === bet.userId) || []
           }
         )
       })

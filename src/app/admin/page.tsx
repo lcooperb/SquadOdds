@@ -26,7 +26,6 @@ interface User {
   id: string;
   email: string;
   name: string;
-  virtualBalance: number;
   isAdmin: boolean;
   createdAt: string;
   _count: {
@@ -63,59 +62,16 @@ interface Event {
   };
 }
 
-interface Payment {
-  id: string;
-  amount: number;
-  transactionId: string;
-  paymentMethod: string;
-  status: string;
-  createdAt: string;
-  verifiedAt: string | null;
-  user: {
-    email: string;
-    name: string;
-  };
-}
-
-interface Redemption {
-  id: string;
-  tokenAmount: number;
-  dollarAmount: number;
-  appleCashEmail: string;
-  status: string;
-  requestedAt: string;
-  processedAt: string | null;
-  adminNotes: string | null;
-  user: {
-    email: string;
-    name: string;
-  };
-}
-
 export default function AdminPanel() {
   const { data: session, status } = useSession();
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<"events" | "users" | "payments" | "redemptions">(
+  const [activeTab, setActiveTab] = useState<"events" | "users">(
     "events"
   );
   const [eventsSubTab, setEventsSubTab] = useState<"active" | "resolved">("active");
-  const [paymentsSubTab, setPaymentsSubTab] = useState<"pending" | "processed">("pending");
-  const [redemptionsSubTab, setRedemptionsSubTab] = useState<"pending" | "completed">("pending");
   const [events, setEvents] = useState<Event[]>([]);
   const [users, setUsers] = useState<User[]>([]);
-  const [payments, setPayments] = useState<Payment[]>([]);
-  const [redemptions, setRedemptions] = useState<Redemption[]>([]);
   const [loading, setLoading] = useState(true);
-
-  // Payment form state
-  const [paymentLoading, setPaymentLoading] = useState(false);
-  const [processing, setProcessing] = useState(false);
-  const [userEmail, setUserEmail] = useState("");
-  const [amount, setAmount] = useState("");
-  const [transactionId, setTransactionId] = useState("");
-  const [paymentMethod, setPaymentMethod] = useState("venmo");
-  const [showForm, setShowForm] = useState(false);
-  const [approvingPayment, setApprovingPayment] = useState<string | null>(null);
 
   useEffect(() => {
     if (status === "loading") return;
@@ -154,11 +110,9 @@ export default function AdminPanel() {
 
   const fetchData = async () => {
     try {
-      const [eventsRes, usersRes, paymentsRes, redemptionsRes] = await Promise.all([
+      const [eventsRes, usersRes] = await Promise.all([
         fetch("/api/admin/events"),
         fetch("/api/admin/users"),
-        fetch("/api/admin/payments/process"),
-        fetch("/api/admin/redemptions"),
       ]);
 
       if (eventsRes.ok) {
@@ -170,34 +124,10 @@ export default function AdminPanel() {
         const usersData = await usersRes.json();
         setUsers(usersData);
       }
-
-      if (paymentsRes.ok) {
-        const paymentsData = await paymentsRes.json();
-        setPayments(paymentsData);
-      }
-      if (redemptionsRes.ok) {
-        const redemptionsData = await redemptionsRes.json();
-        setRedemptions(redemptionsData);
-      }
     } catch (error) {
       console.error("Error fetching admin data:", error);
     } finally {
       setLoading(false);
-    }
-  };
-
-  const fetchPayments = async () => {
-    try {
-      setPaymentLoading(true);
-      const response = await fetch("/api/admin/payments/process");
-      if (response.ok) {
-        const data = await response.json();
-        setPayments(data);
-      }
-    } catch (error) {
-      console.error("Error fetching payments:", error);
-    } finally {
-      setPaymentLoading(false);
     }
   };
 
@@ -293,7 +223,7 @@ export default function AdminPanel() {
 
       if (response.ok) {
         const result = await response.json();
-        alert(`Market cancelled successfully. ${result.refundedBets} bets refunded totaling $${result.totalRefunded.toFixed(2)}`);
+        alert(`Market cancelled successfully. ${result.voidedBets} bets voided totaling $${result.totalVoided.toFixed(2)}`);
         fetchData(); // Refresh data
         closeCancellationModal();
       } else {
@@ -370,101 +300,6 @@ export default function AdminPanel() {
     }
   };
 
-  const processPayment = async () => {
-    if (!userEmail || !amount || !transactionId) {
-      alert("Please fill in all fields");
-      return;
-    }
-
-    setProcessing(true);
-    try {
-      const response = await fetch("/api/admin/payments/process", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          userEmail,
-          amount: Number(amount),
-          paymentMethod,
-          externalTransactionId: transactionId,
-        }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        alert(
-          `Success! Added $${Number(result.dollarsAdded).toFixed(2)} to ${result.user.name}'s account`
-        );
-
-        // Reset form
-        setUserEmail("");
-        setAmount("");
-        setTransactionId("");
-        setShowForm(false);
-
-        // Refresh payments list
-        fetchPayments();
-      } else {
-        const error = await response.json();
-        alert(error.message || "Failed to process payment");
-      }
-    } catch (error) {
-      console.error("Error processing payment:", error);
-      alert("An error occurred while processing the payment");
-    } finally {
-      setProcessing(false);
-    }
-  };
-
-  const handlePaymentAction = async (
-    paymentId: string,
-    action: "approve" | "reject"
-  ) => {
-    setApprovingPayment(paymentId);
-    try {
-      const response = await fetch(`/api/admin/payments/${paymentId}`, {
-        method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ action }),
-      });
-
-      if (response.ok) {
-        const result = await response.json();
-        alert(result.message);
-        fetchPayments(); // Refresh the list
-      } else {
-        const error = await response.json();
-        alert(error.message || `Failed to ${action} payment`);
-      }
-    } catch (error) {
-      console.error(`Error ${action}ing payment:`, error);
-      alert(`An error occurred while ${action}ing the payment`);
-    } finally {
-      setApprovingPayment(null);
-    }
-  };
-
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case "VERIFIED":
-        return "success";
-      case "PENDING":
-        return "warning";
-      case "APPROVED":
-        return "default";
-      case "COMPLETED":
-        return "success";
-      case "REJECTED":
-        return "error";
-      default:
-        return "secondary";
-    }
-  };
-
-  const [processingRedemptionId, setProcessingRedemptionId] = useState<string | null>(null);
 
   // Resolution confirmation modal state
   const [resolutionModal, setResolutionModal] = useState<{
@@ -506,46 +341,6 @@ export default function AdminPanel() {
     eventTitle: "",
     betCount: 0,
   });
-  const handleRedemptionAction = async (
-    redemptionId: string,
-    action: "approve" | "complete" | "reject",
-    adminNotes?: string
-  ) => {
-    setProcessingRedemptionId(redemptionId);
-    try {
-      const response = await fetch(`/api/admin/redemptions/${redemptionId}`, {
-        method: "PUT",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ action, adminNotes }),
-      });
-      if (response.ok) {
-        const result = await response.json();
-        alert(result.message || `Redemption ${action}d`);
-        fetchData();
-      } else {
-        const err = await response.json();
-        alert(err.message || `Failed to ${action} redemption`);
-      }
-    } catch (error) {
-      console.error(`Error ${action} redemption:`, error);
-      alert(`An error occurred while processing redemption`);
-    } finally {
-      setProcessingRedemptionId(null);
-    }
-  };
-
-  const getPaymentMethodColor = (method: string) => {
-    switch (method.toLowerCase()) {
-      case "venmo":
-        return "default";
-      case "cashapp":
-        return "success";
-      case "paypal":
-        return "warning";
-      default:
-        return "secondary";
-    }
-  };
 
   if (status === "loading" || loading) {
     return (
@@ -569,7 +364,7 @@ export default function AdminPanel() {
         </div>
 
         {/* Tab Navigation */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:flex gap-2 md:gap-4 mb-6">
+        <div className="flex gap-2 md:gap-4 mb-6">
           <button
             onClick={() => setActiveTab("events")}
             className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-sm md:text-base ${
@@ -591,28 +386,6 @@ export default function AdminPanel() {
           >
             <Users className="inline h-4 w-4 mr-2" />
             Users ({users.length})
-          </button>
-          <button
-            onClick={() => setActiveTab("payments")}
-            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-sm md:text-base ${
-              activeTab === "payments"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
-          >
-            <DollarSign className="inline h-4 w-4 mr-2" />
-            Payments ({payments.filter(p => p.status === "PENDING").length})
-          </button>
-          <button
-            onClick={() => setActiveTab("redemptions")}
-            className={`px-3 md:px-4 py-2 rounded-lg font-medium transition-colors text-sm md:text-base ${
-              activeTab === "redemptions"
-                ? "bg-blue-600 text-white"
-                : "bg-gray-700 text-gray-300 hover:bg-gray-600"
-            }`}
-          >
-            <ArrowDownCircle className="inline h-4 w-4 mr-2" />
-            Redemptions ({redemptions.filter(r => r.status === "PENDING").length})
           </button>
         </div>
 
@@ -748,7 +521,7 @@ export default function AdminPanel() {
                           className="bg-orange-600 hover:bg-orange-700 w-full md:w-auto"
                         >
                           <X className="h-4 w-4 mr-2" />
-                          Cancel & Refund Market
+                          Cancel Market
                         </Button>
                       </div>
                     </div>
@@ -799,108 +572,6 @@ export default function AdminPanel() {
           </div>
         )}
 
-        {/* Redemptions Tab */}
-        {activeTab === "redemptions" && (
-          <div className="space-y-6">
-            <Card className="bg-gray-800/90 border-0 shadow-lg">
-              <CardHeader className="p-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <ArrowDownCircle className="h-5 w-5" />
-                    Redemption Requests ({redemptions.length})
-                    {redemptions.filter((r) => r.status === "PENDING").length > 0 && (
-                      <Badge variant="warning" className="ml-2">
-                        {redemptions.filter((r) => r.status === "PENDING").length} Pending
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <div className="flex flex-col md:flex-row gap-2">
-                    <Button
-                      variant={redemptionsSubTab === "pending" ? "primary" : "outline"}
-                      size="sm"
-                      onClick={() => setRedemptionsSubTab("pending")}
-                      className="text-xs md:text-sm"
-                    >
-                      Pending ({redemptions.filter(r => r.status === "PENDING").length})
-                    </Button>
-                    <Button
-                      variant={redemptionsSubTab === "completed" ? "primary" : "outline"}
-                      size="sm"
-                      onClick={() => setRedemptionsSubTab("completed")}
-                      className="text-xs md:text-sm"
-                    >
-                      Completed ({redemptions.filter(r => r.status === "COMPLETED" || r.status === "REJECTED").length})
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                {redemptions.filter(r => redemptionsSubTab === "pending" ? r.status === "PENDING" : (r.status === "COMPLETED" || r.status === "REJECTED")).length > 0 ? (
-                  <div className="space-y-4">
-                    {redemptions
-                      .filter(r => redemptionsSubTab === "pending" ? r.status === "PENDING" : (r.status === "COMPLETED" || r.status === "REJECTED"))
-                      .map((r) => (
-                      <div key={r.id} className="flex flex-col md:flex-row md:items-center md:justify-between p-3 md:p-4 bg-gray-800/30 rounded-lg gap-4">
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge variant={getStatusColor(r.status)}>
-                              {r.status === "PENDING" && <Clock className="h-3 w-3 mr-1" />}
-                              {r.status === "APPROVED" && <CheckCircle className="h-3 w-3 mr-1" />}
-                              {r.status === "COMPLETED" && <CheckCircle className="h-3 w-3 mr-1" />}
-                              {r.status === "REJECTED" && <AlertCircle className="h-3 w-3 mr-1" />}
-                              {r.status}
-                            </Badge>
-                          </div>
-                          <div className="text-sm text-gray-400 space-y-1">
-                            <div className="text-white font-medium">{r.user.name} ({r.user.email})</div>
-                            <div className="text-xs md:text-sm">Apple Cash: {r.appleCashEmail}</div>
-                            <div className="text-xs md:text-sm">{new Date(r.requestedAt).toLocaleString()}</div>
-                          </div>
-                        </div>
-
-                        <div className="flex flex-col md:flex-row md:items-center gap-3">
-                          <div className="text-center md:text-right">
-                            <div className="text-white font-semibold text-lg">
-                              ${Number(r.dollarAmount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                            </div>
-                          </div>
-
-                          {r.status === "PENDING" && (
-                            <div className="flex flex-col md:flex-row gap-2">
-                              <Button
-                                size="sm"
-                                className="bg-green-600 hover:bg-green-700 w-full md:w-auto"
-                                onClick={() => handleRedemptionAction(r.id, "complete")}
-                                disabled={processingRedemptionId === r.id}
-                              >
-                                {processingRedemptionId === r.id ? "Processing..." : "Complete"}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() => handleRedemptionAction(r.id, "reject")}
-                                disabled={processingRedemptionId === r.id}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10 w-full md:w-auto"
-                              >
-                                <X className="h-4 w-4 mr-1" /> Reject
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <ArrowDownCircle className="h-12 w-12 mx-auto mb-2" />
-                    <p>No {redemptionsSubTab} redemption requests</p>
-                  </div>
-                )}
-                </CardContent>
-            </Card>
-          </div>
-        )}
-
         {/* Users Tab */}
         {activeTab === "users" && (
           <div className="space-y-4">
@@ -920,9 +591,6 @@ export default function AdminPanel() {
                           {user.email}
                         </p>
                         <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 mt-2 text-sm text-gray-400">
-                          <span className="flex items-center gap-1">
-                            ${Number(user.virtualBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                          </span>
                           <span className="text-xs md:text-sm">{user._count.bets} bets</span>
                           <span className="text-xs md:text-sm">{user._count.createdEvents} markets</span>
                           <span className="text-xs md:text-sm">
@@ -955,251 +623,6 @@ export default function AdminPanel() {
                 <p className="text-gray-400">No users found</p>
               </div>
             )}
-          </div>
-        )}
-
-        {/* Payments Tab */}
-        {activeTab === "payments" && (
-          <div className="space-y-6">
-            {/* Quick Process Form */}
-            <Card className="bg-gray-800/90 border-0 shadow-lg">
-              <CardHeader className="p-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <Plus className="h-5 w-5" />
-                    Process External Payment
-                  </CardTitle>
-                  <Button
-                    variant={showForm ? "ghost" : "primary"}
-                    size="sm"
-                    onClick={() => setShowForm(!showForm)}
-                  >
-                    {showForm ? "Cancel" : "Add Payment"}
-                  </Button>
-                </div>
-              </CardHeader>
-              {showForm && (
-                <CardContent className="p-4 pt-0 space-y-4">
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <label className="block text-sm font-medium text-white mb-2">
-                        User Email *
-                      </label>
-                      <input
-                        type="email"
-                        value={userEmail}
-                        onChange={(e) => setUserEmail(e.target.value)}
-                        placeholder="user@example.com"
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-white mb-2">
-                        Amount (USD) *
-                      </label>
-                      <input
-                        type="number"
-                        step="0.01"
-                        value={amount}
-                        onChange={(e) => setAmount(e.target.value)}
-                        placeholder="10.00"
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-white mb-2">
-                        Transaction ID *
-                      </label>
-                      <input
-                        type="text"
-                        value={transactionId}
-                        onChange={(e) => setTransactionId(e.target.value)}
-                        placeholder="Venmo/CashApp transaction ID"
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      />
-                    </div>
-                    <div>
-                      <label className="block text-sm font-medium text-white mb-2">
-                        Payment Method
-                      </label>
-                      <select
-                        value={paymentMethod}
-                        onChange={(e) => setPaymentMethod(e.target.value)}
-                        className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      >
-                        <option value="venmo">Venmo</option>
-                        <option value="cashapp">Cash App</option>
-                        <option value="paypal">PayPal</option>
-                        <option value="bank">Bank Transfer</option>
-                      </select>
-                    </div>
-                  </div>
-
-                  {amount && (
-                    <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-4">
-                      <div className="flex items-center justify-between">
-                        <span className="text-white">Amount to add:</span>
-                        <span className="font-bold text-green-400">
-                          ${Number(amount).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-
-                  <Button
-                    onClick={processPayment}
-                    disabled={
-                      processing || !userEmail || !amount || !transactionId
-                    }
-                    className="w-full"
-                  >
-                    {processing ? "Processing..." : "Process Payment"}
-                  </Button>
-                </CardContent>
-              )}
-            </Card>
-
-            {/* Recent Payments */}
-            <Card className="bg-gray-800/90 border-0 shadow-lg">
-              <CardHeader className="p-4">
-                <div className="flex items-center justify-between">
-                  <CardTitle className="flex items-center gap-2">
-                    <DollarSign className="h-5 w-5" />
-                    Recent Payments ({payments.length})
-                    {payments.filter((p) => p.status === "PENDING").length >
-                      0 && (
-                      <Badge variant="warning" className="ml-2">
-                        {payments.filter((p) => p.status === "PENDING").length}{" "}
-                        Pending
-                      </Badge>
-                    )}
-                  </CardTitle>
-                  <div className="flex gap-2">
-                    <Button
-                      variant={paymentsSubTab === "pending" ? "primary" : "outline"}
-                      size="sm"
-                      onClick={() => setPaymentsSubTab("pending")}
-                    >
-                      Pending ({payments.filter(p => p.status === "PENDING").length})
-                    </Button>
-                    <Button
-                      variant={paymentsSubTab === "processed" ? "primary" : "outline"}
-                      size="sm"
-                      onClick={() => setPaymentsSubTab("processed")}
-                    >
-                      Processed ({payments.filter(p => p.status === "VERIFIED" || p.status === "REJECTED").length})
-                    </Button>
-                  </div>
-                </div>
-              </CardHeader>
-              <CardContent className="p-4 pt-0">
-                {paymentLoading ? (
-                  <div className="text-center py-8 text-gray-400">
-                    <DollarSign className="h-12 w-12 mx-auto mb-2 animate-pulse" />
-                    <p>Loading payments...</p>
-                  </div>
-                ) : payments.filter(p => paymentsSubTab === "pending" ? p.status === "PENDING" : (p.status === "VERIFIED" || p.status === "REJECTED")).length > 0 ? (
-                  <div className="space-y-4">
-                    {payments
-                      .filter(p => paymentsSubTab === "pending" ? p.status === "PENDING" : (p.status === "VERIFIED" || p.status === "REJECTED"))
-                      .map((payment) => (
-                      <div
-                        key={payment.id}
-                        className="flex flex-col md:flex-row md:items-center md:justify-between p-3 md:p-4 bg-gray-800/30 rounded-lg gap-3 md:gap-0"
-                      >
-                        <div className="flex-1">
-                          <div className="flex items-center gap-2 mb-2">
-                            <Badge
-                              variant={getPaymentMethodColor(
-                                payment.paymentMethod
-                              )}
-                            >
-                              {payment.paymentMethod.toUpperCase()}
-                            </Badge>
-                            <Badge variant={getStatusColor(payment.status)}>
-                              {payment.status === "VERIFIED" && (
-                                <CheckCircle className="h-3 w-3 mr-1" />
-                              )}
-                              {payment.status === "PENDING" && (
-                                <Clock className="h-3 w-3 mr-1" />
-                              )}
-                              {payment.status === "REJECTED" && (
-                                <AlertCircle className="h-3 w-3 mr-1" />
-                              )}
-                              {payment.status}
-                            </Badge>
-                          </div>
-                          <div className="flex flex-col md:flex-row md:items-center gap-1 md:gap-4 text-sm">
-                            <span className="text-white font-medium">
-                              {payment.user.name} ({payment.user.email})
-                            </span>
-                            <span className="text-gray-400 text-xs md:text-sm">
-                              {new Date(payment.createdAt).toLocaleString()}
-                            </span>
-                          </div>
-                        </div>
-                        <div className="flex flex-col md:flex-row md:items-center justify-between md:justify-end gap-3">
-                          <div className="md:text-right">
-                            <div className="text-white font-semibold">
-                              ${Number(payment.amount).toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}
-                            </div>
-                            <div className="text-sm text-green-400">
-                              +$
-                              {Number(payment.amount).toLocaleString("en-US", {
-                                minimumFractionDigits: 2,
-                                maximumFractionDigits: 2,
-                              })}{" "}
-                              added
-                            </div>
-                          </div>
-                          {payment.status === "PENDING" && (
-                            <div className="flex gap-2 w-full md:w-auto justify-center md:justify-end">
-                              <Button
-                                size="sm"
-                                onClick={() =>
-                                  handlePaymentAction(payment.id, "approve")
-                                }
-                                disabled={approvingPayment === payment.id}
-                                className="bg-green-600 hover:bg-green-700"
-                              >
-                                {approvingPayment === payment.id ? (
-                                  "Processing..."
-                                ) : (
-                                  <>
-                                    <CheckCircle className="h-4 w-4 mr-1" />
-                                    Approve
-                                  </>
-                                )}
-                              </Button>
-                              <Button
-                                size="sm"
-                                variant="ghost"
-                                onClick={() =>
-                                  handlePaymentAction(payment.id, "reject")
-                                }
-                                disabled={approvingPayment === payment.id}
-                                className="text-red-400 hover:text-red-300 hover:bg-red-500/10"
-                              >
-                                <X className="h-4 w-4 mr-1" />
-                                Reject
-                              </Button>
-                            </div>
-                          )}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-8 text-gray-400">
-                    <DollarSign className="h-12 w-12 mx-auto mb-2" />
-                    <p>No {paymentsSubTab} payments found</p>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
           </div>
         )}
 
@@ -1290,7 +713,7 @@ export default function AdminPanel() {
                   <p className="text-gray-300 mb-2">Impact:</p>
                   <div className="bg-gray-700 rounded p-3">
                     <p className="text-orange-400 font-medium">
-                      {cancellationModal.betCount} bet{cancellationModal.betCount !== 1 ? 's' : ''} will be refunded
+                      {cancellationModal.betCount} bet{cancellationModal.betCount !== 1 ? 's' : ''} will be voided and removed from portfolios
                     </p>
                   </div>
                 </div>
@@ -1298,7 +721,7 @@ export default function AdminPanel() {
                 <div className="bg-orange-500/10 border border-orange-500/20 rounded p-3">
                   <p className="text-orange-300 text-sm">
                     ⚠️ <strong>Warning:</strong> This action cannot be undone.
-                    All bets will be refunded to users and they will receive notifications.
+                    All bets will be voided (no payout) and removed from user portfolios. Users will receive notifications.
                   </p>
                 </div>
               </div>
