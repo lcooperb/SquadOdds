@@ -28,7 +28,7 @@ export const metadata: Metadata = {
     url: "/",
     siteName: "SquadOdds",
     images: [
-      { url: "/opengraph-image", width: 1200, height: 630 },
+      { url: "/opengraph-image.png", width: 1200, height: 630 },
     ],
     type: "website",
   },
@@ -36,7 +36,7 @@ export const metadata: Metadata = {
     card: "summary_large_image",
     title: "SquadOdds - Call it, before life does.",
     description: "A prediction market for your squad to bet on personal life events",
-    images: ["/twitter-image"],
+    images: ["/twitter-image.png"],
   },
 };
 
