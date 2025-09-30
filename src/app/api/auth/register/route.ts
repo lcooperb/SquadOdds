@@ -37,7 +37,7 @@ export async function POST(request: NextRequest) {
         email: normalizedEmail,
         name,
         hashedPassword,
-        virtualBalance: 50000, // Starting balance
+        virtualBalance: 1, // Starting balance
       },
     })
 
