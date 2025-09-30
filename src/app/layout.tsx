@@ -9,9 +9,35 @@ import { SpeedInsights } from '@vercel/speed-insights/next';
 const dmSans = DM_Sans({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
-  title: "SquadOdds - Squad Predictions",
-  description:
-    "A prediction market for your squad to bet on personal life events",
+  // Update this to your production domain
+  metadataBase: new URL('https://squadodds.vercel.app'),
+  title: "SquadOdds - Call it, before life does.",
+  description: "A prediction market for your squad to bet on personal life events",
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [
+      { url: "/favicon.ico" },
+      { url: "/icon.svg", type: "image/svg+xml" },
+    ],
+    apple: [{ url: "/icons/apple-touch-icon.png", sizes: "180x180" }],
+    other: [{ rel: "mask-icon", url: "/icons/safari-pinned-tab.svg" }],
+  },
+  openGraph: {
+    title: "SquadOdds - Call it, before life does.",
+    description: "A prediction market for your squad to bet on personal life events",
+    url: "/",
+    siteName: "SquadOdds",
+    images: [
+      { url: "/opengraph-image", width: 1200, height: 630 },
+    ],
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "SquadOdds - Call it, before life does.",
+    description: "A prediction market for your squad to bet on personal life events",
+    images: ["/twitter-image"],
+  },
 };
 
 export default function RootLayout({

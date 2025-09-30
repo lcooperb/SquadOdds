@@ -45,7 +45,7 @@ model User {
   image           String?
   hashedPassword  String?
   appleCashEmail  String?   // Apple Cash email for payments
-  virtualBalance  Decimal   @default(500.00)
+  virtualBalance  Decimal   @default(1.00)
   totalWinnings   Decimal   @default(0.00)
   totalLosses     Decimal   @default(0.00)
   isAdmin         Boolean   @default(false)

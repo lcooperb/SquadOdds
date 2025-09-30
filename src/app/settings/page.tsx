@@ -227,7 +227,7 @@ export default function Settings() {
           <CardContent className="p-4 pt-0 space-y-4">
             <div className="flex items-center gap-4">
               <div
-                className="h-16 w-16 rounded-full flex items-center justify-center text-lg font-semibold text-white/90"
+                className="h-16 w-16 rounded-full flex items-center justify-center text-lg font-semibold text-gray-900/90"
                 style={gradientFromString(profile.id || profile.email || profile.name)}
               >
                 {initialsFromName(profile.name)}

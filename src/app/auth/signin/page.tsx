@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { signIn, getSession } from 'next-auth/react'
 import { useRouter } from 'next/navigation'
 import Link from 'next/link'
-import { TrendingUp } from 'lucide-react'
+import Brand from '@/components/Brand'
 
 export default function SignIn() {
   const [email, setEmail] = useState('')
@@ -41,12 +41,7 @@ export default function SignIn() {
     <div className="h-[calc(100vh-112px)] flex items-center justify-center px-4 overflow-hidden">
       <div className="max-w-md w-full space-y-5 p-6 md:p-8">
         <div className="text-center">
-          <Link href="/" className="flex items-center justify-center space-x-2 mb-4 md:mb-6">
-            <TrendingUp className="h-8 w-8 text-blue-500" />
-            <span className="text-xl font-bold">
-              <span className="text-white">Squad</span><span className="text-blue-500">Odds</span>
-            </span>
-          </Link>
+          <Brand size={32} className="justify-center mb-4 md:mb-6" />
           <h2 className="text-3xl font-bold text-white">
             Sign in to your account
           </h2>

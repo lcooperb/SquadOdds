@@ -32,11 +32,11 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Unauthorized' }, { status: 401 })
     }
 
-    const { dollarAmount, appleCashEmail } = await request.json()
+    const { dollarAmount } = await request.json()
 
-    if (!dollarAmount || !appleCashEmail) {
+    if (!dollarAmount) {
       return NextResponse.json(
-        { message: 'Dollar amount and Apple Cash email are required' },
+        { message: 'Dollar amount is required' },
         { status: 400 }
       )
     }
@@ -91,7 +91,8 @@ export async function POST(request: NextRequest) {
           // Backward compatibility: mirror USD amount into tokenAmount
           tokenAmount: dollarAmount,
           dollarAmount,
-          appleCashEmail: appleCashEmail.trim(),
+          // Use the user's account email for contact/record
+          appleCashEmail: session.user.email || '',
           status: 'PENDING',
         },
       }),

@@ -6,6 +6,7 @@ import { useSession } from 'next-auth/react'
 import { Button } from '@/components/ui/Button'
 import TutorialCard from '@/components/tutorial/TutorialCard'
 import InteractiveExample from '@/components/tutorial/InteractiveExample'
+import Brand from '@/components/Brand'
 import {
   TrendingUp,
   DollarSign,
@@ -72,7 +73,7 @@ export default function HowItWorks() {
           {/* Header */}
           <div className="mb-6">
             <div className="flex items-center mb-3">
-              <TrendingUp className="h-12 w-12 text-purple-500" />
+              <Brand size={48} showWordmark={false} />
             </div>
             <h1 className="text-2xl font-bold text-white mb-2">
               How SquadOdds Works

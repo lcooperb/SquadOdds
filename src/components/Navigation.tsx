@@ -6,6 +6,7 @@ import { useState, useEffect } from 'react'
 import { Button } from '@/components/ui/Button'
 import SearchDropdown from '@/components/SearchDropdown'
 import { Menu, X, User, LogOut, Settings, TrendingUp, Users, CreditCard, ArrowDownCircle, ChevronDown } from 'lucide-react'
+import Brand from '@/components/Brand'
 import { gradientFromString, initialsFromName } from '@/lib/avatar'
 import NotificationDropdown from '@/components/NotificationDropdown'
 
@@ -74,13 +75,7 @@ export default function Navigation() {
         <div className="flex items-center justify-between h-16">
           {/* Left side - Logo */}
           <div className="flex items-center">
-            <Link href="/" className="flex items-center space-x-2 flex-shrink-0">
-              <TrendingUp className="h-8 w-8 text-purple-500" />
-              <span className="text-xl font-bold">
-                <span className="text-white">Squad</span>
-                <span className="text-purple-500">Odds</span>
-              </span>
-            </Link>
+            <Brand size={32} className="flex-shrink-0" />
 
             {/* Desktop Search Bar */}
             {session && (

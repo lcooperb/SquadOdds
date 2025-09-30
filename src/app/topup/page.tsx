@@ -9,7 +9,6 @@ import {
   DollarSign,
   CreditCard,
   CheckCircle,
-  Copy,
   AlertTriangle,
   X,
 } from "lucide-react";
@@ -23,11 +22,7 @@ export default function TopUp() {
   const [showPaymentDetails, setShowPaymentDetails] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
-
-  // Apple Cash payment details
-  const paymentAccount = {
-    appleCash: "cooperband.leo@gmail.com", // Your Apple Cash email
-  };
+  
   // Preset amounts in USD
   const predefinedAmounts: number[] = [5, 10, 25, 50, 100, 200];
 
@@ -124,7 +119,10 @@ export default function TopUp() {
       <main className="container mx-auto px-4 py-8 max-w-2xl">
         <div className="mb-8">
           <h1 className="text-3xl font-bold text-white mb-2">Add Funds</h1>
-          <p className="text-gray-400">Add funds to your account balance (USD)</p>
+          <div className="space-y-2 text-gray-300">
+            <p>Pay Leo via Apple Cash and we will approve adding the same amount of dollars to your SquadOdds account.</p>
+            <p className="text-gray-400 text-sm">We use a shared group pile for wagers: everyone pays into the same pool, and whatever goes in will also come out over time.</p>
+          </div>
         </div>
 
         {/* Success Message */}
@@ -272,46 +270,26 @@ export default function TopUp() {
                             minimumFractionDigits: 2,
                             maximumFractionDigits: 2,
                           })}
-                        </strong> via Apple Cash to the email below, then hit Submit.
+                        </strong> via Apple Cash to <strong>Leo</strong>, then hit Submit. We'll review and credit your balance with the same amount.
                       </p>
                     </div>
                   </div>
                 </div>
 
-                {/* Payment Method - Venmo Only */
-                /* Updated to reflect new Venmo handle and no verification step */}
+                {/* Payment Method - Apple Cash */}
                 <div className="space-y-4">
                   <h3 className="text-white font-medium">
-                    Send Payment via Apple Cash:
+                    Send Payment via Apple Cash
                   </h3>
 
-                  <div className="bg-gray-800/30 rounded-lg p-4">
-                    <div className="flex items-center justify-between mb-2">
-                      <h4 className="text-white font-medium">Apple Cash</h4>
-                      <button
-                        onClick={() => copyToClipboard(paymentAccount.appleCash)}
-                        className="text-blue-400 hover:text-blue-300 transition-colors"
-                      >
-                        <Copy className="h-4 w-4" />
-                      </button>
-                    </div>
-                    <p className="text-gray-300 font-mono text-lg">
-                      {paymentAccount.appleCash}
+                  <div className="bg-gray-800/30 rounded-lg p-4 space-y-2">
+                    <h4 className="text-white font-medium">Instructions</h4>
+                    <p className="text-sm text-gray-300">
+                      Use Apple Cash in the Messages app to send <strong>${selectedAmount.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</strong> to <strong>Leo</strong>.
                     </p>
-                    <p className="text-sm text-gray-400 mt-2">
-                      Include your email ({session?.user?.email}) in the message.
-                    </p>
-                    <div className="mt-3 p-3 bg-blue-600/10 border border-blue-500/20 rounded-md">
+                    <div className="mt-2 p-3 bg-blue-600/10 border border-blue-500/20 rounded-md">
                       <p className="text-sm text-blue-300">
-                        💡 <strong>How to send via Apple Cash:</strong><br/>
-                        1. Open Messages app<br/>
-                        2. Start new message to {paymentAccount.appleCash}<br/>
-                        3. Tap the Apple Cash button (or + → Apple Cash)<br/>
-                        4. Send ${selectedAmount.toLocaleString("en-US", {
-                            minimumFractionDigits: 2,
-                            maximumFractionDigits: 2,
-                          })}<br/>
-                        5. Include &quot;{session?.user?.email}&quot; in the message
+                        We keep a shared group pile for bets—everyone pays into the same pool, and whatever goes in will also come out to winners.
                       </p>
                     </div>
                   </div>

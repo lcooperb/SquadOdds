@@ -19,7 +19,6 @@ interface UserProfile {
   id: string;
   email: string;
   name: string;
-  appleCashEmail: string | null;
   virtualBalance: number;
 }
 
@@ -27,7 +26,6 @@ interface Redemption {
   id: string;
   tokenAmount: number;
   dollarAmount: number;
-  appleCashEmail: string;
   status: string;
   requestedAt: string;
   processedAt: string | null;
@@ -42,7 +40,6 @@ export default function RedeemPage() {
   const [loading, setLoading] = useState(true);
   const [submitting, setSubmitting] = useState(false);
   const [redeemAmount, setRedeemAmount] = useState("");
-  const [appleCashEmail, setAppleCashEmail] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
 
@@ -66,7 +63,6 @@ export default function RedeemPage() {
       if (profileRes.ok) {
         const userData = await profileRes.json();
         setProfile(userData);
-        setAppleCashEmail(userData.appleCashEmail || "");
       }
 
       if (redemptionsRes.ok) {
@@ -84,11 +80,6 @@ export default function RedeemPage() {
     e.preventDefault();
     setError(null);
     setSuccessMessage(null);
-
-    if (!appleCashEmail.trim()) {
-      setError("Please enter your Apple Cash email");
-      return;
-    }
 
     const dollars = parseFloat(redeemAmount);
     if (isNaN(dollars) || dollars < 1) {
@@ -110,7 +101,6 @@ export default function RedeemPage() {
         },
         body: JSON.stringify({
           dollarAmount: dollars,
-          appleCashEmail: appleCashEmail.trim(),
         }),
       });
 
@@ -260,26 +250,6 @@ export default function RedeemPage() {
           </CardHeader>
           <CardContent className="p-4 pt-0">
             <form onSubmit={handleRedeem} className="space-y-4">
-              <div>
-                <label
-                  htmlFor="appleCashEmail"
-                  className="block text-sm font-medium text-white mb-2"
-                >
-                  Apple Cash Email *
-                </label>
-                <input
-                  type="email"
-                  id="appleCashEmail"
-                  value={appleCashEmail}
-                  onChange={(e) => setAppleCashEmail(e.target.value)}
-                  placeholder="your-email@example.com"
-                  className="w-full px-3 py-2 bg-gray-800 border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500"
-                  required
-                />
-                <p className="mt-1 text-xs text-gray-400">
-                  Payment will be sent to this email via Apple Cash
-                </p>
-              </div>
 
               <div>
                 <label
@@ -355,7 +325,6 @@ export default function RedeemPage() {
                 disabled={
                   submitting ||
                   !redeemAmount ||
-                  !appleCashEmail.trim() ||
                   parseFloat(redeemAmount) < 1
                 }
                 className="w-full"
@@ -404,9 +373,6 @@ export default function RedeemPage() {
                           minimumFractionDigits: 2,
                           maximumFractionDigits: 2,
                         })}
-                      </span>
-                      <span className="text-gray-400">
-                        to {redemption.appleCashEmail}
                       </span>
                       <span className="text-gray-400">
                         {new Date(redemption.requestedAt).toLocaleDateString()}
