@@ -101,7 +101,7 @@ export default function Dashboard() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+        <div className="bg-gray-800/90 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Your Balance</p>
@@ -112,7 +112,7 @@ export default function Dashboard() {
             <DollarSign className="h-8 w-8 text-green-400" />
           </div>
         </div>
-        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+        <div className="bg-gray-800/90 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Active Markets</p>
@@ -123,7 +123,7 @@ export default function Dashboard() {
             <TrendingUp className="h-8 w-8 text-blue-400" />
           </div>
         </div>
-        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+        <div className="bg-gray-800/90 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Total Volume</p>
@@ -136,7 +136,7 @@ export default function Dashboard() {
             <DollarSign className="h-8 w-8 text-gray-400" />
           </div>
         </div>
-        <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700">
+        <div className="bg-gray-800/90 rounded-lg p-4">
           <div className="flex items-center justify-between">
             <div>
               <p className="text-gray-400 text-sm">Total Traders</p>

@@ -229,7 +229,7 @@ export default function BettingModal({
                 onClick={() => setSelectedSide("YES")}
                 className="w-full"
               >
-                {isMultipleChoice ? "Yes" : "Yes"} {yesPrice}¢
+                {isMultipleChoice ? "Yes" : "Yes"} ${yesPrice}
               </Button>
               <Button
                 variant={localSelectedSide === "NO" ? "no" : "outline"}
@@ -237,7 +237,7 @@ export default function BettingModal({
                 onClick={() => setSelectedSide("NO")}
                 className="w-full"
               >
-                {isMultipleChoice ? "No" : "No"} {noPrice}¢
+                {isMultipleChoice ? "No" : "No"} ${noPrice}
               </Button>
             </div>
 
@@ -245,16 +245,19 @@ export default function BettingModal({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-white font-medium">Amount</label>
-                <input
-                  type="number"
-                  value={amount}
-                  onChange={(e) => setAmount(e.target.value)}
-                  placeholder="0"
-                  className="text-3xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-32"
-                  min="0"
-                  max={userBalance}
-                  step="0.01"
-                />
+                <div className="flex items-center">
+                  <span className="text-3xl font-bold text-gray-500 mr-1">$</span>
+                  <input
+                    type="number"
+                    value={amount}
+                    onChange={(e) => setAmount(e.target.value)}
+                    placeholder="0"
+                    className="text-3xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-28"
+                    min="0"
+                    max={userBalance}
+                    step="0.01"
+                  />
+                </div>
               </div>
 
               {/* Quick Amount Buttons */}
@@ -299,10 +302,10 @@ export default function BettingModal({
                     </div>
                   </div>
                   <div className="text-sm text-gray-400 mt-1">
-                    Avg. Price {averagePrice.toFixed(1)}¢
+                    Avg. Price ${averagePrice.toFixed(1)}
                     {priceImpact > 0.5 && (
                       <span className="ml-2 text-orange-400">
-                        (+{priceImpact.toFixed(1)}¢ impact)
+                        (+${priceImpact.toFixed(1)} impact)
                       </span>
                     )}
                   </div>
@@ -316,10 +319,10 @@ export default function BettingModal({
                       <span className="text-blue-400">📈</span>
                     </div>
                     <div className="text-sm text-gray-300">
-                      Market will move from <span className="font-semibold text-white">{currentPrice}¢</span> → <span className="font-semibold text-white">{marketImpact.estimatedFinalPrice}¢</span>
+                      Market will move from <span className="font-semibold text-white">${currentPrice}</span> → <span className="font-semibold text-white">${marketImpact.estimatedFinalPrice}</span>
                     </div>
                     <div className="text-xs text-gray-400 mt-1">
-                      Your bet moves the {localSelectedSide} price by {priceImpact.toFixed(1)}¢
+                      Your bet moves the {localSelectedSide} price by ${priceImpact.toFixed(1)}
                     </div>
                   </div>
                 )}
@@ -366,7 +369,7 @@ export default function BettingModal({
                             ${position.positionValue.toFixed(2)} {position.side} position
                           </span>
                           <span className="text-gray-400 text-sm">
-                            Avg: {position.averagePrice.toFixed(1)}¢
+                            Avg: ${position.averagePrice.toFixed(1)}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
@@ -395,16 +398,19 @@ export default function BettingModal({
                 <div>
                   <div className="flex items-center justify-between mb-2">
                     <label className="text-white font-medium">Position to sell</label>
-                    <input
-                      type="number"
-                      value={amount}
-                      onChange={(e) => setAmount(e.target.value)}
-                      placeholder="0"
-                      className="text-2xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-32"
-                      min="0"
-                      max={positionToSell.positionValue}
-                      step="0.01"
-                    />
+                    <div className="flex items-center">
+                      <span className="text-2xl font-bold text-gray-500 mr-1">$</span>
+                      <input
+                        type="number"
+                        value={amount}
+                        onChange={(e) => setAmount(e.target.value)}
+                        placeholder="0"
+                        className="text-2xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-28"
+                        min="0"
+                        max={positionToSell.positionValue}
+                        step="0.01"
+                      />
+                    </div>
                   </div>
 
                   {/* Quick Sell Buttons */}

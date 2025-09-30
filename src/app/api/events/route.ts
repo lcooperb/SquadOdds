@@ -11,8 +11,13 @@ export async function GET(request: NextRequest) {
     const search = searchParams.get('search')
     const status = searchParams.get('status') || 'ACTIVE'
 
-    const where: any = {
-      status,
+    // Handle multiple statuses (e.g., "CLOSED,RESOLVED")
+    const where: any = {}
+    if (status.includes(',')) {
+      const statuses = status.split(',')
+      where.status = { in: statuses }
+    } else {
+      where.status = status
     }
 
     if (category && category !== 'All') {

@@ -436,7 +436,7 @@ export default function AdminPanel() {
   if (status === "loading" || loading) {
     return (
       <>
-                <div className="min-h-screen flex items-center justify-center">
+        <div className="min-h-screen flex items-center justify-center">
           <div className="text-white">Loading admin panel...</div>
         </div>
       </>
@@ -445,9 +445,9 @@ export default function AdminPanel() {
 
   return (
     <>
-            <main className="container mx-auto px-4 py-8">
+      <main className="container mx-auto px-4 py-8">
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-white mb-2 flex items-center gap-2">
+          <h1 className="text-2xl font-bold text-white mb-2 flex items-center gap-2">
             <Shield className="h-8 w-8 text-blue-500" />
             Admin Panel
           </h1>
@@ -531,8 +531,8 @@ export default function AdminPanel() {
             {events
               .filter(event => eventsSubTab === "active" ? !event.resolved : event.resolved)
               .map((event) => (
-              <Card key={event.id}>
-                <CardHeader>
+              <Card key={event.id} className="bg-gray-800/90 border-0 shadow-lg hover:bg-gray-800 transition-colors">
+                <CardHeader className="p-4">
                   <div className="flex flex-col md:flex-row md:items-start md:justify-between gap-4">
                     <div className="flex-1">
                       <CardTitle className="text-base md:text-lg">{event.title}</CardTitle>
@@ -578,7 +578,7 @@ export default function AdminPanel() {
                     </div>
                   </div>
                 </CardHeader>
-                <CardContent>
+                <CardContent className="p-4 pt-0">
                   {!event.resolved && event.status === "ACTIVE" && (
                     <div className="space-y-3">
                       <h4 className="font-medium text-white">Resolve Event:</h4>
@@ -664,8 +664,8 @@ export default function AdminPanel() {
         {/* Redemptions Tab */}
         {activeTab === "redemptions" && (
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
+            <Card className="bg-gray-800/90 border-0 shadow-lg">
+              <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <ArrowDownCircle className="h-5 w-5" />
@@ -696,7 +696,7 @@ export default function AdminPanel() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 pt-0">
                 {redemptions.filter(r => redemptionsSubTab === "pending" ? r.status === "PENDING" : (r.status === "COMPLETED" || r.status === "REJECTED")).length > 0 ? (
                   <div className="space-y-4">
                     {redemptions
@@ -758,7 +758,7 @@ export default function AdminPanel() {
                     <p>No {redemptionsSubTab} redemption requests</p>
                   </div>
                 )}
-              </CardContent>
+                </CardContent>
             </Card>
           </div>
         )}
@@ -771,7 +771,7 @@ export default function AdminPanel() {
             </h2>
             <div className="grid gap-4">
               {users.map((user) => (
-                <Card key={user.id}>
+                <Card key={user.id} className="bg-gray-800/90 border-0 shadow-lg">
                   <CardContent className="p-4">
                     <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                       <div className="flex-1">
@@ -824,8 +824,8 @@ export default function AdminPanel() {
         {activeTab === "payments" && (
           <div className="space-y-6">
             {/* Quick Process Form */}
-            <Card>
-              <CardHeader>
+            <Card className="bg-gray-800/90 border-0 shadow-lg">
+              <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <Plus className="h-5 w-5" />
@@ -841,7 +841,7 @@ export default function AdminPanel() {
                 </div>
               </CardHeader>
               {showForm && (
-                <CardContent className="space-y-4">
+                <CardContent className="p-4 pt-0 space-y-4">
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
                       <label className="block text-sm font-medium text-white mb-2">
@@ -922,8 +922,8 @@ export default function AdminPanel() {
             </Card>
 
             {/* Recent Payments */}
-            <Card>
-              <CardHeader>
+            <Card className="bg-gray-800/90 border-0 shadow-lg">
+              <CardHeader className="p-4">
                 <div className="flex items-center justify-between">
                   <CardTitle className="flex items-center gap-2">
                     <DollarSign className="h-5 w-5" />
@@ -954,7 +954,7 @@ export default function AdminPanel() {
                   </div>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-4 pt-0">
                 {paymentLoading ? (
                   <div className="text-center py-8 text-gray-400">
                     <DollarSign className="h-12 w-12 mx-auto mb-2 animate-pulse" />

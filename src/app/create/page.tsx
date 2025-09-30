@@ -187,7 +187,7 @@ export default function CreateMarket() {
 
         <form onSubmit={handleSubmit} className="space-y-8">
           {/* Basic Information Section */}
-          <Card>
+          <Card className="bg-gray-800/90 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Plus className="h-5 w-5" />
@@ -292,7 +292,7 @@ export default function CreateMarket() {
           </Card>
 
           {/* Market Configuration Section */}
-          <Card>
+          <Card className="bg-gray-800/90 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <BarChart3 className="h-5 w-5" />
@@ -340,7 +340,7 @@ export default function CreateMarket() {
 
               {/* Binary Market Odds - Slider */}
               {formData.marketType === "BINARY" && (
-                <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="bg-gray-700/50 rounded-lg p-4">
                   <label className="block text-sm font-medium text-white mb-4">
                     Set Initial Odds *
                   </label>
@@ -408,7 +408,7 @@ export default function CreateMarket() {
 
               {/* Multiple Choice Options */}
               {formData.marketType === "MULTIPLE" && (
-                <div className="bg-gray-800/50 rounded-lg p-4">
+                <div className="bg-gray-700/50 rounded-lg p-4">
                   <label className="block text-sm font-medium text-white mb-3">
                     Market Options *
                   </label>
@@ -522,7 +522,7 @@ export default function CreateMarket() {
           </Card>
 
           {/* Timing & Duration Section */}
-          <Card>
+          <Card className="bg-gray-800/90 border border-gray-700">
             <CardHeader>
               <CardTitle className="flex items-center gap-2">
                 <Calendar className="h-5 w-5" />
@@ -594,7 +594,7 @@ export default function CreateMarket() {
 
           {/* Preview & Actions Section */}
           {formData.title && (
-            <Card>
+            <Card className="bg-gray-800/90 border border-gray-700">
               <CardHeader>
                 <CardTitle className="flex items-center gap-2">
                   <Info className="h-5 w-5" />
@@ -606,7 +606,7 @@ export default function CreateMarket() {
               </CardHeader>
               <CardContent className="space-y-6">
                 {/* Preview */}
-                <div className="bg-gray-800/30 rounded-lg p-4">
+                <div className="bg-gray-700/50 rounded-lg p-4">
                   <h3 className="text-white font-medium mb-3">
                     Market Preview
                   </h3>

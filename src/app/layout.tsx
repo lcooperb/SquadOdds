@@ -23,7 +23,7 @@ export default function RootLayout({
     <html lang="en">
       <body className={dmSans.className}>
         <Providers>
-          <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+          <div className="min-h-screen bg-gray-900">
             <Navigation />
             <div className="pt-16">{children}</div>
           </div>

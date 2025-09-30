@@ -225,15 +225,15 @@ export default function RedeemPage() {
       )}
 
       {/* Current Balance */}
-      <Card className="mb-6">
-        <CardHeader>
+      <Card className="mb-6 bg-gray-800/90 border-0 shadow-lg">
+        <CardHeader className="p-4">
           <CardTitle className="flex items-center gap-2">
             <DollarSign className="h-5 w-5" />
             Current Balance
           </CardTitle>
         </CardHeader>
-        <CardContent>
-          <div className="text-center p-4 bg-gray-800/30 rounded-lg">
+        <CardContent className="p-4 pt-0">
+          <div className="text-center p-4 bg-gray-700/50 rounded-lg">
             <div className="text-3xl font-bold text-green-400 mb-2">
               ${Number(profile.virtualBalance).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
             </div>
@@ -251,14 +251,14 @@ export default function RedeemPage() {
       </Card>
 
       {/* Redemption Form */}
-      <Card className="mb-6">
-        <CardHeader>
+      <Card className="mb-6 bg-gray-800/90 border-0 shadow-lg">
+        <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2">
               <ArrowDownCircle className="h-5 w-5" />
               Request Redemption
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <form onSubmit={handleRedeem} className="space-y-4">
               <div>
                 <label
@@ -339,7 +339,7 @@ export default function RedeemPage() {
                 </div>
               )}
 
-              <div className="bg-gray-800/50 border border-gray-600 rounded-lg p-4">
+              <div className="bg-gray-700/50 rounded-lg p-4">
                 <div className="flex items-start gap-3">
                   <AlertCircle className="h-5 w-5 text-yellow-400 flex-shrink-0 mt-0.5" />
                   <div className="text-sm text-gray-300">
@@ -367,20 +367,20 @@ export default function RedeemPage() {
       </Card>
 
       {/* Redemption History */}
-      <Card>
-        <CardHeader>
+      <Card className="bg-gray-800/90 border-0 shadow-lg">
+        <CardHeader className="p-4">
           <CardTitle className="flex items-center gap-2">
             <Clock className="h-5 w-5" />
             Redemption History ({redemptions.length})
           </CardTitle>
         </CardHeader>
-        <CardContent>
+        <CardContent className="p-4 pt-0">
           {redemptions.length > 0 ? (
             <div className="space-y-4">
               {redemptions.map((redemption) => (
                 <div
                   key={redemption.id}
-                  className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg"
+                  className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg"
                 >
                   <div className="flex-1">
                     <div className="flex items-center gap-2 mb-2">

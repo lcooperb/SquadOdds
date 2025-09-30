@@ -408,6 +408,46 @@ export default function MarketPage() {
         <div className="flex gap-6">
           {/* Left Column - Market Info */}
           <div className="flex-1 max-w-4xl space-y-4 md:space-y-6">
+            {/* Resolved Banner - Show prominently for resolved markets */}
+            {event.resolved && (
+              <div className={`rounded-lg p-4 md:p-5 border-2 ${
+                event.marketType === 'BINARY'
+                  ? event.outcome
+                    ? 'bg-green-900/30 border-green-500/50'
+                    : 'bg-red-900/30 border-red-500/50'
+                  : 'bg-blue-900/30 border-blue-500/50'
+              }`}>
+                <div className="flex items-center justify-between">
+                  <div>
+                    <div className="text-sm font-medium text-gray-300 mb-1">Market Resolved</div>
+                    <div className={`text-2xl md:text-3xl font-bold ${
+                      event.marketType === 'BINARY'
+                        ? event.outcome ? 'text-green-400' : 'text-red-400'
+                        : 'text-blue-400'
+                    }`}>
+                      {event.marketType === 'BINARY'
+                        ? (event.outcome ? "YES" : "NO")
+                        : event.winningOptionId && event.options
+                          ? event.options.find(opt => opt.id === event.winningOptionId)?.title || 'Winner Determined'
+                          : 'Winner Determined'
+                      }
+                    </div>
+                  </div>
+                  <div className="text-right">
+                    <div className="text-sm text-gray-400">Final Price</div>
+                    <div className="text-xl md:text-2xl font-bold text-white">
+                      {event.marketType === 'BINARY'
+                        ? `${event.outcome ? yesPrice : noPrice}¢`
+                        : event.winningOptionId && event.options
+                          ? `${Math.round(event.options.find(opt => opt.id === event.winningOptionId)?.price || 0)}¢`
+                          : '-'
+                      }
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* Header */}
             <div className="space-y-2 md:space-y-3">
               <div className="flex items-center justify-between">
@@ -418,11 +458,6 @@ export default function MarketPage() {
                   {isNew && (
                     <Badge variant="primary">
                       New
-                    </Badge>
-                  )}
-                  {event.resolved && (
-                    <Badge variant={event.outcome ? "success" : "error"}>
-                      Resolved: {event.outcome ? "YES" : "NO"}
                     </Badge>
                   )}
                   {isOngoing && !event.resolved && (
@@ -465,7 +500,7 @@ export default function MarketPage() {
 
               {/* Market Stats */}
               <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                <div className="bg-gray-800/30 rounded-lg p-2 border border-gray-700/50">
+                <div className="bg-gray-800/90 rounded-lg p-2">
                   <div className="flex items-center text-gray-400 text-xs mb-1">
                     <DollarSign className="h-3 w-3 mr-1" />
                     Volume
@@ -475,7 +510,7 @@ export default function MarketPage() {
                   </div>
                 </div>
 
-                <div className="bg-gray-800/30 rounded-lg p-2 border border-gray-700/50">
+                <div className="bg-gray-800/90 rounded-lg p-2">
                   <div className="flex items-center text-gray-400 text-xs mb-1">
                     <Users className="h-3 w-3 mr-1" />
                     Traders
@@ -485,7 +520,7 @@ export default function MarketPage() {
                   </div>
                 </div>
 
-                <div className="bg-gray-800/30 rounded-lg p-2 border border-gray-700/50">
+                <div className="bg-gray-800/90 rounded-lg p-2">
                   <div className="flex items-center text-gray-400 text-xs mb-1">
                     {isOngoing ? (
                       <>
@@ -504,7 +539,7 @@ export default function MarketPage() {
                   </div>
                 </div>
 
-                <div className="bg-gray-800/30 rounded-lg p-2 border border-gray-700/50">
+                <div className="bg-gray-800/90 rounded-lg p-2">
                   <div className="flex items-center text-gray-400 text-xs mb-1">
                     <Clock className="h-3 w-3 mr-1" />
                     Created

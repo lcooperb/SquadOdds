@@ -12,6 +12,7 @@ import {
   Clock,
   Calendar,
 } from "lucide-react";
+import { gradientFromString, initialsFromName } from "@/lib/avatar";
 
 interface SearchResult {
   id: string;
@@ -22,6 +23,13 @@ interface SearchResult {
   totalVolume: number;
   endDate: string | null;
   isOngoing?: boolean;
+  marketType?: 'BINARY' | 'MULTIPLE';
+  options?: Array<{
+    id: string;
+    title: string;
+    price: number;
+    totalVolume?: number;
+  }>;
   _count?: {
     bets: number;
   };
@@ -137,7 +145,7 @@ export default function SearchDropdown() {
   };
 
   return (
-    <div ref={searchRef} className="relative w-96 max-w-sm">
+    <div ref={searchRef} className="relative w-full md:max-w-2xl lg:max-w-3xl xl:max-w-4xl">
       <div className="relative">
         <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
         <Input
@@ -157,7 +165,7 @@ export default function SearchDropdown() {
 
       {/* Search Results Dropdown */}
       {isOpen && (
-        <div className="absolute top-full left-0 right-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto w-96">
+        <div className="absolute top-full left-0 mt-1 bg-gray-800 border border-gray-600 rounded-lg shadow-lg z-50 max-h-96 overflow-y-auto w-full md:w-[32rem] lg:w-[40rem] max-w-[88vw]">
           {/* Tabs */}
           <div className="flex border-b border-gray-600">
             <button
@@ -190,6 +198,23 @@ export default function SearchDropdown() {
               {results.map((market) => {
                 const yesPrice = Math.round(Number(market.yesPrice));
                 const isOngoing = market.isOngoing || !market.endDate;
+
+                // Determine the most likely option and its percent
+                let displayPercent = yesPrice;
+                let displayLabel = 'YES';
+
+                if (market.marketType === 'MULTIPLE' && market.options && market.options.length > 0) {
+                  const top = [...market.options].sort((a, b) => Number(b.price) - Number(a.price))[0];
+                  displayPercent = Math.round(Number(top.price));
+                  displayLabel = top.title;
+                } else {
+                  // Binary: pick the more likely between YES/NO
+                  const noPrice = 100 - yesPrice;
+                  if (noPrice > yesPrice) {
+                    displayPercent = noPrice;
+                    displayLabel = 'NO';
+                  }
+                }
 
                 return (
                   <Link
@@ -238,10 +263,10 @@ export default function SearchDropdown() {
                         </div>
                       </div>
                       <div className="ml-4 text-right">
-                        <div className="text-green-400 font-bold text-sm">
-                          {yesPrice}¢
+                        <div className="text-blue-300 font-bold text-lg">
+                          {displayPercent}%
                         </div>
-                        <div className="text-gray-400 text-xs">YES</div>
+                        <div className="text-gray-400 text-xs truncate max-w-[10rem]">{displayLabel}</div>
                       </div>
                     </div>
                   </Link>
@@ -259,34 +284,40 @@ export default function SearchDropdown() {
               {userResults.map((user) => (
                 <Link
                   key={user.id}
-                  href={`/profile?user=${user.id}`}
+                  href={`/profile?id=${user.id}`}
                   onClick={handleResultClick}
                   className="block px-4 py-3 hover:bg-gray-700 transition-colors border-b border-gray-700 last:border-b-0"
                 >
                   <div className="flex items-center justify-between">
-                    <div className="flex-1">
+                    <div className="flex items-center gap-3 flex-1 min-w-0">
+                      <div
+                        className="h-8 w-8 rounded-full flex items-center justify-center text-xs font-semibold text-gray-900/90 flex-shrink-0"
+                        style={gradientFromString(user.id || user.name)}
+                      >
+                        {initialsFromName(user.name)}
+                      </div>
                       <h4 className="text-white font-medium text-sm mb-1">
                         {user.name}
                       </h4>
-                      <div className="flex items-center gap-4 text-xs text-gray-400">
-                        <span className="flex items-center gap-1">
-                          ${Math.round(user.virtualBalance).toLocaleString("en-US")}
-                        </span>
-                        {user._count && (
-                          <>
-                            <span className="flex items-center gap-1">
-                              <TrendingUp className="h-3 w-3" />
-                              {user._count.bets} bets
-                            </span>
-                            <span className="flex items-center gap-1">
-                              <Users className="h-3 w-3" />
-                              {user._count.createdEvents} markets
-                            </span>
-                          </>
-                        )}
-                      </div>
                     </div>
-                    <div className="ml-4 text-right">
+                    <div className="flex items-center gap-4 text-xs text-gray-400 mr-4">
+                      <span className="flex items-center gap-1">
+                        ${Math.round(user.virtualBalance).toLocaleString("en-US")}
+                      </span>
+                      {user._count && (
+                        <>
+                          <span className="flex items-center gap-1">
+                            <TrendingUp className="h-3 w-3" />
+                            {user._count.bets} bets
+                          </span>
+                          <span className="flex items-center gap-1">
+                            <Users className="h-3 w-3" />
+                            {user._count.createdEvents} markets
+                          </span>
+                        </>
+                      )}
+                    </div>
+                    <div className="ml-2 text-right">
                       <div className="text-green-400 font-bold text-sm">
                         ${Math.round(user.totalWinnings).toLocaleString("en-US")}
                       </div>

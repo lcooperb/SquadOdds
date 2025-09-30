@@ -60,6 +60,7 @@ model User {
   commentLikes  CommentLike[]
   payments      Payment[]
   redemptions   Redemption[]
+  notifications Notification[]
 }
 
 model VerificationToken {
@@ -225,4 +226,19 @@ model Redemption {
   user User @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   @@map("redemptions")
+}
+
+model Notification {
+  id        String   @id @default(cuid())
+  userId    String
+  type      String   // MARKET_CLOSED, MARKET_RESOLVED, PAYMENT_APPROVED, REDEMPTION_COMPLETED, etc.
+  title     String   // "Market Closed"
+  message   String   // "The market 'Will Alice get promoted?' has closed"
+  data      Json?    // Additional structured data (event ID, winning option, etc.)
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("notifications")
 }

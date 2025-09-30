@@ -145,7 +145,7 @@ export default function BettingCard({
 
   if (!selectedOption && isMultipleChoice) {
     return (
-      <Card className="bg-gray-800/50 border-gray-700">
+      <Card className="bg-gray-800/90 border border-gray-700">
         <CardContent className="p-6 text-center">
           <div className="text-gray-400">Select an option to start trading</div>
         </CardContent>
@@ -154,7 +154,7 @@ export default function BettingCard({
   }
 
   return (
-    <Card className="bg-gray-800/50 border-gray-700">
+    <Card className="bg-gray-800/90 border border-gray-700">
       <CardHeader className="pb-3">
         <div className="flex items-center justify-between">
           <div className="flex items-center gap-2">

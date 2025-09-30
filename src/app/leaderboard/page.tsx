@@ -2,19 +2,8 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
-import { Badge } from "@/components/ui/Badge";
-import { Button } from "@/components/ui/Button";
-import {
-  Trophy,
-  TrendingUp,
-  DollarSign,
-  Target,
-  Users,
-  Medal,
-  Crown,
-  Award,
-} from "lucide-react";
+import { Trophy } from "lucide-react";
+import { gradientFromString, initialsFromName } from "@/lib/avatar";
 
 interface LeaderboardUser {
   id: string;
@@ -69,25 +58,6 @@ export default function Leaderboard() {
     }
   };
 
-  const getRankIcon = (rank: number) => {
-    switch (rank) {
-      case 1:
-        return <Crown className="h-6 w-6 text-yellow-400" />;
-      case 2:
-        return <Medal className="h-6 w-6 text-gray-300" />;
-      case 3:
-        return <Award className="h-6 w-6 text-orange-400" />;
-      default:
-        return <span className="text-gray-400 font-bold">#{rank}</span>;
-    }
-  };
-
-  const getRankBadge = (rank: number) => {
-    if (rank === 1) return "success";
-    if (rank <= 3) return "warning";
-    if (rank <= 5) return "default";
-    return "secondary";
-  };
 
   if (loading) {
     return (
@@ -103,63 +73,50 @@ export default function Leaderboard() {
     <>
       <main className="container mx-auto px-4 py-8">
         {/* Header */}
-        <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-            <Trophy className="h-10 w-10 text-yellow-400" />
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-white mb-2">
             Leaderboard
           </h1>
-          <p className="text-gray-400 text-lg">
+          <p className="text-gray-400">
             See who&apos;s winning in your friend group prediction market
           </p>
         </div>
 
         {/* Stats Overview */}
         {data && (
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardContent className="p-4 text-center">
-                <Users className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">
-                  {data.meta.totalUsers}
-                </div>
-                <div className="text-sm text-gray-400">Total Users</div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-8">
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white mb-1">
+                {data.meta.totalUsers}
+              </div>
+              <div className="text-sm text-gray-400">Total Users</div>
+            </div>
 
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardContent className="p-4 text-center">
-                <Target className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">
-                  {data.meta.activeBettors}
-                </div>
-                <div className="text-sm text-gray-400">Active Traders</div>
-              </CardContent>
-            </Card>
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white mb-1">
+                {data.meta.activeBettors}
+              </div>
+              <div className="text-sm text-gray-400">Active Traders</div>
+            </div>
 
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardContent className="p-4 text-center">
-                <DollarSign className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">
-                  ${Math.round(data.meta.totalVolume).toLocaleString("en-US")}
-                </div>
-                <div className="text-sm text-gray-400">Total Volume</div>
-              </CardContent>
-            </Card>
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white mb-1">
+                ${Math.round(data.meta.totalVolume).toLocaleString("en-US")}
+              </div>
+              <div className="text-sm text-gray-400">Total Volume</div>
+            </div>
 
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardContent className="p-4 text-center">
-                <TrendingUp className="h-8 w-8 text-orange-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white">
-                  {data.leaderboard.filter((u) => u.stats.netProfit > 0).length}
-                </div>
-                <div className="text-sm text-gray-400">Profitable Traders</div>
-              </CardContent>
-            </Card>
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white mb-1">
+                {data.leaderboard.filter((u) => u.stats.netProfit > 0).length}
+              </div>
+              <div className="text-sm text-gray-400">Profitable</div>
+            </div>
           </div>
         )}
 
         {/* Timeframe Filter */}
-        <div className="flex justify-center mb-8">
+        <div className="flex justify-start mb-8">
           <div className="flex gap-2 bg-gray-800 rounded-lg p-1">
             {[
               { key: "all", label: "All Time" },
@@ -183,130 +140,80 @@ export default function Leaderboard() {
 
         {/* Leaderboard */}
         {data && data.leaderboard.length > 0 ? (
-          <div className="space-y-4">
+          <div className="space-y-3">
             {data.leaderboard.map((user, index) => (
-              <Card
+              <div
                 key={user.id}
-                className={`transition-all duration-200 hover:border-blue-500 ${
-                  user.rank <= 3
-                    ? "bg-gradient-to-r from-gray-800/50 to-gray-800/30 border-yellow-500/30"
-                    : "bg-gray-800/30"
-                }`}
+                onClick={() => router.push(`/profile?id=${user.id}`)}
+                className="bg-gray-800/90 border border-gray-700 rounded-lg p-4 hover:border-blue-500 transition-all duration-200 cursor-pointer"
               >
-                <CardContent className="p-6">
-                  <div className="flex items-center justify-between">
-                    {/* Left: Rank & User Info */}
-                    <div className="flex items-center gap-4">
-                      <div className="flex items-center justify-center w-12 h-12 bg-gray-700 rounded-full">
-                        {getRankIcon(user.rank)}
-                      </div>
-
-                      <div>
-                        <div className="flex items-center gap-2">
-                          <h3
-                            className="text-lg font-semibold text-white cursor-pointer hover:text-blue-400 transition-colors"
-                            onClick={() =>
-                              router.push(`/profile?id=${user.id}`)
-                            }
-                          >
-                            {user.name}
-                          </h3>
-                          <Badge variant={getRankBadge(user.rank)}>
-                            #{user.rank}
-                          </Badge>
-                        </div>
-                        <div className="flex items-center gap-4 mt-2 text-sm">
-                          <span className="text-gray-400">
-                            Joined{" "}
-                            {new Date(user.createdAt).toLocaleDateString()}
-                          </span>
-                        </div>
-                      </div>
+                <div className="flex items-center justify-between">
+                  {/* Left: Rank, Avatar & User Info */}
+                  <div className="flex items-center gap-3 md:gap-4">
+                    <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10">
+                      <span className={`text-lg md:text-xl font-bold ${
+                        user.rank === 1 ? "text-yellow-400" :
+                        user.rank === 2 ? "text-gray-300" :
+                        user.rank === 3 ? "text-orange-400" : "text-gray-400"
+                      }`}>
+                        #{user.rank}
+                      </span>
+                    </div>
+                    <div
+                      className="h-9 w-9 md:h-10 md:w-10 rounded-full flex items-center justify-center text-[10px] md:text-xs font-semibold text-gray-900/90"
+                      style={gradientFromString(user.id || user.name)}
+                    >
+                      {initialsFromName(user.name)}
                     </div>
 
-                    {/* Center: Stats */}
-                    <div className="hidden md:grid grid-cols-4 gap-6 text-center">
-                      <div>
-                        <div
-                          className={`text-lg font-bold ${
-                            user.stats.netProfit >= 0
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }`}
-                        >
-                          {user.stats.netProfit >= 0 ? "+" : "-"}$
-                          {Math.round(Math.abs(user.stats.netProfit)).toLocaleString("en-US")}
-                        </div>
-                        <div className="text-xs text-gray-400">Net Profit</div>
-                      </div>
-
-                      <div>
-                        <div className="text-lg font-bold text-white">
-                          {user.stats.winRate.toFixed(1)}%
-                        </div>
-                        <div className="text-xs text-gray-400">Win Rate</div>
-                      </div>
-
-                      <div>
-                        <div className="text-lg font-bold text-white">
-                          {user.stats.totalBets}
-                        </div>
-                        <div className="text-xs text-gray-400">Total Bets</div>
-                      </div>
-
-                      <div>
-                        <div
-                          className={`text-lg font-bold ${
-                            user.stats.roi >= 0
-                              ? "text-green-400"
-                              : "text-red-400"
-                          }`}
-                        >
-                          {user.stats.roi >= 0 ? "+" : ""}
-                          {user.stats.roi.toFixed(1)}%
-                        </div>
-                        <div className="text-xs text-gray-400">ROI</div>
-                      </div>
-                    </div>
-
-                    {/* Right: Current Balance */}
-                    <div className="text-right">
-                      <div className="text-xl font-bold text-white">
-                        ${Math.round(user.virtualBalance).toLocaleString()}
-                      </div>
-                      <div className="text-sm text-gray-400">
-                        Current Balance
-                      </div>
-                      <div className="text-xs text-gray-500 mt-1">
-                        {user.stats.eventsCreated} markets created
+                    <div>
+                      <h3 className="text-base md:text-lg font-semibold text-white">
+                        {user.name}
+                      </h3>
+                      <div className="text-xs md:text-sm text-gray-400 mt-1">
+                        Joined {new Date(user.createdAt).toLocaleDateString()}
                       </div>
                     </div>
                   </div>
-                  {/* Mobile Stats */}
-                  <div className="md:hidden mt-4 grid grid-cols-2 gap-4 text-center">
-                    <div>
+
+                  {/* Center: Stats - Desktop */}
+                  <div className="hidden md:flex items-center gap-8">
+                    <div className="text-center">
                       <div
                         className={`text-lg font-bold ${
-                          user.stats.netProfit >= 0
-                            ? "text-green-400"
-                            : "text-red-400"
+                          user.stats.netProfit >= 0 ? "text-green-400" : "text-red-400"
                         }`}
                       >
                         {user.stats.netProfit >= 0 ? "+" : ""}$
-                        {user.stats.netProfit.toFixed(2)}
+                        {Math.round(Math.abs(user.stats.netProfit)).toLocaleString("en-US")}
                       </div>
-                      <div className="text-xs text-gray-400">Net Profit</div>
+                      <div className="text-xs text-gray-400">Profit</div>
                     </div>
 
-                    <div>
+                    <div className="text-center">
                       <div className="text-lg font-bold text-white">
-                        {user.stats.winRate.toFixed(1)}%
+                        {user.stats.winRate.toFixed(0)}%
                       </div>
                       <div className="text-xs text-gray-400">Win Rate</div>
                     </div>
+
+                    <div className="text-center">
+                      <div className="text-lg font-bold text-white">
+                        {user.stats.totalBets}
+                      </div>
+                      <div className="text-xs text-gray-400">Bets</div>
+                    </div>
                   </div>
-                </CardContent>
-              </Card>
+
+                  {/* Right: Current Balance */}
+                  <div className="text-right">
+                    <div className="text-lg md:text-xl font-bold text-white">
+                      ${Math.round(user.virtualBalance).toLocaleString()}
+                    </div>
+                    <div className="text-xs md:text-sm text-gray-400">Balance</div>
+                  </div>
+                </div>
+              </div>
             ))}
           </div>
         ) : (

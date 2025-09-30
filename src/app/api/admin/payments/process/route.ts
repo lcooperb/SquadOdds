@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { notifyPaymentApproved } from '@/lib/notifications'
 
 // POST /api/admin/payments/process - Admin endpoint to process external payments
 export async function POST(request: NextRequest) {
@@ -100,6 +101,14 @@ export async function POST(request: NextRequest) {
 
       return { payment, updatedUser }
     })
+
+    // Send notification to user
+    try {
+      await notifyPaymentApproved(user.id, paymentAmount)
+    } catch (notificationError) {
+      console.error('Error sending payment notification:', notificationError)
+      // Don't fail the payment if notifications fail
+    }
 
     return NextResponse.json({
       message: 'Payment processed successfully',

@@ -3,22 +3,11 @@
 import { useState, useEffect } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/Card";
 import { Badge } from "@/components/ui/Badge";
 import { Button } from "@/components/ui/Button";
 import { Progress } from "@/components/ui/Progress";
-import {
-  User,
-  DollarSign,
-  TrendingUp,
-  TrendingDown,
-  Target,
-  Calendar,
-  BarChart3,
-  Trophy,
-  Activity,
-  Clock,
-} from "lucide-react";
+import { Target, Calendar } from "lucide-react";
+import { gradientFromString, initialsFromName } from "@/lib/avatar";
 
 interface UserProfile {
   id: string;
@@ -198,82 +187,67 @@ export default function Profile() {
         return "secondary";
     }
   };
-
   return (
     <>
       <main className="container mx-auto px-4 py-8">
         {/* Profile Header */}
         <div className="mb-8">
-          <div className="flex items-center gap-6 mb-6">
-            <div className="w-20 h-20 bg-blue-600 rounded-full flex items-center justify-center">
-              <User className="h-10 w-10 text-white" />
+          <div className="mb-6 flex items-center gap-4">
+            <div
+              className="h-14 w-14 rounded-full flex items-center justify-center text-base font-semibold text-gray-900/90"
+              style={gradientFromString(profile.id || profile.email || profile.name)}
+            >
+              {initialsFromName(profile.name)}
             </div>
             <div>
-              <h1 className="text-3xl font-bold text-white">
+              <h1 className="text-3xl font-bold text-white mb-1">
                 {profile.name}
               </h1>
-              <p className="text-gray-500 text-sm">
+              <p className="text-gray-400">
                 Member since {new Date(profile.createdAt).toLocaleDateString()}
               </p>
             </div>
           </div>
 
           {/* Stats Overview */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardContent className="p-4 text-center">
-                <DollarSign className="h-8 w-8 text-green-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white text-numbers">
-                  ${Math.round(Number(profile.virtualBalance)).toLocaleString("en-US")}
-                </div>
-                <div className="text-sm text-gray-400">Current Balance</div>
-              </CardContent>
-            </Card>
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white mb-1">
+                ${Math.round(Number(profile.virtualBalance)).toLocaleString("en-US")}
+              </div>
+              <div className="text-sm text-gray-400">Current Balance</div>
+            </div>
 
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardContent className="p-4 text-center">
-                <TrendingUp className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                <div
-                  className={`text-2xl font-bold text-numbers ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
-                >
-                  {netProfit >= 0 ? "+" : ""}${Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
-                </div>
-                <div className="text-sm text-gray-400">Net Profit</div>
-              </CardContent>
-            </Card>
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div
+                className={`text-2xl font-bold mb-1 ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
+              >
+                {netProfit >= 0 ? "+" : ""}${Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
+              </div>
+              <div className="text-sm text-gray-400">Net Profit</div>
+            </div>
 
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardContent className="p-4 text-center">
-                <Target className="h-8 w-8 text-blue-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white text-numbers">
-                  {winRate.toFixed(1)}%
-                </div>
-                <div className="text-sm text-gray-400">Win Rate</div>
-              </CardContent>
-            </Card>
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white mb-1">
+                {winRate.toFixed(1)}%
+              </div>
+              <div className="text-sm text-gray-400">Win Rate</div>
+            </div>
 
-            <Card className="bg-gray-800/50 border-gray-700">
-              <CardContent className="p-4 text-center">
-                <Activity className="h-8 w-8 text-orange-400 mx-auto mb-2" />
-                <div className="text-2xl font-bold text-white text-numbers">
-                  {profile._count?.bets || 0}
-                </div>
-                <div className="text-sm text-gray-400">Total Bets</div>
-              </CardContent>
-            </Card>
+            <div className="bg-gray-800/90 rounded-lg p-4 text-center">
+              <div className="text-2xl font-bold text-white mb-1">
+                {profile._count?.bets || 0}
+              </div>
+              <div className="text-sm text-gray-400">Total Bets</div>
+            </div>
           </div>
         </div>
 
         {/* Detailed Stats */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <BarChart3 className="h-5 w-5" />
-                Performance
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mb-8">
+          <div className="bg-gray-800/90 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Performance</h3>
+            <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">Total Winnings</span>
                 <span className="text-green-400 font-semibold">
@@ -286,122 +260,99 @@ export default function Profile() {
                   -${Math.round(Number(profile.totalLosses)).toLocaleString("en-US")}
                 </span>
               </div>
-              <div className="flex justify-between border-t border-gray-700 pt-2">
-                <span className="text-white font-medium">Net Profit/Loss</span>
+              <div className="flex justify-between border-t border-gray-700/50 pt-3">
+                <span className="text-white font-medium">Net P&L</span>
                 <span
                   className={`font-bold ${netProfit >= 0 ? "text-green-400" : "text-red-400"}`}
                 >
-                  {netProfit >= 0 ? "+" : "-"}${Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
+                  {netProfit >= 0 ? "+" : ""}${Math.round(Math.abs(netProfit)).toLocaleString("en-US")}
                 </span>
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Trophy className="h-5 w-5" />
-                Betting Stats
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-gray-800/90 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Betting Stats</h3>
+            <div className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-400">Active Bets</span>
-                <span className="text-white font-semibold">
-                  {activeBets.length}
-                </span>
+                <span className="text-white font-semibold">{activeBets.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Won Bets</span>
-                <span className="text-green-400 font-semibold">
-                  {wonBets.length}
-                </span>
+                <span className="text-green-400 font-semibold">{wonBets.length}</span>
               </div>
               <div className="flex justify-between">
                 <span className="text-gray-400">Lost Bets</span>
-                <span className="text-red-400 font-semibold">
-                  {completedBets.length - wonBets.length}
-                </span>
+                <span className="text-red-400 font-semibold">{completedBets.length - wonBets.length}</span>
               </div>
-              <div className="space-y-2">
-                <div className="flex justify-between text-sm">
+              <div className="border-t border-gray-700/50 pt-3">
+                <div className="flex justify-between mb-2">
                   <span className="text-gray-400">Win Rate</span>
-                  <span className="text-white">{winRate.toFixed(1)}%</span>
+                  <span className="text-white font-semibold">{winRate.toFixed(1)}%</span>
                 </div>
                 <Progress value={winRate} variant="yes" />
               </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
 
-          <Card>
-            <CardHeader>
-              <CardTitle className="flex items-center gap-2">
-                <Calendar className="h-5 w-5" />
-                Market Creation
-              </CardTitle>
-            </CardHeader>
-            <CardContent className="space-y-4">
+          <div className="bg-gray-800/90 rounded-lg p-6">
+            <h3 className="text-lg font-semibold text-white mb-4">Markets</h3>
+            <div className="space-y-3">
               <div className="flex justify-between">
-                <span className="text-gray-400">Markets Created</span>
+                <span className="text-gray-400">Created</span>
+                <span className="text-white font-semibold">{profile._count?.createdEvents || 0}</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-gray-400">Active</span>
                 <span className="text-white font-semibold">
-                  {profile._count?.createdEvents || 0}
+                  {(profile.createdEvents || []).filter(e => e.status === "ACTIVE").length}
                 </span>
               </div>
               <div className="flex justify-between">
-                <span className="text-gray-400">Active Markets</span>
+                <span className="text-gray-400">Resolved</span>
                 <span className="text-white font-semibold">
-                  {
-                    (profile.createdEvents || []).filter(
-                      (e) => e.status === "ACTIVE"
-                    ).length
-                  }
+                  {(profile.createdEvents || []).filter(e => e.resolved).length}
                 </span>
               </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Resolved Markets</span>
-                <span className="text-white font-semibold">
-                  {
-                    (profile.createdEvents || []).filter((e) => e.resolved)
-                      .length
-                  }
-                </span>
-              </div>
-            </CardContent>
-          </Card>
+            </div>
+          </div>
         </div>
 
         {/* Activity Section */}
-        <Card>
-          <CardHeader>
-            <div className="flex items-center justify-between">
-              <CardTitle>Recent Activity</CardTitle>
-              <div className="flex gap-2">
-                <Button
-                  variant={activeTab === "bets" ? "primary" : "ghost"}
-                  size="sm"
-                  onClick={() => setActiveTab("bets")}
-                >
-                  Bets ({(profile.bets || []).length})
-                </Button>
-                <Button
-                  variant={activeTab === "created" ? "primary" : "ghost"}
-                  size="sm"
-                  onClick={() => setActiveTab("created")}
-                >
-                  Markets ({(profile.createdEvents || []).length})
-                </Button>
-              </div>
+        <div className="bg-gray-800/90 rounded-lg p-6">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-3 mb-6">
+            <h2 className="text-xl font-semibold text-white">Recent Activity</h2>
+            <div className="flex gap-2">
+              <Button
+                variant={activeTab === "bets" ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("bets")}
+                className="text-xs md:text-sm"
+              >
+                Bets ({(profile.bets || []).length})
+              </Button>
+              <Button
+                variant={activeTab === "created" ? "primary" : "ghost"}
+                size="sm"
+                onClick={() => setActiveTab("created")}
+                className="text-xs md:text-sm"
+              >
+                Markets ({(profile.createdEvents || []).length})
+              </Button>
             </div>
-          </CardHeader>
-          <CardContent>
+          </div>
+
+          <div>
             {activeTab === "bets" ? (
               <div className="space-y-4">
                 {/* Bet Filters */}
-                <div className="flex gap-2 border-b border-gray-700 pb-3">
+                <div className="flex flex-wrap gap-2 border-b border-gray-700 pb-3">
                   <Button
                     variant={betFilter === "all" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setBetFilter("all")}
+                    className="text-xs md:text-sm"
                   >
                     All ({(profile.bets || []).length})
                   </Button>
@@ -409,6 +360,7 @@ export default function Profile() {
                     variant={betFilter === "active" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setBetFilter("active")}
+                    className="text-xs md:text-sm"
                   >
                     Active ({activeBets.length})
                   </Button>
@@ -416,6 +368,7 @@ export default function Profile() {
                     variant={betFilter === "won" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setBetFilter("won")}
+                    className="text-xs md:text-sm"
                   >
                     Won ({wonBets.length})
                   </Button>
@@ -423,6 +376,7 @@ export default function Profile() {
                     variant={betFilter === "lost" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setBetFilter("lost")}
+                    className="text-xs md:text-sm"
                   >
                     Lost ({completedBets.length - wonBets.length})
                   </Button>
@@ -430,11 +384,13 @@ export default function Profile() {
 
                 {/* Bets Table */}
                 {filteredBets.length > 0 ? (
-                  <div className="space-y-2">
-                    {filteredBets.slice(0, 10).map((bet) => (
+                  <div className="space-y-0 bg-gray-900/30 rounded-lg overflow-hidden">
+                    {filteredBets.slice(0, 10).map((bet, index) => (
                       <div
                         key={bet.id}
-                        className="flex items-center justify-between py-3 px-4 bg-gray-800/20 rounded-lg hover:bg-gray-800/30 transition-colors"
+                        className={`flex items-center justify-between py-4 px-4 hover:bg-gray-700/30 transition-colors ${
+                          index !== Math.min(filteredBets.length, 10) - 1 ? "border-b border-gray-700/50" : ""
+                        }`}
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
@@ -443,10 +399,10 @@ export default function Profile() {
                             </Badge>
                             <span className="text-sm text-gray-400">{bet.event.category}</span>
                           </div>
-                          <h4 className="font-medium text-white truncate pr-4">
+                          <h4 className="font-medium text-white truncate pr-4 mb-1">
                             {bet.event.title}
                           </h4>
-                          <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
+                          <div className="flex items-center gap-3 text-sm text-gray-400">
                             <span className="font-medium text-white">
                               {bet.side} {bet.option && `(${bet.option.title})`}
                             </span>
@@ -457,21 +413,20 @@ export default function Profile() {
                         </div>
                         <div className="text-right">
                           <div className="text-white font-medium">
-                            {Number(bet.shares).toFixed(1)}
+                            {Number(bet.shares).toFixed(1)} shares
                           </div>
-                          <div className="text-xs text-gray-400">shares</div>
                           {bet.status !== "ACTIVE" && (
                             <div
                               className={`text-sm font-medium mt-1 ${bet.status === "WON" ? "text-green-400" : "text-red-400"}`}
                             >
-                              {bet.status === "WON" ? "+" : "-"}${Math.round(Number(bet.amount)).toLocaleString("en-US")}
+                              {bet.status === "WON" ? "+" : ""}${Math.round(Number(bet.amount)).toLocaleString("en-US")}
                             </div>
                           )}
                         </div>
                       </div>
                     ))}
                     {filteredBets.length > 10 && (
-                      <div className="text-center pt-3">
+                      <div className="text-center py-3 border-t border-gray-700/50 bg-gray-800/30">
                         <p className="text-sm text-gray-400">
                           Showing 10 of {filteredBets.length} bets
                         </p>
@@ -491,11 +446,12 @@ export default function Profile() {
             ) : (
               <div className="space-y-4">
                 {/* Market Filters */}
-                <div className="flex gap-2 border-b border-gray-700 pb-3">
+                <div className="flex flex-wrap gap-2 border-b border-gray-700 pb-3">
                   <Button
                     variant={marketFilter === "all" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setMarketFilter("all")}
+                    className="text-xs md:text-sm"
                   >
                     All ({(profile.createdEvents || []).length})
                   </Button>
@@ -503,6 +459,7 @@ export default function Profile() {
                     variant={marketFilter === "active" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setMarketFilter("active")}
+                    className="text-xs md:text-sm"
                   >
                     Active ({(profile.createdEvents || []).filter(e => e.status === "ACTIVE" && !e.resolved).length})
                   </Button>
@@ -510,6 +467,7 @@ export default function Profile() {
                     variant={marketFilter === "resolved" ? "primary" : "ghost"}
                     size="sm"
                     onClick={() => setMarketFilter("resolved")}
+                    className="text-xs md:text-sm"
                   >
                     Resolved ({(profile.createdEvents || []).filter(e => e.resolved).length})
                   </Button>
@@ -517,28 +475,26 @@ export default function Profile() {
 
                 {/* Markets Table */}
                 {filteredMarkets.length > 0 ? (
-                  <div className="space-y-2">
-                    {filteredMarkets.slice(0, 10).map((event) => (
+                  <div className="space-y-0 bg-gray-900/30 rounded-lg overflow-hidden">
+                    {filteredMarkets.slice(0, 10).map((event, index) => (
                       <div
                         key={event.id}
-                        className="flex items-center justify-between py-3 px-4 bg-gray-800/20 rounded-lg hover:bg-gray-800/30 transition-colors"
+                        className={`flex items-center justify-between py-4 px-4 hover:bg-gray-700/30 transition-colors ${
+                          index !== Math.min(filteredMarkets.length, 10) - 1 ? "border-b border-gray-700/50" : ""
+                        }`}
                       >
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2 mb-1">
-                            <Badge
-                              variant={event.resolved ? "success" : "default"}
-                            >
+                            <Badge variant={event.resolved ? "success" : "default"}>
                               {event.resolved ? "RESOLVED" : event.status}
                             </Badge>
                             <span className="text-sm text-gray-400">{event.category}</span>
                           </div>
-                          <h4 className="font-medium text-white truncate pr-4">
+                          <h4 className="font-medium text-white truncate pr-4 mb-1">
                             {event.title}
                           </h4>
-                          <div className="flex items-center gap-3 text-sm text-gray-400 mt-1">
-                            <span>
-                              Created {new Date(event.createdAt).toLocaleDateString()}
-                            </span>
+                          <div className="text-sm text-gray-400">
+                            Created {new Date(event.createdAt).toLocaleDateString()}
                           </div>
                         </div>
                         <div className="text-right">
@@ -546,7 +502,7 @@ export default function Profile() {
                             variant="ghost"
                             size="sm"
                             onClick={() => router.push(`/market/${event.id}`)}
-                            className="text-blue-400 hover:text-blue-300"
+                            className="text-purple-400 hover:text-purple-300"
                           >
                             View →
                           </Button>
@@ -554,7 +510,7 @@ export default function Profile() {
                       </div>
                     ))}
                     {filteredMarkets.length > 10 && (
-                      <div className="text-center pt-3">
+                      <div className="text-center py-3 border-t border-gray-700/50 bg-gray-800/30">
                         <p className="text-sm text-gray-400">
                           Showing 10 of {filteredMarkets.length} markets
                         </p>
@@ -572,8 +528,8 @@ export default function Profile() {
                 )}
               </div>
             )}
-          </CardContent>
-        </Card>
+          </div>
+        </div>
       </main>
     </>
   );

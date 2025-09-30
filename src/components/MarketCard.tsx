@@ -80,6 +80,7 @@ export default function MarketCard({
     event.marketType === "MULTIPLE" &&
     event.options &&
     event.options.length > 0;
+  const isClosed = event.status === "CLOSED" || event.status === "RESOLVED";
 
   const getCategoryColor = (category: string) => {
     switch (category.toLowerCase()) {
@@ -104,7 +105,7 @@ export default function MarketCard({
   if (compact) {
     return (
       <Link href={`/market/${event.id}`} className="block h-full">
-        <Card className="market-card hover:border-blue-500 transition-all duration-200 cursor-pointer h-full flex flex-col">
+        <Card className="market-card hover:border-blue-500 transition-all duration-200 cursor-pointer h-full flex flex-col bg-gray-800/90 border border-gray-700">
           <CardContent className="p-3 flex-1">
             <div className="flex items-start justify-between h-full">
               <div className="flex-1 min-w-0 flex flex-col justify-between">
@@ -127,9 +128,14 @@ export default function MarketCard({
                         Ongoing
                       </Badge>
                     )}
-                    {!isOngoing && isExpiringSoon && (
+                    {!isOngoing && isExpiringSoon && !isClosed && (
                       <Badge variant="warning" className="text-xs">
                         Ending Soon
+                      </Badge>
+                    )}
+                    {isClosed && (
+                      <Badge variant="secondary" className="text-xs">
+                        {event.status === "RESOLVED" ? "Resolved" : "Closed"}
                       </Badge>
                     )}
                   </div>
@@ -152,7 +158,7 @@ export default function MarketCard({
                 <div className={`text-lg font-bold mb-1 transition-colors duration-300 ${
                   yesPercentage >= 50 ? 'text-green-400' : 'text-red-400'
                 }`}>
-                  {yesPercentage}¢
+                  ${yesPercentage}
                 </div>
                 <div className="text-xs text-gray-400">
                   {yesPercentage >= 50 ? 'YES' : 'NO'} {yesPercentage >= 50 ? yesPercentage : noPercentage}%
@@ -169,7 +175,9 @@ export default function MarketCard({
   if (isMultipleChoice) {
     return (
       <Link href={`/market/${event.id}`} className="block h-full">
-        <Card className="market-card hover:border-blue-500 transition-all duration-200 cursor-pointer h-full flex flex-col bg-gray-800/50 border-gray-700">
+        <Card className={`market-card transition-all duration-200 cursor-pointer h-full flex flex-col bg-gray-800/90 border ${
+          isClosed ? 'border-gray-600 opacity-90' : 'border-gray-700 hover:border-blue-500'
+        }`}>
           <CardContent className="p-3 flex-1 flex flex-col">
             {/* Header with title */}
             <div className="mb-2">
@@ -178,7 +186,7 @@ export default function MarketCard({
               </h3>
             </div>
 
-            {/* Top 2 options with percentages and buttons */}
+            {/* Top 2 options with percentages and buttons/outcomes */}
             <div className="space-y-2.5 mb-3 flex-1">
               {topOptions.map((option, index) => (
                 <div
@@ -192,14 +200,20 @@ export default function MarketCard({
                     <span className="text-sm font-bold text-white">
                       {Math.round(option.price)}%
                     </span>
-                    <div className="flex gap-2">
-                      <button className="bg-green-600/20 hover:bg-green-600/30 rounded px-3 py-1 text-xs font-semibold text-green-400 border border-green-500/30 transition-colors">
-                        Yes
-                      </button>
-                      <button className="bg-red-600/20 hover:bg-red-600/30 rounded px-3 py-1 text-xs font-semibold text-red-400 border border-red-500/30 transition-colors">
-                        No
-                      </button>
-                    </div>
+                    {isClosed ? (
+                      <div className="px-3 py-1 bg-gray-700/50 rounded text-xs font-semibold text-gray-400">
+                        Final
+                      </div>
+                    ) : (
+                      <div className="flex gap-2">
+                        <span className="bg-green-600/10 rounded px-3 py-1 text-xs font-semibold text-green-400/50 border border-green-500/20 cursor-not-allowed">
+                          Yes
+                        </span>
+                        <span className="bg-red-600/10 rounded px-3 py-1 text-xs font-semibold text-red-400/50 border border-red-500/20 cursor-not-allowed">
+                          No
+                        </span>
+                      </div>
+                    )}
                   </div>
                 </div>
               ))}
@@ -230,9 +244,14 @@ export default function MarketCard({
                     Ongoing
                   </Badge>
                 )}
-                {!isOngoing && isExpiringSoon && (
+                {!isOngoing && isExpiringSoon && !isClosed && (
                   <Badge variant="warning" className="text-xs">
                     Ending Soon
+                  </Badge>
+                )}
+                {isClosed && (
+                  <Badge variant="secondary" className="text-xs">
+                    {event.status === "RESOLVED" ? "Resolved" : "Closed"}
                   </Badge>
                 )}
               </div>
@@ -246,7 +265,9 @@ export default function MarketCard({
   // Binary market layout (existing)
   return (
     <Link href={`/market/${event.id}`} className="block h-full">
-      <Card className="market-card hover:border-blue-500 transition-all duration-200 cursor-pointer h-full flex flex-col bg-gray-800/50 border-gray-700">
+      <Card className={`market-card transition-all duration-200 cursor-pointer h-full flex flex-col bg-gray-800/90 border ${
+        isClosed ? 'border-gray-600 opacity-90' : 'border-gray-700 hover:border-blue-500'
+      }`}>
         <CardContent className="p-4 flex-1 flex flex-col">
           {/* Header with title and percentage circle */}
           <div className="flex items-start justify-between mb-6">
@@ -290,17 +311,27 @@ export default function MarketCard({
             </div>
           </div>
 
-          {/* YES/NO Buttons with Live Prices */}
-          <div className="grid grid-cols-2 gap-2 mb-4">
-            <div className="bg-green-600/20 hover:bg-green-600/30 rounded-lg py-2 px-3 text-center transition-all duration-300 cursor-pointer border border-green-500/30">
-              <div className="text-sm font-semibold text-green-400">Yes</div>
-              <div className="text-xs text-green-300 mt-0.5">{yesPercentage}¢</div>
+          {/* YES/NO Buttons or Final Outcome */}
+          {isClosed ? (
+            <div className="mb-4 p-3 bg-gray-700/50 rounded-lg text-center">
+              <div className="text-sm text-gray-400 mb-1">Final Outcome</div>
+              <div className={`text-lg font-bold ${yesPercentage >= 50 ? 'text-green-400' : 'text-red-400'}`}>
+                {yesPercentage >= 50 ? 'YES' : 'NO'} ({yesPercentage >= 50 ? yesPercentage : noPercentage}%)
+              </div>
+              {event.status === "RESOLVED" && (
+                <div className="text-xs text-gray-400 mt-1">Market resolved</div>
+              )}
             </div>
-            <div className="bg-red-600/20 hover:bg-red-600/30 rounded-lg py-2 px-3 text-center transition-all duration-300 cursor-pointer border border-red-500/30">
-              <div className="text-sm font-semibold text-red-400">No</div>
-              <div className="text-xs text-red-300 mt-0.5">{noPercentage}¢</div>
+          ) : (
+            <div className="grid grid-cols-2 gap-2 mb-4">
+              <div className="bg-green-600/10 rounded-lg py-2 px-3 text-center border border-green-500/20 opacity-60">
+                <div className="text-sm font-semibold text-green-400/60">Yes</div>
+              </div>
+              <div className="bg-red-600/10 rounded-lg py-2 px-3 text-center border border-red-500/20 opacity-60">
+                <div className="text-sm font-semibold text-red-400/60">No</div>
+              </div>
             </div>
-          </div>
+          )}
 
           {/* Bottom Stats */}
           <div className="flex items-center justify-between text-sm text-gray-400 mt-auto">
@@ -327,9 +358,14 @@ export default function MarketCard({
                   Ongoing
                 </Badge>
               )}
-              {!isOngoing && isExpiringSoon && (
+              {!isOngoing && isExpiringSoon && !isClosed && (
                 <Badge variant="warning" className="text-xs">
                   Ending Soon
+                </Badge>
+              )}
+              {isClosed && (
+                <Badge variant="secondary" className="text-xs">
+                  {event.status === "RESOLVED" ? "Resolved" : "Closed"}
                 </Badge>
               )}
             </div>

@@ -168,14 +168,14 @@ export default function TopUp() {
 
         {!showPaymentDetails ? (
           /* Amount Selection */
-          <Card>
-            <CardHeader>
+          <Card className="bg-gray-800/90 border-0 shadow-lg">
+            <CardHeader className="p-4">
               <CardTitle className="flex items-center gap-2">
                 <DollarSign className="h-5 w-5" />
                 Select Amount
               </CardTitle>
             </CardHeader>
-            <CardContent className="space-y-6">
+            <CardContent className="p-4 pt-0 space-y-6">
               {/* Predefined Amounts */}
               <div>
                 <label className="block text-sm font-medium text-white mb-3">Choose Amount (USD)</label>
@@ -184,10 +184,10 @@ export default function TopUp() {
                     <button
                       key={amount}
                       onClick={() => handleAmountSelect(amount)}
-                      className={`p-3 rounded-lg border-2 transition-all ${
+                      className={`p-3 rounded-lg transition-all text-sm font-semibold ${
                         selectedAmount === amount && !customAmount
-                          ? "border-blue-500 bg-blue-500/20"
-                          : "border-gray-600 bg-gray-800/50 hover:border-gray-500"
+                          ? "bg-purple-600 hover:bg-purple-700 text-white ring-1 ring-purple-400/50"
+                          : "bg-gray-800 text-gray-200 border border-gray-700 hover:bg-gray-700"
                       }`}
                     >
                       <div className="text-white font-semibold">
@@ -251,14 +251,14 @@ export default function TopUp() {
         ) : (
           /* Payment Details */
           <div className="space-y-6">
-            <Card>
-              <CardHeader>
+            <Card className="bg-gray-800/90 border-0 shadow-lg">
+              <CardHeader className="p-4">
                 <CardTitle className="flex items-center gap-2">
                   <CreditCard className="h-5 w-5" />
                   Payment Instructions
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-4 pt-0 space-y-4">
                 <div className="bg-yellow-600/10 border border-yellow-500/20 rounded-lg p-4">
                   <div className="flex items-start gap-3">
                     <AlertTriangle className="h-5 w-5 text-yellow-400 mt-0.5" />
@@ -285,7 +285,7 @@ export default function TopUp() {
                     Send Payment via Apple Cash:
                   </h3>
 
-                  <div className="bg-gray-800/50 rounded-lg p-4">
+                  <div className="bg-gray-800/30 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <h4 className="text-white font-medium">Apple Cash</h4>
                       <button
@@ -320,14 +320,14 @@ export default function TopUp() {
             </Card>
 
             {/* Submission Instructions (No Verification Required) */}
-            <Card>
-              <CardHeader>
+            <Card className="bg-gray-800/90 border-0 shadow-lg">
+              <CardHeader className="p-4">
                 <CardTitle className="flex items-center gap-2">
                   <CheckCircle className="h-5 w-5" />
                   Submit Request
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
+              <CardContent className="p-4 pt-0 space-y-4">
                 <p className="text-gray-300">
                   After sending payment, hit <strong>Submit</strong> for review.
                 </p>

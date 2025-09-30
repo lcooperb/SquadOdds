@@ -17,6 +17,7 @@ import {
   ChevronUp,
   Crown
 } from 'lucide-react'
+import { gradientFromString, initialsFromName } from '@/lib/avatar'
 
 interface Comment {
   id: string
@@ -102,6 +103,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
   const [replyContent, setReplyContent] = useState('')
   const [sortBy, setSortBy] = useState('newest')
   const [expandedReplies, setExpandedReplies] = useState<Set<string>>(new Set())
+  const [expandedHolders, setExpandedHolders] = useState<Set<string>>(new Set())
 
   useEffect(() => {
     if (activeTab === 'comments') {
@@ -218,6 +220,16 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
     setExpandedReplies(newExpanded)
   }
 
+  const toggleHolderDetails = (holderId: string) => {
+    const newExpanded = new Set(expandedHolders)
+    if (newExpanded.has(holderId)) {
+      newExpanded.delete(holderId)
+    } else {
+      newExpanded.add(holderId)
+    }
+    setExpandedHolders(newExpanded)
+  }
+
   const isLikedByUser = (comment: Comment) => {
     return session ? comment.likes.some(like => like.userId === session.user?.id) : false
   }
@@ -242,10 +254,11 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
     return (
       <div key={comment.id} className={`${isReply ? 'ml-8 border-l border-gray-700 pl-4' : ''} space-y-3`}>
         <div className="flex items-start gap-3">
-          <div className="w-10 h-10 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full flex items-center justify-center flex-shrink-0">
-            <span className="text-white text-sm font-medium">
-              {comment.user.name.charAt(0).toUpperCase()}
-            </span>
+          <div
+            className="w-10 h-10 rounded-full flex items-center justify-center flex-shrink-0 text-gray-900 text-sm font-medium"
+            style={gradientFromString(comment.user.id || comment.user.name)}
+          >
+            {initialsFromName(comment.user.name)}
           </div>
 
           <div className="flex-1 min-w-0">
@@ -444,42 +457,116 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
             {loading ? (
               <div className="text-center py-8 text-gray-400">Loading holders...</div>
             ) : holders.length > 0 ? (
-              holders.map((holder) => (
-                <div key={holder.user.id} className="bg-gray-800/30 rounded-lg">
-                  <div className="flex items-center justify-between p-4">
-                    <div className="flex items-center gap-3">
-                      <div className="flex items-center justify-center w-8 h-8 bg-gray-700 rounded-full">
-                        {holder.rank <= 3 ? (
-                          <Crown className={`h-4 w-4 ${
-                            holder.rank === 1 ? 'text-yellow-400' :
-                            holder.rank === 2 ? 'text-gray-300' : 'text-orange-400'
-                          }`} />
-                        ) : (
-                          <span className="text-gray-400 font-bold text-sm">#{holder.rank}</span>
+              holders.map((holder) => {
+                const isExpanded = expandedHolders.has(holder.user.id)
+                return (
+                  <div key={holder.user.id} className="bg-gray-800/30 rounded-lg">
+                    <div
+                      className="flex items-center justify-between p-4 cursor-pointer hover:bg-gray-800/50 transition-colors"
+                      onClick={() => toggleHolderDetails(holder.user.id)}
+                    >
+                      <div className="flex items-center gap-3 flex-1">
+                        <div className="flex items-center justify-center w-8 h-8 bg-gray-700 rounded-full flex-shrink-0">
+                          {holder.rank <= 3 ? (
+                            <Crown className={`h-4 w-4 ${
+                              holder.rank === 1 ? 'text-yellow-400' :
+                              holder.rank === 2 ? 'text-gray-300' : 'text-orange-400'
+                            }`} />
+                          ) : (
+                            <span className="text-gray-400 font-bold text-sm">#{holder.rank}</span>
+                          )}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-white font-medium truncate">{holder.user.name}</span>
+                          </div>
+                          <div className="text-gray-300 text-sm">
+                            {holder.positionDescription}
+                          </div>
+                        </div>
+                      </div>
+                      <div className="text-right flex-shrink-0 ml-3">
+                        <div className={`text-lg font-medium ${
+                          holder.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'
+                        }`}>
+                          {holder.profitLoss >= 0 ? '✅ Up' : '❌ Down'} ${Math.abs(holder.profitLoss).toFixed(0)}
+                        </div>
+                        <div className="text-gray-400 text-xs">
+                          Portfolio: ${Math.round(holder.currentValue).toLocaleString("en-US")}
+                        </div>
+                      </div>
+                      <ChevronDown className={`h-5 w-5 text-gray-400 ml-2 flex-shrink-0 transition-transform ${
+                        isExpanded ? 'rotate-180' : ''
+                      }`} />
+                    </div>
+
+                    {/* Expanded Details */}
+                    {isExpanded && (
+                      <div className="px-4 pb-4 space-y-2 border-t border-gray-700 pt-3">
+                        <div className="text-sm font-medium text-gray-300 mb-2">Position Details:</div>
+
+                        {/* Binary market positions */}
+                        {holder.position !== 'MULTIPLE' && holder.position !== 'NEUTRAL' && (
+                          <div className="space-y-2">
+                            {holder.yesPosition !== undefined && holder.yesPosition > 0 && (
+                              <div className="flex justify-between items-center bg-green-900/20 rounded p-2 border border-green-500/30">
+                                <span className="text-green-400 text-sm font-medium">YES Position</span>
+                                <div className="text-right">
+                                  <div className="text-green-400 font-semibold">${holder.yesPosition.toFixed(0)}</div>
+                                  <div className="text-xs text-gray-400">shares held</div>
+                                </div>
+                              </div>
+                            )}
+                            {holder.noPosition !== undefined && holder.noPosition > 0 && (
+                              <div className="flex justify-between items-center bg-red-900/20 rounded p-2 border border-red-500/30">
+                                <span className="text-red-400 text-sm font-medium">NO Position</span>
+                                <div className="text-right">
+                                  <div className="text-red-400 font-semibold">${holder.noPosition.toFixed(0)}</div>
+                                  <div className="text-xs text-gray-400">shares held</div>
+                                </div>
+                              </div>
+                            )}
+                          </div>
                         )}
-                      </div>
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <span className="text-white font-medium">{holder.user.name}</span>
+
+                        {/* Multiple choice market positions */}
+                        {holder.position === 'MULTIPLE' && holder.optionPositions && (
+                          <div className="space-y-2">
+                            {Object.entries(holder.optionPositions).map(([optionId, position]) => (
+                              <div key={optionId} className="bg-gray-700/30 rounded p-2 border border-gray-600">
+                                <div className="font-medium text-white text-sm mb-1">{position.optionTitle}</div>
+                                <div className="grid grid-cols-2 gap-2 text-xs">
+                                  {position.yesPosition > 0 && (
+                                    <div className="bg-green-900/20 rounded p-1.5 border border-green-500/30">
+                                      <div className="text-green-400 font-medium">YES: ${position.yesPosition.toFixed(0)}</div>
+                                      <div className="text-gray-400">Avg {position.yesAvgPrice.toFixed(1)}¢</div>
+                                    </div>
+                                  )}
+                                  {position.noPosition > 0 && (
+                                    <div className="bg-red-900/20 rounded p-1.5 border border-red-500/30">
+                                      <div className="text-red-400 font-medium">NO: ${position.noPosition.toFixed(0)}</div>
+                                      <div className="text-gray-400">Avg {position.noAvgPrice.toFixed(1)}¢</div>
+                                    </div>
+                                  )}
+                                </div>
+                                <div className="mt-1 text-xs text-gray-400">
+                                  Current Value: ${position.currentValue.toFixed(0)}
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Summary stats */}
+                        <div className="flex justify-between items-center pt-2 mt-2 border-t border-gray-700">
+                          <span className="text-sm text-gray-400">Total Invested</span>
+                          <span className="text-sm font-medium text-white">${holder.totalAmount.toFixed(0)}</span>
                         </div>
-                        <div className="text-gray-300 text-sm">
-                          {holder.positionDescription}
-                        </div>
                       </div>
-                    </div>
-                    <div className="text-right">
-                      <div className={`text-lg font-medium ${
-                        holder.profitLoss >= 0 ? 'text-green-400' : 'text-red-400'
-                      }`}>
-                        {holder.profitLoss >= 0 ? '✅ Up' : '❌ Down'} ${Math.abs(holder.profitLoss).toFixed(0)}
-                      </div>
-                      <div className="text-gray-400 text-xs">
-                        Portfolio: ${Math.round(holder.currentValue).toLocaleString("en-US")}
-                      </div>
-                    </div>
+                    )}
                   </div>
-                </div>
-              ))
+                )
+              })
             ) : (
               <div className="text-center py-8 text-gray-400">
                 <Users className="h-12 w-12 mx-auto mb-2" />

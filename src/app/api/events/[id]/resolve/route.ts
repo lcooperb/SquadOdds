@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { notifyMarketResolution } from '@/lib/notifications'
 
 // POST /api/events/[id]/resolve - Resolve an event and distribute winnings
 export async function POST(
@@ -140,6 +141,14 @@ export async function POST(
 
       return resolvedEvent
     })
+
+    // Send notifications to all users with bets on this market
+    try {
+      await notifyMarketResolution(params.id, outcome, winningOptionId)
+    } catch (notificationError) {
+      console.error('Error sending resolution notifications:', notificationError)
+      // Don't fail the resolution if notifications fail
+    }
 
     const winnerDescription = event.marketType === 'BINARY'
       ? (outcome ? 'YES' : 'NO')

@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth/next'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
+import { notifyRedemptionUpdate } from '@/lib/notifications'
 
 export async function PUT(
   request: NextRequest,
@@ -58,6 +59,13 @@ export async function PUT(
         }
       })
 
+      // Send notification to user
+      try {
+        await notifyRedemptionUpdate(redemptionId, 'COMPLETED', adminNotes)
+      } catch (notificationError) {
+        console.error('Error sending redemption notification:', notificationError)
+      }
+
       return NextResponse.json({
         message: `Redemption completed! Funds were already held at request time for ${redemption.user.name}.`
       })
@@ -80,6 +88,13 @@ export async function PUT(
           }
         })
       ])
+
+      // Send notification to user
+      try {
+        await notifyRedemptionUpdate(redemptionId, 'REJECTED', adminNotes)
+      } catch (notificationError) {
+        console.error('Error sending redemption notification:', notificationError)
+      }
 
       return NextResponse.json({
         message: `Redemption rejected and $${Number(redemption.dollarAmount).toFixed(2)} refunded to ${redemption.user.name}.`

@@ -15,6 +15,7 @@ import {
   Trash2,
   AlertCircle,
 } from "lucide-react";
+import { gradientFromString, initialsFromName } from "@/lib/avatar";
 
 interface UserProfile {
   id: string;
@@ -23,6 +24,7 @@ interface UserProfile {
   virtualBalance: number;
   isAdmin: boolean;
   createdAt: string;
+  image?: string | null;
 }
 
 export default function Settings() {
@@ -57,6 +59,8 @@ export default function Settings() {
       setLoading(false);
     }
   };
+
+  // No profile image editing; avatar is initials over gradient
 
   const handleChangePassword = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -135,14 +139,14 @@ export default function Settings() {
         </div>
 
         {/* Account Information */}
-        <Card className="mb-6">
-          <CardHeader>
+        <Card className="mb-6 bg-gray-800/90 border-0 shadow-lg">
+          <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2">
               <User className="h-5 w-5" />
               Account Information
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 pt-0 space-y-4">
             <div>
               <label className="block text-sm font-medium text-white mb-2">
                 Name
@@ -179,15 +183,15 @@ export default function Settings() {
         </Card>
 
         {/* Balance Information */}
-        <Card className="mb-6">
-          <CardHeader>
+        <Card className="mb-6 bg-gray-800/90 border-0 shadow-lg">
+          <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2">
               <DollarSign className="h-5 w-5" />
               Account Balance
             </CardTitle>
           </CardHeader>
-          <CardContent>
-            <div className="flex items-center justify-between p-4 bg-gray-800/30 rounded-lg">
+          <CardContent className="p-4 pt-0">
+            <div className="flex items-center justify-between p-4 bg-gray-700/50 rounded-lg">
               <div>
                 <div className="text-2xl font-bold text-green-400">
                   ${Math.round(profile.virtualBalance).toLocaleString("en-US")}
@@ -212,15 +216,38 @@ export default function Settings() {
           </CardContent>
         </Card>
 
+        {/* Profile Avatar */}
+        <Card className="mb-6 bg-gray-800/90 border-0 shadow-lg">
+          <CardHeader className="p-4">
+            <CardTitle className="flex items-center gap-2">
+              <User className="h-5 w-5" />
+              Profile Avatar
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="p-4 pt-0 space-y-4">
+            <div className="flex items-center gap-4">
+              <div
+                className="h-16 w-16 rounded-full flex items-center justify-center text-lg font-semibold text-white/90"
+                style={gradientFromString(profile.id || profile.email || profile.name)}
+              >
+                {initialsFromName(profile.name)}
+              </div>
+              <div className="text-sm text-gray-400">
+                Your avatar is generated automatically from your name.
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+
         {/* Security & Privacy */}
-        <Card className="mb-6">
-          <CardHeader>
+        <Card className="mb-6 bg-gray-800/90 border-0 shadow-lg">
+          <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2">
               <Key className="h-5 w-5" />
               Security & Privacy
             </CardTitle>
           </CardHeader>
-          <CardContent className="space-y-4">
+          <CardContent className="p-4 pt-0 space-y-4">
             <form onSubmit={handleChangePassword} className="space-y-3">
               <div>
                 <label className="block text-sm font-medium text-white mb-2">Current Password</label>
@@ -273,14 +300,14 @@ export default function Settings() {
         </Card>
 
         {/* Advanced Settings */}
-        <Card>
-          <CardHeader>
+        <Card className="bg-gray-800/90 border-0 shadow-lg">
+          <CardHeader className="p-4">
             <CardTitle className="flex items-center gap-2 text-red-400">
               <Trash2 className="h-5 w-5" />
               Advanced
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="p-4 pt-0">
             <div className="bg-red-600/10 border border-red-500/20 rounded-lg p-4">
               <div className="flex items-start gap-3">
                 <AlertCircle className="h-5 w-5 text-red-400 flex-shrink-0 mt-0.5" />

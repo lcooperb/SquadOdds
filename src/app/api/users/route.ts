@@ -17,9 +17,42 @@ export async function GET(request: NextRequest) {
 
     const { searchParams } = new URL(request.url)
     const all = searchParams.get('all')
+    const search = searchParams.get('search')?.trim()
 
     if (all === 'true') {
-      // Admin only - get all users
+      // If a search term is provided, allow any authenticated user to search filtered users
+      if (search && search.length > 0) {
+        const users = await prisma.user.findMany({
+          where: {
+            OR: [
+              { name: { contains: search, mode: 'insensitive' } },
+              { email: { contains: search, mode: 'insensitive' } },
+            ],
+          },
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            virtualBalance: true,
+            totalWinnings: true,
+            _count: {
+              select: {
+                bets: true,
+                createdEvents: true,
+              },
+            },
+          },
+          orderBy: [
+            { totalWinnings: 'desc' },
+            { createdAt: 'asc' },
+          ],
+          take: 10,
+        })
+
+        return NextResponse.json(users)
+      }
+
+      // Admin only - get full list if no search filter
       if (!session.user.isAdmin) {
         return NextResponse.json(
           { message: 'Admin access required' },
@@ -66,7 +99,10 @@ export async function GET(request: NextRequest) {
           isAdmin: true,
           createdAt: true,
           bets: {
-            include: {
+            select: {
+              amount: true,
+              status: true,
+              createdAt: true,
               event: {
                 select: {
                   id: true,
