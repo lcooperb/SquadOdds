@@ -206,10 +206,10 @@ export default function MarketCard({
                       </div>
                     ) : (
                       <div className="flex gap-2">
-                        <span className="bg-green-600/10 rounded px-3 py-1 text-xs font-semibold text-green-400/50 border border-green-500/20 cursor-not-allowed">
+                        <span className="bg-green-600/20 rounded px-3 py-1 text-xs font-semibold text-green-400 border border-green-500/40 cursor-not-allowed">
                           Yes
                         </span>
-                        <span className="bg-red-600/10 rounded px-3 py-1 text-xs font-semibold text-red-400/50 border border-red-500/20 cursor-not-allowed">
+                        <span className="bg-red-600/20 rounded px-3 py-1 text-xs font-semibold text-red-400 border border-red-500/40 cursor-not-allowed">
                           No
                         </span>
                       </div>
@@ -324,11 +324,11 @@ export default function MarketCard({
             </div>
           ) : (
             <div className="grid grid-cols-2 gap-2 mb-4">
-              <div className="bg-green-600/10 rounded-lg py-2 px-3 text-center border border-green-500/20 opacity-60">
-                <div className="text-sm font-semibold text-green-400/60">Yes</div>
+              <div className="bg-green-600/20 rounded-lg py-2 px-3 text-center border border-green-500/40">
+                <div className="text-sm font-semibold text-green-400">Yes</div>
               </div>
-              <div className="bg-red-600/10 rounded-lg py-2 px-3 text-center border border-red-500/20 opacity-60">
-                <div className="text-sm font-semibold text-red-400/60">No</div>
+              <div className="bg-red-600/20 rounded-lg py-2 px-3 text-center border border-red-500/40">
+                <div className="text-sm font-semibold text-red-400">No</div>
               </div>
             </div>
           )}

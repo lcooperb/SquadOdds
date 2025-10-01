@@ -149,8 +149,8 @@ export default function Leaderboard() {
               >
                 <div className="flex items-center justify-between">
                   {/* Left: Rank, Avatar & User Info */}
-                  <div className="flex items-center gap-3 md:gap-4">
-                    <div className="flex items-center justify-center w-8 h-8 md:w-10 md:h-10">
+                  <div className="flex items-center gap-3 md:gap-4 flex-1 min-w-0">
+                    <div className="flex items-center justify-center w-8 md:w-10 flex-shrink-0">
                       <span className={`text-lg md:text-xl font-bold ${
                         user.rank === 1 ? "text-yellow-400" :
                         user.rank === 2 ? "text-gray-300" :
@@ -160,58 +160,55 @@ export default function Leaderboard() {
                       </span>
                     </div>
                     <div
-                      className="h-9 w-9 md:h-10 md:w-10 rounded-full flex items-center justify-center text-[10px] md:text-xs font-semibold text-gray-900/90"
+                      className="h-9 w-9 md:h-10 md:w-10 rounded-full flex items-center justify-center text-[10px] md:text-xs font-semibold text-gray-900/90 flex-shrink-0"
                       style={gradientFromString(user.id || user.name)}
                     >
                       {initialsFromName(user.name)}
                     </div>
 
-                    <div>
-                      <h3 className="text-base md:text-lg font-semibold text-white">
+                    <div className="min-w-0 flex-1">
+                      <h3 className="text-sm md:text-lg font-semibold text-white truncate">
                         {user.name}
                       </h3>
-                      <div className="text-xs md:text-sm text-gray-400 mt-1">
-                        Joined {new Date(user.createdAt).toLocaleDateString()}
-                      </div>
                     </div>
                   </div>
 
-                  {/* Center: Stats - Desktop */}
-                  <div className="hidden md:flex items-center gap-6">
-                    <div className="text-right w-24">
-                      <div className="text-lg font-bold text-green-400">
-                        ${user.stats.portfolio.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  {/* Right: Stats */}
+                  <div className="flex items-center gap-2 md:gap-6 flex-shrink-0">
+                    <div className="text-right w-14 md:w-24">
+                      <div className="text-sm md:text-lg font-bold text-green-400">
+                        ${user.stats.portfolio.toLocaleString("en-US", { minimumFractionDigits: 0, maximumFractionDigits: 0 })}
                       </div>
-                      <div className="text-xs text-gray-400">Portfolio</div>
+                      <div className="text-[9px] md:text-xs text-gray-400">Portfolio</div>
                     </div>
 
-                    <div className="text-right w-24">
+                    <div className="text-right w-14 md:w-24">
                       <div
-                        className={`text-lg font-bold ${
+                        className={`text-sm md:text-lg font-bold ${
                           user.stats.netProfit >= 0 ? "text-green-400" : "text-red-400"
                         }`}
                       >
                         {user.stats.netProfit >= 0 ? "+" : ""}$
                         {Math.round(Math.abs(user.stats.netProfit)).toLocaleString("en-US")}
                       </div>
-                      <div className="text-xs text-gray-400">Profit</div>
+                      <div className="text-[9px] md:text-xs text-gray-400">Profit</div>
                     </div>
 
-                    <div className="text-right w-20">
-                      <div className="text-lg font-bold text-white">
+                    <div className="text-right w-10 md:w-20">
+                      <div className="text-sm md:text-lg font-bold text-white">
                         {user.stats.winRate.toFixed(0)}%
                       </div>
-                      <div className="text-xs text-gray-400">Win Rate</div>
+                      <div className="text-[9px] md:text-xs text-gray-400">Win</div>
                     </div>
 
-                    <div className="text-right w-16">
+                    <div className="hidden md:block text-right w-16">
                       <div className="text-lg font-bold text-white">
                         {user.stats.totalBets}
                       </div>
                       <div className="text-xs text-gray-400">Bets</div>
                     </div>
 
-                    <div className="text-right w-20">
+                    <div className="hidden md:block text-right w-20">
                       <div className="text-lg font-bold text-white">
                         {user.stats.eventsCreated}
                       </div>

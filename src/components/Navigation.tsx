@@ -212,10 +212,19 @@ export default function Navigation() {
             )}
           </div>
 
-          {/* Mobile right side - Notifications and Menu button */}
+          {/* Mobile right side - Portfolio, Notifications and Menu button */}
           <div className="flex md:hidden items-center space-x-3">
             {session && (
               <>
+                {/* Portfolio */}
+                <div className="text-right">
+                  <div className="text-[10px] text-gray-400">Portfolio</div>
+                  <div className="text-green-400 font-semibold text-xs">
+                    {portfolioValue !== null
+                      ? `$${Number(portfolioValue).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 })}`
+                      : '...'}
+                  </div>
+                </div>
                 {/* Notifications */}
                 <NotificationDropdown />
               </>
@@ -236,26 +245,6 @@ export default function Navigation() {
             <div className="px-0 pt-4 pb-3 space-y-1 border-t border-gray-700 rounded-b-lg">
               {session ? (
                 <>
-                  {/* Balance Cards */}
-                  <div className="grid grid-cols-2 gap-3 mb-4">
-                    <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                      <div className="text-xs text-gray-400 mb-1">Portfolio</div>
-                      <div className="text-green-400 font-semibold text-lg">
-                        {portfolioValue !== null
-                          ? `$${Number(portfolioValue).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                          : '...'}
-                      </div>
-                    </div>
-                    <div className="bg-gray-800/50 rounded-lg p-3 border border-gray-700">
-                      <div className="text-xs text-gray-400 mb-1">Cash</div>
-                      <div className="text-green-400 font-semibold text-lg">
-                        {userBalance !== null
-                          ? `$${Number(userBalance).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`
-                          : '...'}
-                      </div>
-                    </div>
-                  </div>
-
                   {/* Mobile Search Bar */}
                   <div className="mb-3">
                     <SearchDropdown />

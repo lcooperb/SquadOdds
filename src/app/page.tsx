@@ -115,7 +115,7 @@ export default function Home() {
         {session && (
           <div className="mb-6">
             <h1 className="text-3xl font-bold text-white mb-2">
-              Welcome back, {session.user.name}!
+              Welcome back{session.user.name ? `, ${session.user.name}` : ''}!
             </h1>
             <p className="text-gray-400">
               Explore prediction markets and place your bets
@@ -125,7 +125,7 @@ export default function Home() {
 
         {/* Stats Cards - only show if logged in */}
         {session && (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
+          <div className="grid grid-cols-2 md:grid-cols-2 lg:grid-cols-4 gap-3 mb-6">
             <div className="bg-gray-800/90 rounded-lg p-4 text-center">
               <div className="text-2xl font-bold text-green-400 mb-1">
                 ${portfolioValue.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}

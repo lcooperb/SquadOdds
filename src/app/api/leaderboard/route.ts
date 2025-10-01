@@ -57,6 +57,7 @@ export async function GET(request: NextRequest) {
 
     // Calculate stats for each user
     const leaderboard = users.map(user => {
+      // Bets are already filtered by timeframe from the query
       const bets = user.bets
       const totalBets = bets.length
       const totalStaked = bets.reduce((sum, bet) => sum + Number(bet.amount), 0)
@@ -71,7 +72,8 @@ export async function GET(request: NextRequest) {
       const winRate = totalBets > 0 ? (wonBets.length / totalBets) * 100 : 0
       const roi = totalStaked > 0 ? (netProfit / totalStaked) * 100 : 0
 
-      // Calculate portfolio: sum of ACTIVE bets' amount on ACTIVE events
+      // Portfolio: always show current active bets (not filtered by timeframe)
+      // For timeframe views, we only show active bets that were placed in that timeframe
       const activeBets = bets.filter(bet => bet.status === 'ACTIVE' && bet.event?.status === 'ACTIVE')
       const portfolio = activeBets.reduce((sum, bet) => sum + Number(bet.amount), 0)
 
@@ -84,13 +86,13 @@ export async function GET(request: NextRequest) {
         totalLosses: Number(user.totalLosses),
         createdAt: user.createdAt,
         stats: {
-          totalBets,
-          totalStaked,
-          netProfit,
-          winRate: Math.round(winRate * 100) / 100,
-          roi: Math.round(roi * 100) / 100,
-          eventsCreated: user._count.createdEvents,
-          portfolio,
+          totalBets, // Filtered by timeframe
+          totalStaked, // Filtered by timeframe
+          netProfit, // Filtered by timeframe
+          winRate: Math.round(winRate * 100) / 100, // Filtered by timeframe
+          roi: Math.round(roi * 100) / 100, // Filtered by timeframe
+          eventsCreated: user._count.createdEvents, // Filtered by timeframe
+          portfolio, // Active bets within timeframe
         },
         rank: 0, // Will be set below
       }
