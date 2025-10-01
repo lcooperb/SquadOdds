@@ -313,7 +313,7 @@ export default function BettingModal({
 
                 {/* Market Impact Preview */}
                 {priceImpact > 0.1 && (
-                  <div className="bg-blue-600/10 border border-blue-500/20 rounded-lg p-3">
+                  <div className="hidden md:block bg-blue-600/10 border border-blue-500/20 rounded-lg p-3">
                     <div className="flex items-center gap-2 mb-2">
                       <span className="text-blue-400 text-sm font-medium">Market Impact</span>
                       <span className="text-blue-400">📈</span>
