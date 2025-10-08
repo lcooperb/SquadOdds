@@ -49,7 +49,6 @@ export async function GET(request: NextRequest) {
             bets: {
               where: dateFilter,
             },
-            createdEvents: true,
           },
         },
       },
@@ -91,7 +90,6 @@ export async function GET(request: NextRequest) {
           netProfit, // Filtered by timeframe
           winRate: Math.round(winRate * 100) / 100, // Filtered by timeframe
           roi: Math.round(roi * 100) / 100, // Filtered by timeframe
-          eventsCreated: user._count.createdEvents, // Filtered by timeframe
           portfolio, // Active bets within timeframe
         },
         rank: 0, // Will be set below

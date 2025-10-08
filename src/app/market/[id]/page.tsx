@@ -563,11 +563,6 @@ export default function MarketPage() {
                 )}
               </div>
 
-              {/* Market Creator */}
-              <div className="text-sm text-gray-400">
-                Created by <span className="text-gray-300 font-medium">{event.createdBy.name}</span>
-              </div>
-
               <h1 className="text-2xl md:text-3xl font-bold text-white leading-tight">
                 {event.title}
               </h1>

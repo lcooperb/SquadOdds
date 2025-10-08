@@ -18,7 +18,6 @@ interface LeaderboardUser {
     netProfit: number;
     winRate: number;
     roi: number;
-    eventsCreated: number;
     portfolio: number;
   };
   rank: number;
@@ -206,13 +205,6 @@ export default function Leaderboard() {
                         {user.stats.totalBets}
                       </div>
                       <div className="text-xs text-gray-400">Bets</div>
-                    </div>
-
-                    <div className="hidden md:block text-right w-20">
-                      <div className="text-lg font-bold text-white">
-                        {user.stats.eventsCreated}
-                      </div>
-                      <div className="text-xs text-gray-400">Markets</div>
                     </div>
                   </div>
                 </div>

@@ -53,7 +53,20 @@ export async function GET(
       )
     }
 
-    return NextResponse.json(event)
+    // Get current session to check if user is the creator
+    const session = await getServerSession(authOptions)
+    const currentUserId = session?.user?.id
+
+    // Anonymize creator name if current user is not the creator
+    const anonymizedEvent = {
+      ...event,
+      createdBy: {
+        id: event.createdBy.id,
+        name: event.createdBy.id === currentUserId ? event.createdBy.name : 'Anonymous',
+      },
+    }
+
+    return NextResponse.json(anonymizedEvent)
   } catch (error) {
     console.error('Error fetching event:', error)
     return NextResponse.json(
@@ -165,7 +178,16 @@ export async function PUT(
       },
     })
 
-    return NextResponse.json(event)
+    // Anonymize creator name if current user is not the creator
+    const anonymizedEvent = {
+      ...event,
+      createdBy: {
+        id: event.createdBy.id,
+        name: event.createdBy.id === session.user.id ? event.createdBy.name : 'Anonymous',
+      },
+    }
+
+    return NextResponse.json(anonymizedEvent)
   } catch (error) {
     console.error('Error updating event:', error)
     return NextResponse.json(

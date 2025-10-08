@@ -54,7 +54,20 @@ export async function GET(request: NextRequest) {
       ],
     })
 
-    return NextResponse.json(events)
+    // Get current session to check if user is viewing their own events
+    const session = await getServerSession(authOptions)
+    const currentUserId = session?.user?.id
+
+    // Anonymize creator names for events not created by current user
+    const anonymizedEvents = events.map(event => ({
+      ...event,
+      createdBy: {
+        id: event.createdBy.id,
+        name: event.createdBy.id === currentUserId ? event.createdBy.name : 'Anonymous',
+      },
+    }))
+
+    return NextResponse.json(anonymizedEvents)
   } catch (error) {
     console.error('Error fetching events:', error)
     return NextResponse.json(
@@ -278,7 +291,16 @@ export async function POST(request: NextRequest) {
       },
     })
 
-    return NextResponse.json(completeEvent, { status: 201 })
+    // Anonymize creator name for non-creators (though creator just created this)
+    const anonymizedEvent = {
+      ...completeEvent,
+      createdBy: {
+        id: completeEvent!.createdBy.id,
+        name: completeEvent!.createdBy.id === session.user.id ? completeEvent!.createdBy.name : 'Anonymous',
+      },
+    }
+
+    return NextResponse.json(anonymizedEvent, { status: 201 })
   } catch (error) {
     console.error('Error creating event:', error)
     return NextResponse.json(

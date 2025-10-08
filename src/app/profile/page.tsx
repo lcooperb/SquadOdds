@@ -66,6 +66,9 @@ export default function Profile() {
   // Get user ID from URL params or use current user
   const userId = searchParams.get("id") || session?.user?.id;
 
+  // Check if viewing own profile or someone else's
+  const isOwnProfile = userId === session?.user?.id;
+
   useEffect(() => {
     if (status === "loading") return;
     if (!session) {
@@ -75,6 +78,13 @@ export default function Profile() {
 
     fetchProfile();
   }, [session, status, router]);
+
+  // Reset to bets tab when viewing another user's profile
+  useEffect(() => {
+    if (!isOwnProfile && activeTab === "created") {
+      setActiveTab("bets");
+    }
+  }, [isOwnProfile]);
 
   const fetchProfile = async () => {
     try {
@@ -339,27 +349,29 @@ export default function Profile() {
             </div>
           </div>
 
-          <div className="bg-gray-800/90 rounded-lg p-6">
-            <h3 className="text-lg font-semibold text-white mb-4">Markets</h3>
-            <div className="space-y-3">
-              <div className="flex justify-between">
-                <span className="text-gray-400">Created</span>
-                <span className="text-white font-semibold">{profile._count?.createdEvents || 0}</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Active</span>
-                <span className="text-white font-semibold">
-                  {(profile.createdEvents || []).filter(e => e.status === "ACTIVE").length}
-                </span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-gray-400">Resolved</span>
-                <span className="text-white font-semibold">
-                  {(profile.createdEvents || []).filter(e => e.resolved).length}
-                </span>
+          {isOwnProfile && (
+            <div className="bg-gray-800/90 rounded-lg p-6">
+              <h3 className="text-lg font-semibold text-white mb-4">Markets</h3>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Created</span>
+                  <span className="text-white font-semibold">{profile._count?.createdEvents || 0}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Active</span>
+                  <span className="text-white font-semibold">
+                    {(profile.createdEvents || []).filter(e => e.status === "ACTIVE").length}
+                  </span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-400">Resolved</span>
+                  <span className="text-white font-semibold">
+                    {(profile.createdEvents || []).filter(e => e.resolved).length}
+                  </span>
+                </div>
               </div>
             </div>
-          </div>
+          )}
         </div>
 
         {/* Activity Section */}
@@ -375,19 +387,21 @@ export default function Profile() {
               >
                 Bets ({(profile.bets || []).length})
               </Button>
-              <Button
-                variant={activeTab === "created" ? "primary" : "ghost"}
-                size="sm"
-                onClick={() => setActiveTab("created")}
-                className="text-xs md:text-sm"
-              >
-                Markets ({(profile.createdEvents || []).length})
-              </Button>
+              {isOwnProfile && (
+                <Button
+                  variant={activeTab === "created" ? "primary" : "ghost"}
+                  size="sm"
+                  onClick={() => setActiveTab("created")}
+                  className="text-xs md:text-sm"
+                >
+                  Markets ({(profile.createdEvents || []).length})
+                </Button>
+              )}
             </div>
           </div>
 
           <div>
-            {activeTab === "bets" ? (
+            {activeTab === "bets" || !isOwnProfile ? (
               <div className="space-y-4">
                 {/* Bet Filters */}
                 <div className="flex flex-wrap gap-2 border-b border-gray-700 pb-3">
