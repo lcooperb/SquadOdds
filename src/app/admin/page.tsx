@@ -20,6 +20,7 @@ import {
   AlertCircle,
   X,
   ArrowDownCircle,
+  Trash2,
 } from "lucide-react";
 
 interface User {
@@ -300,6 +301,54 @@ export default function AdminPanel() {
     }
   };
 
+  const openUserDeletionModal = (
+    userId: string,
+    userName: string,
+    userEmail: string,
+    betCount: number,
+    eventCount: number
+  ) => {
+    setUserDeletionModal({
+      isOpen: true,
+      userId,
+      userName,
+      userEmail,
+      betCount,
+      eventCount,
+    });
+  };
+
+  const closeUserDeletionModal = () => {
+    setUserDeletionModal({
+      isOpen: false,
+      userId: "",
+      userName: "",
+      userEmail: "",
+      betCount: 0,
+      eventCount: 0,
+    });
+  };
+
+  const confirmUserDeletion = async () => {
+    try {
+      const response = await fetch(`/api/admin/users/${userDeletionModal.userId}`, {
+        method: "DELETE",
+      });
+
+      if (response.ok) {
+        alert("User deleted successfully");
+        fetchData(); // Refresh data
+        closeUserDeletionModal();
+      } else {
+        const error = await response.json();
+        alert(`Error deleting user: ${error.message}`);
+      }
+    } catch (error) {
+      console.error("Error deleting user:", error);
+      alert("Error deleting user");
+    }
+  };
+
 
   // Resolution confirmation modal state
   const [resolutionModal, setResolutionModal] = useState<{
@@ -340,6 +389,23 @@ export default function AdminPanel() {
     eventId: "",
     eventTitle: "",
     betCount: 0,
+  });
+
+  // User deletion confirmation modal state
+  const [userDeletionModal, setUserDeletionModal] = useState<{
+    isOpen: boolean;
+    userId: string;
+    userName: string;
+    userEmail: string;
+    betCount: number;
+    eventCount: number;
+  }>({
+    isOpen: false,
+    userId: "",
+    userName: "",
+    userEmail: "",
+    betCount: 0,
+    eventCount: 0,
   });
 
   if (status === "loading" || loading) {
@@ -610,6 +676,21 @@ export default function AdminPanel() {
                           <Settings className="h-4 w-4 mr-2" />
                           {user.isAdmin ? "Remove Admin" : "Make Admin"}
                         </Button>
+                        <Button
+                          onClick={() => openUserDeletionModal(
+                            user.id,
+                            user.name,
+                            user.email,
+                            user._count.bets,
+                            user._count.createdEvents
+                          )}
+                          variant="outline"
+                          size="sm"
+                          className="w-full md:w-auto text-xs md:text-sm text-red-400 hover:text-red-300 hover:bg-red-950/30"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Delete User
+                        </Button>
                       </div>
                     </div>
                   </CardContent>
@@ -808,6 +889,78 @@ export default function AdminPanel() {
                   className="flex-1 bg-red-600 hover:bg-red-700"
                 >
                   <X className="h-4 w-4 mr-2" />
+                  Permanently Delete
+                </Button>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* User Deletion Confirmation Modal */}
+        {userDeletionModal.isOpen && (
+          <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+            <div className="bg-gray-800 rounded-lg p-6 max-w-md w-full mx-4">
+              <div className="flex items-center gap-3 mb-4">
+                <AlertCircle className="h-6 w-6 text-red-500" />
+                <h3 className="text-lg font-semibold text-white">
+                  Confirm User Deletion
+                </h3>
+              </div>
+
+              <div className="space-y-4">
+                <div>
+                  <p className="text-gray-300 mb-2">
+                    You are about to permanently delete this user:
+                  </p>
+                  <div className="bg-gray-700 rounded p-3">
+                    <p className="text-white font-medium">
+                      {userDeletionModal.userName}
+                    </p>
+                    <p className="text-gray-400 text-sm">
+                      {userDeletionModal.userEmail}
+                    </p>
+                  </div>
+                </div>
+
+                <div>
+                  <p className="text-gray-300 mb-2">This will delete:</p>
+                  <div className="bg-gray-700 rounded p-3 space-y-1">
+                    <p className="text-red-400 text-sm">
+                      • {userDeletionModal.betCount} bet{userDeletionModal.betCount !== 1 ? 's' : ''}
+                    </p>
+                    <p className="text-red-400 text-sm">
+                      • {userDeletionModal.eventCount} created market{userDeletionModal.eventCount !== 1 ? 's' : ''}
+                    </p>
+                    <p className="text-red-400 text-sm">
+                      • All user data and activity
+                    </p>
+                    <p className="text-red-400 text-sm">
+                      • User account and authentication
+                    </p>
+                  </div>
+                </div>
+
+                <div className="bg-red-500/10 border border-red-500/20 rounded p-3">
+                  <p className="text-red-300 text-sm">
+                    ⚠️ <strong>Warning:</strong> This action is PERMANENT and cannot be undone.
+                    All data associated with this user will be permanently deleted from the database.
+                  </p>
+                </div>
+              </div>
+
+              <div className="flex gap-3 mt-6">
+                <Button
+                  onClick={closeUserDeletionModal}
+                  variant="outline"
+                  className="flex-1"
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={confirmUserDeletion}
+                  className="flex-1 bg-red-600 hover:bg-red-700"
+                >
+                  <Trash2 className="h-4 w-4 mr-2" />
                   Permanently Delete
                 </Button>
               </div>

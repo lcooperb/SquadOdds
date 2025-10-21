@@ -92,12 +92,12 @@ model Event {
   createdAt      DateTime    @default(now())
   updatedAt      DateTime    @updatedAt
 
-  createdBy     User         @relation("EventCreator", fields: [createdById], references: [id])
+  createdBy     User         @relation("EventCreator", fields: [createdById], references: [id], onDelete: Cascade)
   bets          Bet[]
   priceHistory  PricePoint[]
   comments      Comment[]
   options       MarketOption[] // For multiple choice markets
-  winningOption MarketOption? @relation("WinningOption", fields: [winningOptionId], references: [id])
+  winningOption MarketOption? @relation("WinningOption", fields: [winningOptionId], references: [id], onDelete: SetNull)
 
   @@map("events")
 }
