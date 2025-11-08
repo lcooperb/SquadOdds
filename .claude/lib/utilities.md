@@ -1,156 +1,119 @@
 # SquadOdds - Library Utilities Documentation
 
-**Keywords:** utilities, lib, helpers, functions, calculations, amm, positions
+**Keywords:** utilities, lib, helpers, functions, calculations, parimutuel, positions
 
 Complete documentation of all utility functions and libraries in `src/lib/`.
 
 ---
 
-## 📊 Market Impact & AMM (`src/lib/marketImpact.ts`)
+## 📊 Parimutuel Betting System (`src/lib/marketImpact.ts`)
 
-**Purpose:** Automated Market Maker (AMM) implementation for dynamic pricing with realistic slippage and market depth.
+**Purpose:** Pool-based betting system where all bets go into pools and winners split the losers' pool proportionally.
 
 ### Key Concepts
 
-**Market Impact:** How much a bet moves the price
-- Larger bets = bigger price moves
-- Higher volume = less impact per bet
-- Extreme prices (near 0% or 100%) resist change more
+**Pool-Based Pricing:** Price is determined by pool ratios
+- All bets go into YES and NO pools (or option pools)
+- Price = (pool amount / total volume) × 100
+- Larger bets = bigger price moves (shift pool ratios more)
 
-**Slippage:** Difference between market price and execution price
-- User pays more than market price when buying
-- Larger bets = more slippage
-- Small markets get liquidity boost to reduce volatility
+**Parimutuel Payouts:** Winners split losers' pool
+- Your share of winning pool = your bet / total winning pool
+- Your profit = (your share) × (total losing pool)
+- Total payout = your bet + your profit
 
-**Liquidity Scaling:** Virtual liquidity added to small markets
-- Micro markets (<$200): Significant boost
-- Small markets ($200-$500): Moderate boost
-- Medium+ markets (>$500): Normal scaling
+**Money In = Money Out:** No platform profit
+- Total bets = total payouts
+- Pure peer-to-peer betting system
+- Platform holds no money
 
 ---
 
 ### `calculateMarketImpact()`
 
-**Calculate market impact and execution prices for a bet.**
+**Calculate parimutuel market impact when placing a bet.**
 
 **Signature:**
 ```typescript
 function calculateMarketImpact(
   betAmount: number,
   startingPrice: number,
-  totalLiquidity: number,
+  yesPool: number,
+  noPool: number,
   side: 'YES' | 'NO'
 ): MarketImpactResult
 
 interface MarketImpactResult {
-  totalPositions: number;      // Position size (bet amount in AMM)
-  averagePrice: number;         // Weighted average execution price
-  priceSlices: BetSlice[];      // Breakdown for large bets
-  finalPrice: number;           // New market price after trade
+  totalPositions: number;      // Position size (bet amount)
+  averagePrice: number;         // Entry price (%)
+  finalPrice: number;           // New market price after bet
+  estimatedPayout: number;      // Estimated payout if wins
 }
 ```
 
 **How It Works:**
 
-1. **Adaptive Liquidity Calculation**
+1. **Add Bet to Pool**
 ```typescript
-// Base liquidity with floor
-const minLiquidity = Math.max(150, totalLiquidity * 0.3);
-
-// Progressive scaling by market size
-if (totalLiquidity <= 200) {
-  // Micro markets: Significant boost
-  scaledLiquidity = minLiquidity + Math.log(totalLiquidity + 1) * 60;
-} else if (totalLiquidity <= 500) {
-  // Small markets: Moderate boost
-  scaledLiquidity = minLiquidity + Math.log(totalLiquidity + 1) * 40;
-} else {
-  // Medium+ markets: Normal scaling
-  scaledLiquidity = totalLiquidity * 0.8;
-}
+const newYesPool = side === 'YES' ? yesPool + betAmount : yesPool;
+const newNoPool = side === 'NO' ? noPool + betAmount : noPool;
+const newTotalPool = newYesPool + newNoPool;
 ```
 
-2. **Impact Factor & Slippage**
+2. **Calculate New Price (Pool Ratio)**
 ```typescript
-// How much this bet impacts the market
-const impactFactor = betAmount / scaledLiquidity;
-
-// Base slippage
-const rawSlippage = impactFactor * startingPrice * 0.4;
-
-// Market size multiplier (caps slippage for tiny markets)
-const marketSizeMultiplier = totalLiquidity < 500
-  ? Math.max(0.4, totalLiquidity / 1250)
-  : 1.0;
-
-const slippage = Math.sqrt(rawSlippage) * (8 * marketSizeMultiplier);
+// Price = (YES pool / total pool) × 100
+const finalPrice = newTotalPool > 0
+  ? Math.round((newYesPool / newTotalPool) * 100)
+  : startingPrice;
 ```
 
-3. **Execution Prices**
+3. **Estimate Payout**
 ```typescript
-// What user actually pays (always higher due to slippage)
-const userExecutionPrice = Math.min(95, startingPrice + slippage);
+// User's share of winning pool
+const totalWinningPool = side === 'YES' ? newYesPool : newNoPool;
+const userShare = betAmount / totalWinningPool;
 
-// New market price (YES bet pushes price up)
-const newMarketPrice = side === 'YES'
-  ? Math.min(95, startingPrice + slippage * 0.9)
-  : Math.max(5, startingPrice - slippage * 0.9);
-```
+// Profit from losing pool
+const totalLosingPool = side === 'YES' ? newNoPool : newYesPool;
+const profitFromLosers = userShare * totalLosingPool;
 
-4. **Order Slicing (for large bets)**
-```typescript
-const liquidityRatio = betAmount / scaledLiquidity;
-
-if (liquidityRatio < 0.0005) {
-  // Micro trade: Single execution at user price
-  return singleSliceResult;
-} else if (liquidityRatio < 0.01) {
-  // Small trade: Average of start and user price
-  const avgPrice = (startingPrice + userExecutionPrice) / 2;
-  return singleSliceResult;
-} else {
-  // Large trade: Split across 2-5 price levels
-  const numSlices = Math.min(5, Math.max(2, Math.ceil(liquidityRatio * 50)));
-  // Progressive price movement across slices
-}
+// Total payout = bet + profit
+const estimatedPayout = betAmount + profitFromLosers;
 ```
 
 **Example Usage:**
 ```typescript
-// User bets $100 YES at 50% in a $1000 market
-const result = calculateMarketImpact(100, 50, 1000, 'YES');
+// User bets $100 YES when YES pool = $500, NO pool = $500
+const result = calculateMarketImpact(100, 50, 500, 500, 'YES');
 
 console.log(result);
 // {
-//   totalPositions: 100,           // Position size
-//   averagePrice: 51.2,            // Execution price (user pays)
-//   priceSlices: [{...}],          // Single slice for this size
-//   finalPrice: 51.8               // New market price
+//   totalPositions: 100,           // User's bet amount
+//   averagePrice: 50,              // Entry price
+//   finalPrice: 55,                // New price (600/1100 * 100)
+//   estimatedPayout: 120           // $100 + ($100/600 * $500)
 // }
 ```
 
 ---
 
-### `calculateNewMarketPrice()`
+### `calculatePoolsFromPrice()`
 
-**Calculate new market price after a bet (uses market impact result).**
+**Helper to derive pool sizes from current price and total volume.**
 
 **Signature:**
 ```typescript
-function calculateNewMarketPrice(
-  currentPrice: number,
-  totalVolumeBeforeBet: number,
-  betAmount: number,
-  side: 'YES' | 'NO',
-  marketImpactResult: MarketImpactResult
-): number
+function calculatePoolsFromPrice(
+  totalVolume: number,
+  yesPrice: number
+): { yesPool: number; noPool: number }
 ```
 
 **Usage:**
 ```typescript
-const marketImpact = calculateMarketImpact(100, 50, 1000, 'YES');
-const newPrice = calculateNewMarketPrice(50, 1000, 100, 'YES', marketImpact);
-// Returns: 51.8 (rounded to 1 decimal)
+const { yesPool, noPool } = calculatePoolsFromPrice(1000, 60);
+// Returns: { yesPool: 600, noPool: 400 }
 ```
 
 ---
@@ -164,92 +127,86 @@ const newPrice = calculateNewMarketPrice(50, 1000, 100, 'YES', marketImpact);
 function previewMarketImpact(
   betAmount: number,
   startingPrice: number,
-  totalLiquidity: number,
+  yesPool: number,
+  noPool: number,
   side: 'YES' | 'NO'
 ): {
   estimatedPosition: number;
   estimatedAveragePrice: number;
   priceImpact: number;
   estimatedFinalPrice: number;
+  estimatedPayout: number;
 }
 ```
 
 **Usage in UI:**
 ```typescript
 // In BettingCard component
-const [amount, setAmount] = useState('');
-const [preview, setPreview] = useState(null);
+const { yesPool, noPool } = calculatePoolsFromPrice(
+  event.totalVolume,
+  event.yesPrice
+);
 
-useEffect(() => {
-  if (Number(amount) > 0) {
-    const result = previewMarketImpact(
-      Number(amount),
-      event.yesPrice,
-      event.totalVolume,
-      'YES'
-    );
-    setPreview(result);
-  }
-}, [amount, event]);
+const preview = previewMarketImpact(
+  Number(amount),
+  event.yesPrice,
+  yesPool,
+  noPool,
+  'YES'
+);
 
 // Display preview
 {preview && (
   <div>
-    <p>Position: ${preview.estimatedPosition}</p>
-    <p>Avg Price: {preview.estimatedAveragePrice}%</p>
-    <p>Price Impact: +{preview.priceImpact}%</p>
-    <p>New Price: {preview.estimatedFinalPrice}%</p>
+    <p>Your Bet: ${preview.estimatedPosition}</p>
+    <p>Entry Odds: {preview.estimatedAveragePrice}%</p>
+    <p>Odds Shift: +{preview.priceImpact}pp</p>
+    <p>New Odds: {preview.estimatedFinalPrice}%</p>
+    <p>Est. Payout: ${preview.estimatedPayout}</p>
   </div>
 )}
 ```
 
 ---
 
-### AMM Examples
+### Parimutuel Examples
 
-**Micro Market ($100 volume):**
-```typescript
-// $20 bet on YES @ 50%
-calculateMarketImpact(20, 50, 100, 'YES')
-// Result:
-// - Position: $20
-// - Avg Price: ~51%
-// - New Market Price: ~52%
-// - Impact: ~2%
-```
-
-**Small Market ($500 volume):**
-```typescript
-// $50 bet on YES @ 50%
-calculateMarketImpact(50, 50, 500, 'YES')
-// Result:
-// - Position: $50
-// - Avg Price: ~51.5%
-// - New Market Price: ~52%
-// - Impact: ~2%
-```
-
-**Large Market ($5000 volume):**
+**Balanced Market ($500 YES, $500 NO):**
 ```typescript
 // $100 bet on YES @ 50%
-calculateMarketImpact(100, 50, 5000, 'YES')
+const { yesPool, noPool } = calculatePoolsFromPrice(1000, 50);
+calculateMarketImpact(100, 50, yesPool, noPool, 'YES')
 // Result:
 // - Position: $100
-// - Avg Price: ~50.3%
-// - New Market Price: ~50.5%
-// - Impact: ~0.5%
+// - Entry Price: 50%
+// - New Price: 55% (600/1100)
+// - Odds Shift: +5pp
+// - Est. Payout: $183.33 ($100 + $100/600 * $500)
+```
+
+**Skewed Market ($700 YES, $300 NO):**
+```typescript
+// $100 bet on YES @ 70%
+const { yesPool, noPool } = calculatePoolsFromPrice(1000, 70);
+calculateMarketImpact(100, 70, yesPool, noPool, 'YES')
+// Result:
+// - Position: $100
+// - Entry Price: 70%
+// - New Price: 73% (800/1100)
+// - Odds Shift: +3pp
+// - Est. Payout: $137.50 ($100 + $100/800 * $300)
 ```
 
 **Large Bet on Small Market:**
 ```typescript
-// $200 bet on YES @ 50% in $300 market
-calculateMarketImpact(200, 50, 300, 'YES')
+// $200 bet on YES when pools are YES: $150, NO: $150
+calculateMarketImpact(200, 50, 150, 150, 'YES')
 // Result:
 // - Position: $200
-// - Avg Price: ~56% (multi-slice execution)
-// - New Market Price: ~58%
-// - Impact: ~8%
-// - Slices: 3 price levels (50→53→56)
+// - Entry Price: 50%
+// - New Price: 70% (350/500)
+// - Odds Shift: +20pp
+// - Est. Payout: $285.71 ($200 + $200/350 * $150)
 ```
 
 ---
@@ -260,14 +217,17 @@ calculateMarketImpact(200, 50, 300, 'YES')
 
 ### Key Concepts
 
-**Position Value:** Sum of bet shares (can be negative for sells)
-- Buy operations: Positive shares
-- Sell operations: Negative shares
-- Net position: Sum of all shares for a side
+**Position Value:** Total bet amount on a side
+- Stored in `bet.shares` field (represents bet amount in parimutuel system)
+- Sum of all bets for a side
 
-**Average Price:** Weighted average entry price
-- Only counts positive purchases (excludes sells)
-- Used to calculate potential payout
+**Average Price:** Weighted average entry odds
+- Only counts positive purchases
+- Calculated as (total amount spent / total position) × 100
+
+**Potential Payout:** Parimutuel payout estimate if wins
+- Your share of winning pool × losing pool = profit
+- Total payout = bet amount + profit
 
 **Portfolio:** Sum of all ACTIVE bet amounts on ACTIVE markets
 
@@ -326,14 +286,35 @@ const yesPositionForAvg = yesPurchases.reduce((sum, bet) => sum + Number(bet.sha
 const avgPrice = yesPositionForAvg > 0 ? yesAmount / yesPositionForAvg * 100 : 0;
 ```
 
-4. **Return Dominant Side**
+4. **Calculate Parimutuel Payout**
+```typescript
+// Calculate total pools from ALL bets
+const totalYesPool = allRelevantBets
+  .filter(bet => bet.side === 'YES' && Number(bet.shares) > 0)
+  .reduce((sum, bet) => sum + Number(bet.amount), 0);
+
+const totalNoPool = allRelevantBets
+  .filter(bet => bet.side === 'NO' && Number(bet.shares) > 0)
+  .reduce((sum, bet) => sum + Number(bet.amount), 0);
+
+// User's share of winning pool
+const userShare = totalYesPool > 0 ? yesPositionValue / totalYesPool : 0;
+
+// Profit from losers' pool
+const profitFromLosers = userShare * totalNoPool;
+
+// Total payout = original bet + profit
+const potentialPayout = yesPositionValue + profitFromLosers;
+```
+
+5. **Return Dominant Side**
 ```typescript
 if (yesPositionValue > 0) {
   return {
     side: 'YES',
     positionValue: yesPositionValue,
     averagePrice: avgPrice,
-    potentialPayout: avgPrice > 0 ? yesPositionValue / (avgPrice / 100) : 0
+    potentialPayout: potentialPayout
   };
 }
 // Returns null if no net position
@@ -341,18 +322,21 @@ if (yesPositionValue > 0) {
 
 **Example:**
 ```typescript
-const bets = [
+// Alice has $150 bet on YES
+// Total market: YES pool = $500, NO pool = $300
+const allBets = [
   { side: 'YES', amount: 100, shares: 100, userId: 'alice' },
   { side: 'YES', amount: 50, shares: 50, userId: 'alice' },
-  { side: 'YES', amount: -30, shares: -30, userId: 'alice' }, // Sell
+  { side: 'YES', amount: 350, shares: 350, userId: 'bob' },    // Other YES bets
+  { side: 'NO', amount: 300, shares: 300, userId: 'charlie' }  // NO pool
 ];
 
-const position = calculateUserPosition(bets, 'alice');
+const position = calculateUserPosition(allBets, 'alice');
 // {
 //   side: 'YES',
-//   positionValue: 120,           // 100 + 50 - 30
-//   averagePrice: ~50,            // (100 + 50) / (100 + 50) * 100
-//   potentialPayout: 240          // 120 / 0.5
+//   positionValue: 150,           // Alice's total YES position
+//   averagePrice: 50,             // Entry odds (weighted avg)
+//   potentialPayout: 240          // $150 + (150/500 * 300) = $240
 // }
 ```
 
@@ -375,15 +359,29 @@ function getAllUserPositions(
 
 **Example:**
 ```typescript
+// Alice has hedged: $400 YES, $100 NO
+// Total market: YES pool = $600, NO pool = $400
 const bets = [
-  { side: 'YES', amount: 100, shares: 100, userId: 'alice' },
-  { side: 'NO', amount: 50, shares: 50, userId: 'alice' },
+  { side: 'YES', amount: 400, shares: 400, userId: 'alice' },
+  { side: 'NO', amount: 100, shares: 100, userId: 'alice' },
+  { side: 'YES', amount: 200, shares: 200, userId: 'bob' },
+  { side: 'NO', amount: 300, shares: 300, userId: 'charlie' }
 ];
 
 const positions = getAllUserPositions(bets, 'alice');
 // [
-//   { side: 'YES', positionValue: 100, averagePrice: 50, potentialPayout: 200 },
-//   { side: 'NO', positionValue: 50, averagePrice: 50, potentialPayout: 100 }
+//   {
+//     side: 'YES',
+//     positionValue: 400,
+//     averagePrice: 60,  // Current YES odds
+//     potentialPayout: 667  // $400 + (400/600 * 400)
+//   },
+//   {
+//     side: 'NO',
+//     positionValue: 100,
+//     averagePrice: 40,  // Current NO odds
+//     potentialPayout: 250  // $100 + (100/400 * 600)
+//   }
 // ]
 ```
 
@@ -883,16 +881,21 @@ formatPercentage(33.333, 2) // "33.33%"
 
 ### Market Impact in Betting Flow
 ```typescript
-// 1. Preview (before placing bet)
-const preview = previewMarketImpact(amount, price, volume, side);
-// Show user estimated impact
+// 1. Calculate pools from current price
+const { yesPool, noPool } = calculatePoolsFromPrice(totalVolume, currentPrice);
 
-// 2. Calculate (when placing bet)
-const impact = calculateMarketImpact(amount, price, volume, side);
+// 2. Preview (before placing bet)
+const preview = previewMarketImpact(amount, currentPrice, yesPool, noPool, side);
+// Show user estimated impact and payout
+
+// 3. Calculate (when placing bet)
+const impact = calculateMarketImpact(amount, currentPrice, yesPool, noPool, side);
 // Use for actual bet creation
 
-// 3. Update Price (after bet)
-const newPrice = calculateNewMarketPrice(price, volume, amount, side, impact);
+// 4. Update Price (from pool ratios)
+const newYesPool = side === 'YES' ? yesPool + amount : yesPool;
+const newNoPool = side === 'NO' ? noPool + amount : noPool;
+const newPrice = (newYesPool / (newYesPool + newNoPool)) * 100;
 // Store new price in event
 ```
 
@@ -931,22 +934,28 @@ await notifyMarketResolution(eventId, outcome, winningOptionId, payments);
 
 ## 📊 Key Formulas
 
-### AMM Price Impact
+### Parimutuel Price (Pool Ratio)
 ```
-impactFactor = betAmount / scaledLiquidity
-slippage = sqrt(impactFactor * startingPrice * 0.4) * (8 * marketSizeMultiplier)
-userExecutionPrice = startingPrice + slippage
-newMarketPrice = startingPrice + (slippage * 0.9) [for YES]
+yesPrice = (yesPool / (yesPool + noPool)) * 100
+noPrice = 100 - yesPrice
 ```
 
-### Average Price
+### Pool Calculation from Price
 ```
-avgPrice = totalAmountSpent / totalPositionValue * 100
+yesPool = (yesPrice / 100) * totalVolume
+noPool = totalVolume - yesPool
 ```
 
-### Potential Payout
+### Average Entry Odds
 ```
-potentialPayout = positionValue / (avgPrice / 100)
+avgPrice = (totalAmountSpent / totalPositionValue) * 100
+```
+
+### Parimutuel Payout
+```
+userShare = userBetAmount / totalWinningPool
+profitFromLosers = userShare * totalLosingPool
+potentialPayout = userBetAmount + profitFromLosers
 ```
 
 ### Portfolio Value

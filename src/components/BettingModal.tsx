@@ -6,7 +6,7 @@ import { Button } from "@/components/ui/Button";
 import { Input } from "@/components/ui/Input";
 import { Badge } from "@/components/ui/Badge";
 import { calculateUserPosition, getAllUserPositions } from "@/lib/positions";
-import { previewMarketImpact } from "@/lib/marketImpact";
+import { previewMarketImpact, calculatePoolsFromPrice } from "@/lib/marketImpact";
 import { Calculator, DollarSign, TrendingUp, TrendingDown } from "lucide-react";
 
 interface UserPosition {
@@ -113,30 +113,35 @@ export default function BettingModal({
     noPrice = 100 - yesPrice;
   }
 
-  // Calculate market impact and potential payout
+  // Calculate market impact and potential payout (PARIMUTUEL)
   const amountNum = parseFloat(amount) || 0;
   const currentPrice = localSelectedSide === "YES" ? yesPrice : noPrice;
   const totalVolume = event.totalVolume || 0;
 
-  // Use market impact calculation for better estimate
+  // Calculate current pool sizes from total volume and price
+  const { yesPool, noPool } = calculatePoolsFromPrice(totalVolume, yesPrice);
+
+  // Use parimutuel market impact calculation
   const marketImpact = amountNum > 0 ? previewMarketImpact(
     amountNum,
     currentPrice,
-    totalVolume,
+    yesPool,
+    noPool,
     localSelectedSide
   ) : {
     estimatedPosition: 0,
     estimatedAveragePrice: currentPrice,
     priceImpact: 0,
-    estimatedFinalPrice: currentPrice
+    estimatedFinalPrice: currentPrice,
+    estimatedPayout: 0
   };
 
   const positionValue = marketImpact.estimatedPosition;
   const averagePrice = marketImpact.estimatedAveragePrice;
   const priceImpact = marketImpact.priceImpact;
 
-  // Calculate actual potential payout: what you win if your side wins
-  const potentialPayout = averagePrice > 0 ? positionValue / (averagePrice / 100) : positionValue;
+  // Use parimutuel payout estimate
+  const potentialPayout = marketImpact.estimatedPayout || 0;
 
   // Quick amount buttons
   const quickAmounts = [1, 20, 100];
@@ -224,7 +229,7 @@ export default function BettingModal({
                 onClick={() => setSelectedSide("YES")}
                 className="w-full"
               >
-                {isMultipleChoice ? "Yes" : "Yes"} ${yesPrice}
+                {isMultipleChoice ? "Yes" : "Yes"} {yesPrice}%
               </Button>
               <Button
                 variant={localSelectedSide === "NO" ? "no" : "outline"}
@@ -232,7 +237,7 @@ export default function BettingModal({
                 onClick={() => setSelectedSide("NO")}
                 className="w-full"
               >
-                {isMultipleChoice ? "No" : "No"} ${noPrice}
+                {isMultipleChoice ? "No" : "No"} {noPrice}%
               </Button>
             </div>
 
@@ -284,7 +289,7 @@ export default function BettingModal({
                 <div className="bg-gray-700/30 rounded-lg p-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-white font-medium">To win</span>
+                      <span className="text-white font-medium">Est. payout</span>
                       <span className="text-green-400">💸</span>
                     </div>
                     <div className="text-3xl font-bold text-green-400">
@@ -296,45 +301,9 @@ export default function BettingModal({
                     </div>
                   </div>
                   <div className="text-sm text-gray-400 mt-1">
-                    Avg. Price ${averagePrice.toFixed(1)}
-                    {priceImpact > 0.5 && (
-                      <span className="ml-2 text-orange-400">
-                        (+${priceImpact.toFixed(1)} impact)
-                      </span>
-                    )}
+                    If {localSelectedSide} wins at current odds
                   </div>
                 </div>
-
-                {/* Market Impact Preview */}
-                {priceImpact > 0.1 && (
-                  <div className="hidden md:block bg-blue-600/10 border border-blue-500/20 rounded-lg p-3">
-                    <div className="flex items-center gap-2 mb-2">
-                      <span className="text-blue-400 text-sm font-medium">Market Impact</span>
-                      <span className="text-blue-400">📈</span>
-                    </div>
-                    <div className="text-sm text-gray-300">
-                      Market will move from <span className="font-semibold text-white">${currentPrice}</span> → <span className="font-semibold text-white">${marketImpact.estimatedFinalPrice}</span>
-                    </div>
-                    <div className="text-xs text-gray-400 mt-1">
-                      Your bet moves the {localSelectedSide} price by ${priceImpact.toFixed(1)}
-                    </div>
-                  </div>
-                )}
-
-                {/* Position Size Info */}
-                {positionValue !== amountNum && (
-                  <div className="bg-gray-700/20 rounded-lg p-3">
-                    <div className="text-sm text-gray-400 mb-1">Position Details</div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-300">Amount invested:</span>
-                      <span className="text-white font-medium">${amountNum.toFixed(2)}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-gray-300">Position value:</span>
-                      <span className="text-white font-medium">${positionValue.toFixed(2)}</span>
-                    </div>
-                  </div>
-                )}
               </div>
             )}
           </>
@@ -360,14 +329,14 @@ export default function BettingModal({
                       >
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-white font-medium">
-                            ${position.positionValue.toFixed(2)} {position.side} position
+                            ${position.positionValue.toFixed(2)} {position.side} bet
                           </span>
                           <span className="text-gray-400 text-sm">
-                            Avg: ${position.averagePrice.toFixed(1)}
+                            Avg entry: {position.averagePrice.toFixed(1)}%
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
-                          <span className="text-gray-400">Potential Payout:</span>
+                          <span className="text-gray-400">Est. if {position.side} wins:</span>
                           <span className="text-green-400 font-medium">
                             ${position.potentialPayout.toFixed(2)}
                           </span>

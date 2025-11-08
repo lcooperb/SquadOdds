@@ -200,7 +200,7 @@ export async function POST(request: NextRequest) {
         const yesAmount = investment * (yes / 100)
         const noAmount = investment * (no / 100)
 
-        // Create YES bet (AMM system - shares represent position values)
+        // Create YES bet (parimutuel system - shares represent position values)
         if (yesAmount > 0) {
           await tx.bet.create({
             data: {
@@ -209,12 +209,12 @@ export async function POST(request: NextRequest) {
               side: 'YES',
               amount: yesAmount,
               price: yes,
-              shares: yesAmount, // In AMM system, shares field stores position values
+              shares: yesAmount, // In parimutuel system, shares field stores position values
             },
           })
         }
 
-        // Create NO bet (AMM system - shares represent position values)
+        // Create NO bet (parimutuel system - shares represent position values)
         if (noAmount > 0) {
           await tx.bet.create({
             data: {
@@ -223,7 +223,7 @@ export async function POST(request: NextRequest) {
               side: 'NO',
               amount: noAmount,
               price: 100 - yes, // NO price is inverse of YES price
-              shares: noAmount, // In AMM system, shares field stores position values
+              shares: noAmount, // In parimutuel system, shares field stores position values
             },
           })
         }
@@ -253,7 +253,7 @@ export async function POST(request: NextRequest) {
                 side: 'YES',
                 amount: optionAmount,
                 price: optionOdds,
-                shares: optionAmount, // In AMM system, shares field stores position values
+                shares: optionAmount, // In parimutuel system, shares field stores position values
               },
             })
 

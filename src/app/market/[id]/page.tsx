@@ -63,7 +63,7 @@ interface EventDetail {
     amount: number;
     price: number;
     shares: number;
-    positionSize: number; // Database 'shares' field stores position values in AMM
+    positionSize: number; // Database 'shares' field stores position values in parimutuel system
     createdAt: string;
     user: {
       id: string;
@@ -438,9 +438,9 @@ export default function MarketPage() {
                       <div className="text-sm text-gray-400">Final Price</div>
                       <div className="text-xl md:text-2xl font-bold text-white">
                         {event.marketType === 'BINARY'
-                          ? `${event.outcome ? yesPrice : noPrice}¢`
+                          ? `${event.outcome ? yesPrice : noPrice}%`
                           : event.winningOptionId && event.options
-                            ? `${Math.round(event.options.find(opt => opt.id === event.winningOptionId)?.price || 0)}¢`
+                            ? `${Math.round(event.options.find(opt => opt.id === event.winningOptionId)?.price || 0)}%`
                             : '-'
                         }
                       </div>
@@ -789,7 +789,7 @@ export default function MarketPage() {
                               >
                                 <div className="flex items-center justify-between w-full gap-1 md:gap-2">
                                   <div className="text-xs md:text-sm">Buy Yes</div>
-                                  <div className="font-bold text-sm md:text-lg">{Number(option.price).toFixed(1)}¢</div>
+                                  <div className="font-bold text-sm md:text-lg">{Number(option.price).toFixed(1)}%</div>
                                 </div>
                               </Button>
                               <Button
@@ -819,7 +819,7 @@ export default function MarketPage() {
                               >
                                 <div className="flex items-center justify-between w-full gap-1 md:gap-2">
                                   <div className="text-xs md:text-sm">Buy No</div>
-                                  <div className="font-bold text-sm md:text-lg">{(100 - Number(option.price)).toFixed(1)}¢</div>
+                                  <div className="font-bold text-sm md:text-lg">{(100 - Number(option.price)).toFixed(1)}%</div>
                                 </div>
                               </Button>
                             </div>
@@ -895,7 +895,7 @@ export default function MarketPage() {
                   setShowMobileBettingModal(true);
                 }}
               >
-                Buy Yes {yesPrice}¢
+                Buy Yes {yesPrice}%
               </Button>
               <Button
                 variant="no"
@@ -906,7 +906,7 @@ export default function MarketPage() {
                   setShowMobileBettingModal(true);
                 }}
               >
-                Buy No {noPrice}¢
+                Buy No {noPrice}%
               </Button>
             </div>
           </div>

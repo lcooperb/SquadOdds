@@ -105,7 +105,7 @@ export default function InteractiveExample({
                     className={selectedSide === 'YES' ? 'bg-green-600 hover:bg-green-700 text-white' : ''}
                   >
                     <TrendingUp className="h-4 w-4 mr-2" />
-                    YES {currentPrice}¢
+                    YES {currentPrice}%
                   </Button>
                   <Button
                     onClick={() => setSelectedSide('NO')}
@@ -113,7 +113,7 @@ export default function InteractiveExample({
                     className={selectedSide === 'NO' ? 'bg-red-600 hover:bg-red-700 text-white' : ''}
                   >
                     <TrendingDown className="h-4 w-4 mr-2" />
-                    NO {100 - currentPrice}¢
+                    NO {100 - currentPrice}%
                   </Button>
                 </div>
               </div>
@@ -154,21 +154,21 @@ export default function InteractiveExample({
                 </div>
               </div>
               <div>
-                <span className="text-gray-400">Average Price:</span>
+                <span className="text-gray-400">Average Entry:</span>
                 <div className="text-white font-medium">
-                  {impact.estimatedAveragePrice.toFixed(1)}¢
+                  {impact.estimatedAveragePrice.toFixed(1)}%
                 </div>
               </div>
               <div>
-                <span className="text-gray-400">Price Impact:</span>
+                <span className="text-gray-400">Odds Shift:</span>
                 <div className="text-white font-medium">
-                  +{impact.priceImpact.toFixed(1)}¢
+                  +{impact.priceImpact.toFixed(1)}pp
                 </div>
               </div>
               <div>
-                <span className="text-gray-400">New Market Price:</span>
+                <span className="text-gray-400">New Odds:</span>
                 <div className="text-white font-medium">
-                  {impact.estimatedFinalPrice.toFixed(1)}¢
+                  {impact.estimatedFinalPrice.toFixed(1)}%
                 </div>
               </div>
             </div>

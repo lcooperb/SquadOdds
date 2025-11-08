@@ -72,7 +72,7 @@ export async function GET(
 
       bets.forEach(bet => {
         const userId = bet.userId
-        const positionValue = Number(bet.shares) // In new AMM system, 'shares' field stores position values
+        const positionValue = Number(bet.shares) // In parimutuel system, 'shares' field stores position values
         const amount = Number(bet.amount)
         const optionId = bet.optionId || 'unknown'
         const optionTitle = bet.option?.title || 'Unknown Option'
@@ -189,7 +189,7 @@ export async function GET(
 
       return NextResponse.json(holders)
     } else {
-      // Binary market logic (updated for AMM)
+      // Binary market logic (parimutuel system)
       const holdingsMap = new Map<string, {
         user: any,
         yesPosition: number,
@@ -201,7 +201,7 @@ export async function GET(
 
       bets.forEach(bet => {
         const userId = bet.userId
-        const positionValue = Number(bet.shares) // In new AMM system, 'shares' field stores position values
+        const positionValue = Number(bet.shares) // In parimutuel system, 'shares' field stores position values
         const amount = Number(bet.amount)
 
         if (!holdingsMap.has(userId)) {

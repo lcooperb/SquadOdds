@@ -181,9 +181,9 @@ Complete documentation of all API routes in the SquadOdds platform.
 
 **Business Logic:**
 1. Validate bet parameters
-2. Calculate market impact (AMM)
+2. Calculate pools and market impact (parimutuel)
 3. Create bet record
-4. Update market price
+4. Update market price from pool ratios
 5. Record price history
 6. For multiple choice: Recalculate all option prices
 

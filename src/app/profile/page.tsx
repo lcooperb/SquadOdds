@@ -495,7 +495,7 @@ export default function Profile() {
                                 if (pos.avgPrice > 0) {
                                   statusDisplay = (
                                     <span className="text-gray-400">
-                                      @ {pos.avgPrice.toFixed(0)}¢ avg
+                                      @ {pos.avgPrice.toFixed(0)}% avg
                                     </span>
                                   );
                                 } else {

@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server'
 import { getServerSession } from 'next-auth'
 import { authOptions } from '@/lib/auth'
 import { prisma } from '@/lib/prisma'
-import { calculateMarketImpact, calculateNewMarketPrice } from '@/lib/marketImpact'
+import { calculateMarketImpact, calculateNewMarketPrice, calculatePoolsFromPrice } from '@/lib/marketImpact'
 
 // POST /api/bets - Place a new bet
 export async function POST(request: NextRequest) {
@@ -145,17 +145,29 @@ export async function POST(request: NextRequest) {
       marketImpactResult = {
         totalPositions: positionSize,
         averagePrice: currentPrice,
-        priceImpact: 0
+        priceImpact: 0,
+        finalPrice: currentPrice
       }
     } else {
-      // For BUY operations, use simplified AMM calculation
+      // For BUY operations, use parimutuel pool calculation
+      // Calculate current pool sizes from total volume and YES price
+      const eventYesPrice = event.marketType === 'MULTIPLE'
+        ? (selectedOption ? Number(selectedOption.price) : Number(event.yesPrice))
+        : Number(event.yesPrice)
+
+      const { yesPool, noPool } = calculatePoolsFromPrice(
+        Number(event.totalVolume),
+        eventYesPrice
+      )
+
       marketImpactResult = calculateMarketImpact(
         amount,
         currentPrice,
-        Number(event.totalVolume),
+        yesPool,
+        noPool,
         side
       )
-      positionSize = marketImpactResult.totalPositions // This is now position value, not shares
+      positionSize = marketImpactResult.totalPositions // This is the bet amount in parimutuel
       averagePrice = marketImpactResult.averagePrice
     }
 
@@ -279,12 +291,32 @@ export async function POST(request: NextRequest) {
           })
         }
       } else {
-        // Binary market price calculation - use market impact result directly
-        let newYesPrice = marketImpactResult.finalPrice
+        // Binary market price calculation - PARIMUTUEL MODEL
+        // New price = new YES pool / new total pool
+        const currentYesPrice = Number(event.yesPrice)
+        const currentTotalVolume = Number(event.totalVolume)
+
+        // Calculate current pools
+        const { yesPool: currentYesPool, noPool: currentNoPool } = calculatePoolsFromPrice(
+          currentTotalVolume,
+          currentYesPrice
+        )
+
+        // Calculate new pools after this bet
+        const volumeChange = type === 'SELL' ? -sellPayout : amount
+        const newTotalVolume = currentTotalVolume + volumeChange
+        const newYesPool = side === 'YES'
+          ? currentYesPool + (type === 'BUY' ? amount : 0)
+          : currentYesPool - (type === 'SELL' && side === 'YES' ? sellPayout : 0)
+        const newNoPool = newTotalVolume - newYesPool
+
+        // Calculate new price from pool ratio
+        let newYesPrice = newTotalVolume > 0
+          ? (newYesPool / newTotalVolume) * 100
+          : currentYesPrice
 
         // Ensure price is within bounds
         newYesPrice = Math.max(5, Math.min(95, newYesPrice))
-
         const newNoPrice = 100 - newYesPrice
 
         // Update event price
@@ -301,9 +333,7 @@ export async function POST(request: NextRequest) {
             eventId,
             yesPrice: newYesPrice,
             noPrice: newNoPrice,
-            volume: type === 'SELL' ?
-              Number(event.totalVolume) - sellPayout :
-              Number(event.totalVolume) + amount,
+            volume: newTotalVolume,
           },
         })
       }

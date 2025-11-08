@@ -97,46 +97,44 @@ Resolution: Admin selects winning option (e.g., "Bob")
 
 ---
 
-## 💹 Automated Market Maker (AMM)
+## 💹 Parimutuel Betting System
 
-### Dynamic Pricing
-**Prices adjust automatically based on betting activity.**
+### Pool-Based Pricing
+**Odds are determined by pool ratios, and winners split the losers' pool.**
 
 **Key Features:**
-- **Market Impact:** Larger bets move prices more
-- **Slippage:** Price increases as you buy (execution price > market price)
-- **Adaptive Liquidity:** Small markets get virtual liquidity boost
-- **Multi-Slice Execution:** Large trades split across price levels
+- **Pool-Based:** All bets go into YES and NO pools (or option pools)
+- **Dynamic Odds:** Odds = pool ratio (YES pool / total pool × 100)
+- **Proportional Payouts:** Winners split losers' pool based on bet size
+- **Money In = Money Out:** No platform profit, pure peer-to-peer
 
 **How It Works:**
 ```typescript
-1. User places $100 bet on YES at 50%
-2. System calculates market impact based on:
-   - Bet size ($100)
-   - Current price (50%)
-   - Total market volume
-3. Price moves to ~52% (depending on volume)
-4. User gets average execution price (~51%)
-5. Market price updates for next bettor
+1. Market starts: YES pool = $500, NO pool = $500 (50% odds each)
+2. User places $100 bet on YES
+3. New pools: YES pool = $600, NO pool = $500
+4. New odds: YES = 55% (600/1100 * 100), NO = 45%
+5. If YES wins, user gets: $100 + ($100/600 * $500) = $183.33
 ```
 
-**Price Impact Factors:**
-- **Bet Size:** Bigger bets = bigger price moves
-- **Market Volume:** Higher volume = less impact
-- **Current Price:** Extreme prices (near 0% or 100%) move less
-- **Market Size:** Micro markets (<$200) get liquidity boost to prevent wild swings
+**Pool Impact Factors:**
+- **Bet Size:** Bigger bets shift pool ratios more
+- **Current Pool Ratio:** Large pool vs small pool = different impacts
+- **Total Volume:** Larger markets = smaller percentage shifts
 
 **Example Scenarios:**
 
-*Small Market ($100 volume):*
-- $20 bet on YES @ 50% → Price moves to ~52% (2% impact)
+*Balanced Market (YES: $500, NO: $500):*
+- $100 bet on YES → Odds shift from 50% to 55% (+5pp)
+- Estimated payout if wins: $183.33
 
-*Large Market ($5,000 volume):*
-- $20 bet on YES @ 50% → Price moves to ~50.2% (0.2% impact)
+*Skewed Market (YES: $700, NO: $300):*
+- $100 bet on YES → Odds shift from 70% to 73% (+3pp)
+- Estimated payout if wins: $137.50
 
-*Large Bet on Small Market:*
-- $100 bet on YES @ 50% in $200 market → Price moves to ~58% (8% impact)
-- Bet executes across multiple price levels (slicing)
+*Large Bet on Small Market (YES: $150, NO: $150):*
+- $200 bet on YES → Odds shift from 50% to 70% (+20pp)
+- Estimated payout if wins: $285.71
 
 ---
 

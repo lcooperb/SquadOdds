@@ -6,6 +6,47 @@ All notable changes to the SquadOdds project are documented here.
 
 ---
 
+## [2.1.0] - Parimutuel System Migration - November 2024
+
+### 🔄 BREAKING CHANGE: AMM → Parimutuel Betting System
+
+**Complete conversion from Automated Market Maker (AMM) to pure parimutuel pool-based betting.**
+
+#### What Changed
+- ❌ **REMOVED:** AMM pricing with slippage and liquidity scaling
+  - No more complex market impact formulas
+  - No share-based position tracking
+  - Removed AMM-style execution prices
+
+- ✅ **ADDED:** Parimutuel pool-based system
+  - Odds determined by pool ratios (YES pool / total pool)
+  - Winners split losers' pool proportionally
+  - Simple, transparent payout calculations
+  - Money in = money out (no platform profit)
+
+#### Key Changes
+- **`src/lib/marketImpact.ts`:** Rewritten for pool-based calculations
+  - Added `calculatePoolsFromPrice()` helper
+  - Updated `calculateMarketImpact()` to use pool ratios
+  - Updated `previewMarketImpact()` with parimutuel payout estimates
+
+- **`src/lib/positions.ts`:** Updated payout calculations
+  - Changed from share-based to pool-based payouts
+  - Updated `calculateUserPosition()` for parimutuel math
+
+- **UI Updates:** Changed terminology throughout
+  - "¢" (cents) → "%" (percentages)
+  - "shares" → "bets"
+  - "price impact" → "odds shift"
+  - "To win" → "Est. payout"
+
+#### Migration Impact
+- **Database:** `bet.shares` field now stores bet amounts (position values in parimutuel)
+- **Pricing:** All markets now use pool ratio pricing instead of AMM formulas
+- **Payouts:** Winners receive proportional share of losing pool instead of share-based payouts
+
+---
+
 ## [2.0.0] - Major System Overhaul - September 2024
 
 ### 🔄 BREAKING CHANGE: Wallet → Credit System Migration
@@ -136,7 +177,7 @@ const payment = losingBet.amount * winnerShare;
 
 ---
 
-## [1.4.0] - AMM Improvements - August 2024
+## [1.4.0] - AMM Improvements - August 2024 (Legacy - Before Parimutuel Migration)
 
 ### Enhanced: Market Impact System
 
@@ -208,7 +249,7 @@ const marketSizeMultiplier = totalVolume < 500
 - Binary prediction markets (YES/NO)
 - User authentication with NextAuth.js
 - Virtual balance system ($100 starting balance)
-- Basic AMM for price discovery
+- Basic AMM for price discovery (replaced by parimutuel system in v2.1.0)
 - Market creation and resolution
 - Leaderboard and user profiles
 - Comments and activity feed

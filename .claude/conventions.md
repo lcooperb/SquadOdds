@@ -557,7 +557,7 @@ const formatted = largeAmount.toLocaleString('en-US'); // "999,999.99"
 # ✅ GOOD - Clear, descriptive
 git commit -m "Add payment breakdown UI to resolved market pages"
 git commit -m "Fix: Portfolio calculation now excludes cancelled bets"
-git commit -m "Refactor: Extract AMM logic to marketImpact.ts"
+git commit -m "Refactor: Extract parimutuel logic to marketImpact.ts"
 
 # ❌ BAD - Vague
 git commit -m "Updates"

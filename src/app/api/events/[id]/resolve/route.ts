@@ -110,30 +110,7 @@ export async function POST(
           data: { status: newStatus },
         })
 
-        if (isWinner) {
-          // Calculate winnings for stats tracking
-          const winnings = Number(bet.shares)
-
-          // Update user stats (no balance operations)
-          await tx.user.update({
-            where: { id: bet.userId },
-            data: {
-              totalWinnings: {
-                increment: winnings - Number(bet.amount),
-              },
-            },
-          })
-        } else {
-          // Update user stats for losing bet
-          await tx.user.update({
-            where: { id: bet.userId },
-            data: {
-              totalLosses: {
-                increment: Number(bet.amount),
-              },
-            },
-          })
-        }
+        // User stats will be updated after parimutuel calculations below
       }
 
       return resolvedEvent
@@ -158,7 +135,7 @@ export async function POST(
       return false
     })
 
-    // Calculate payment matrix: who owes who
+    // Calculate payment matrix: who owes who (PURE PARIMUTUEL)
     const payments: Array<{
       from: { id: string; name: string }
       to: { id: string; name: string }
@@ -167,6 +144,30 @@ export async function POST(
 
     // Total amount won by each winner
     const totalWinningAmount = winningBets.reduce((sum, bet) => sum + Number(bet.amount), 0)
+    const totalLosingAmount = losingBets.reduce((sum, bet) => sum + Number(bet.amount), 0)
+
+    // Map to track total profit per user for stats
+    const userProfits = new Map<string, number>()
+    const userLosses = new Map<string, number>()
+
+    // Initialize losers
+    losingBets.forEach(losingBet => {
+      const currentLoss = userLosses.get(losingBet.userId) || 0
+      userLosses.set(losingBet.userId, currentLoss + Number(losingBet.amount))
+    })
+
+    // Calculate winnings for each winner in parimutuel style
+    if (totalWinningAmount > 0) {
+      winningBets.forEach(winningBet => {
+        const betAmount = Number(winningBet.amount)
+        const winnerShare = betAmount / totalWinningAmount
+        const profitFromLosers = totalLosingAmount * winnerShare
+
+        // Track profit (not including their original bet back)
+        const currentProfit = userProfits.get(winningBet.userId) || 0
+        userProfits.set(winningBet.userId, currentProfit + profitFromLosers)
+      })
+    }
 
     // Each loser's amount is distributed proportionally to winners
     losingBets.forEach(losingBet => {
@@ -191,6 +192,33 @@ export async function POST(
           })
         }
       })
+    })
+
+    // Update user stats with parimutuel winnings/losses
+    await prisma.$transaction(async (tx) => {
+      // Update winners' stats
+      for (const [userId, profit] of userProfits.entries()) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            totalWinnings: {
+              increment: profit,
+            },
+          },
+        })
+      }
+
+      // Update losers' stats
+      for (const [userId, loss] of userLosses.entries()) {
+        await tx.user.update({
+          where: { id: userId },
+          data: {
+            totalLosses: {
+              increment: loss,
+            },
+          },
+        })
+      }
     })
 
     // Send notifications to all users with bets on this market

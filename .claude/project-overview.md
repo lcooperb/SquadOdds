@@ -1,10 +1,10 @@
 # SquadOdds - Project Overview
 
-**Keywords:** prediction-market, credit-betting, AMM, portfolio, next.js, prisma, typescript
+**Keywords:** prediction-market, credit-betting, parimutuel, portfolio, next.js, prisma, typescript
 
 ## 🎯 Project Description
 
-SquadOdds is a Polymarket-inspired prediction market platform designed for friend groups. Users create and bet on personal life events using a **credit-based betting system** (no wallet management). The platform features an Automated Market Maker (AMM) for dynamic pricing, real-time price charts, social features, and comprehensive analytics.
+SquadOdds is a Polymarket-inspired prediction market platform designed for friend groups. Users create and bet on personal life events using a **credit-based betting system** (no wallet management). The platform features a **parimutuel betting system** for dynamic pricing, real-time price charts, social features, and comprehensive analytics.
 
 ## 🏗️ Architecture
 
@@ -37,7 +37,7 @@ src/
 │   └── ...
 ├── lib/                    # Utility functions
 │   ├── positions.ts       # Portfolio and position calculations
-│   ├── marketImpact.ts    # AMM pricing engine
+│   ├── marketImpact.ts    # Parimutuel pricing engine
 │   ├── notifications.ts   # Notification system
 │   └── auth.ts            # NextAuth configuration
 prisma/
@@ -71,25 +71,28 @@ const activeBets = user.bets.filter(b =>
 const portfolio = activeBets.reduce((sum, b) => sum + b.amount, 0);
 ```
 
-## 📊 Automated Market Maker (AMM)
+## 📊 Parimutuel Betting System
 
-SquadOdds uses a custom AMM for dynamic pricing with realistic market depth and slippage.
+SquadOdds uses a **parimutuel betting system** (pool-based betting) where winners split the losers' pool proportionally.
 
-### Pricing Model
-- **Binary Markets:** YES/NO probabilities (0-100%)
-- **Multiple Choice Markets:** Options sum to 100% probability
-- **Market Impact:** Larger bets move prices more (slippage)
-- **Liquidity Scaling:** Small markets get virtual liquidity boost to prevent extreme volatility
+### How It Works
+- **Pool-Based:** All bets go into YES and NO pools (or option pools for multiple choice)
+- **Dynamic Odds:** Odds = pool ratio (e.g., if YES pool = $60, NO pool = $40, then YES odds = 60%)
+- **Winners Split Losers' Pool:** When resolved, winning pool splits the losing pool proportionally
+- **Money In = Money Out:** No platform profit, pure peer-to-peer betting
 
 ### Key Calculations
 ```typescript
-// Market impact increases with bet size relative to total volume
-const impactFactor = betAmount / scaledLiquidity;
-const slippage = Math.sqrt(rawSlippage) * scalingFactor;
-const newPrice = currentPrice + slippage; // For YES bets
+// Price is determined by pool ratios
+const yesPrice = (yesPool / totalPool) * 100;
+
+// Payout calculation for winners
+const userShare = userBetAmount / totalWinningPool;
+const profitFromLosers = userShare * totalLosingPool;
+const totalPayout = userBetAmount + profitFromLosers;
 ```
 
-See `src/lib/marketImpact.ts` for full AMM implementation.
+See `src/lib/marketImpact.ts` for full parimutuel implementation.
 
 ## 🎯 Market Types
 
@@ -161,7 +164,7 @@ See `src/lib/notifications.ts` for implementation.
 - **Event.yesPrice:** Current YES probability (0-100) for binary markets
 - **Event.outcome:** true = YES won, false = NO won, null = not resolved
 - **Event.winningOptionId:** ID of winning option for multiple choice markets
-- **Bet.shares:** Stores position value in AMM model (can be negative for SELL operations)
+- **Bet.shares:** Stores bet amount in parimutuel model (position value)
 - **Bet.status:** ACTIVE, WON, LOST, REFUNDED
 
 See `prisma/schema.prisma` for complete schema.
@@ -260,9 +263,9 @@ npm run lint          # ESLint check
 
 ## 🔍 Key Files to Know
 
-- `src/app/api/bets/route.ts` - Core betting logic with AMM
+- `src/app/api/bets/route.ts` - Core betting logic with parimutuel pricing
 - `src/app/api/events/[id]/resolve/route.ts` - Resolution and payment calculation
-- `src/lib/marketImpact.ts` - AMM pricing engine
+- `src/lib/marketImpact.ts` - Parimutuel pricing engine
 - `src/lib/positions.ts` - Position and portfolio calculations
 - `src/lib/notifications.ts` - Notification system with payment details
 - `src/components/Navigation.tsx` - Main nav with portfolio display
@@ -285,7 +288,7 @@ EMAIL_FROM="noreply@squadodds.com"
 
 ## 🎯 Core Business Logic
 
-1. **Betting:** Users place bets on credit (up to $300/bet) → price moves via AMM → portfolio updates
+1. **Betting:** Users place bets on credit (up to $300/bet) → price updates via parimutuel pool ratios → portfolio updates
 2. **Market Resolution:** Admin resolves → bets marked WON/LOST → payments calculated → notifications sent → portfolio updates
 3. **Market Cancellation:** Admin cancels → all bets marked REFUNDED → portfolio clears → no payments
 4. **Portfolio:** Always calculated as sum of ACTIVE bet amounts on ACTIVE markets

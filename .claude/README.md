@@ -11,13 +11,13 @@
 
 - Architecture & tech stack
 - Credit-based betting system (no wallet)
-- AMM pricing model
+- Parimutuel pricing model
 - Portfolio calculations
 - Payment obligations system
 - Database schema overview
 - Key business logic
 
-**Keywords:** `prediction-market`, `credit-betting`, `AMM`, `portfolio`, `next.js`, `prisma`, `typescript`
+**Keywords:** `prediction-market`, `credit-betting`, `parimutuel`, `portfolio`, `next.js`, `prisma`, `typescript`
 
 ---
 
@@ -54,8 +54,8 @@
 
 - Credit-based betting ($300 per-bet limit)
 - Binary & multiple choice markets
-- AMM pricing with market impact
-- Buy/sell positions
+- Parimutuel pricing with pool-based odds
+- Place bets on YES/NO or options
 - Resolution & payment obligations
 - Notification system
 - Leaderboard & analytics
@@ -99,14 +99,14 @@
 ### [lib/utilities.md](./lib/utilities.md)
 **Utility libraries and helper functions.**
 
-- **marketImpact.ts:** AMM implementation, slippage, liquidity
+- **marketImpact.ts:** Parimutuel betting system, pool-based pricing
 - **positions.ts:** Position & portfolio calculations
 - **notifications.ts:** Notification system with payments
 - **avatar.ts:** Avatar gradients & initials
 - **auth.ts:** NextAuth configuration
 - **prisma.ts:** Database client singleton
 
-**Keywords:** `utilities`, `lib`, `helpers`, `functions`, `calculations`, `amm`, `positions`
+**Keywords:** `utilities`, `lib`, `helpers`, `functions`, `calculations`, `parimutuel`, `positions`
 
 ---
 
@@ -127,7 +127,7 @@
 
 **Adding a New Market Feature:**
 1. Check current market types in `features.md`
-2. Review AMM logic in `lib/utilities.md` (marketImpact)
+2. Review parimutuel pricing logic in `lib/utilities.md` (marketImpact)
 3. See betting flow in `api/routes-overview.md` (POST /api/bets)
 4. Update UI in `components/ui-components.md` (BettingCard)
 
@@ -155,10 +155,10 @@
 - **Portfolio:** Calculated as sum of ACTIVE bets
 - **Payments:** Losers owe winners on resolution (settled externally)
 
-### AMM Pricing
-- **Market Impact:** Larger bets move prices more
-- **Adaptive Liquidity:** Small markets get virtual liquidity boost
-- **Slippage:** Execution price > market price for buyers
+### Parimutuel Pricing
+- **Pool-Based:** Price = pool ratio (YES pool / total pool)
+- **Dynamic Odds:** Larger bets shift pool ratios more
+- **Payout:** Winners split losers' pool proportionally
 - See `lib/utilities.md` for formulas
 
 ### Bet Status Lifecycle
@@ -191,7 +191,7 @@
 - See `conventions.md` → Common ESLint Errors
 
 **Price not moving after bet:**
-- Check AMM calculation in `src/lib/marketImpact.ts`
+- Check parimutuel pool calculation in `src/lib/marketImpact.ts`
 - Ensure price history is being recorded
 - Verify transaction completed successfully
 
@@ -225,10 +225,10 @@
 - `changelog.md` → v2.0 Migration
 - `features.md` → Credit-Based Betting
 
-**AMM / Pricing:**
-- `lib/utilities.md` → Market Impact & AMM
-- `features.md` → Automated Market Maker
-- `project-overview.md` → AMM section
+**Parimutuel / Pricing:**
+- `lib/utilities.md` → Parimutuel Betting System
+- `features.md` → Parimutuel Pricing
+- `project-overview.md` → Parimutuel section
 
 **Portfolio:**
 - `project-overview.md` → Portfolio Logic
@@ -283,8 +283,8 @@ import { prisma } from '@/lib/prisma';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth';
 
-// AMM
-import { calculateMarketImpact, previewMarketImpact } from '@/lib/marketImpact';
+// Parimutuel Pricing
+import { calculateMarketImpact, previewMarketImpact, calculatePoolsFromPrice } from '@/lib/marketImpact';
 
 // Positions
 import { calculateUserPosition, getAllUserPositions } from '@/lib/positions';

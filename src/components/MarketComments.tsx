@@ -539,13 +539,13 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
                                   {position.yesPosition > 0 && (
                                     <div className="bg-green-900/20 rounded p-1.5 border border-green-500/30">
                                       <div className="text-green-400 font-medium">YES: ${position.yesPosition.toFixed(0)}</div>
-                                      <div className="text-gray-400">Avg {position.yesAvgPrice.toFixed(1)}¢</div>
+                                      <div className="text-gray-400">Avg {position.yesAvgPrice.toFixed(1)}%</div>
                                     </div>
                                   )}
                                   {position.noPosition > 0 && (
                                     <div className="bg-red-900/20 rounded p-1.5 border border-red-500/30">
                                       <div className="text-red-400 font-medium">NO: ${position.noPosition.toFixed(0)}</div>
-                                      <div className="text-gray-400">Avg {position.noAvgPrice.toFixed(1)}¢</div>
+                                      <div className="text-gray-400">Avg {position.noAvgPrice.toFixed(1)}%</div>
                                     </div>
                                   )}
                                 </div>
@@ -595,7 +595,7 @@ export default function MarketComments({ eventId, activity }: MarketCommentsProp
                   <div className="text-right">
                     <div className="text-white font-medium">${Math.round(Number(bet.amount)).toLocaleString("en-US")}</div>
                     <div className="text-gray-400 text-sm">
-                      @ {Number(bet.price).toFixed(0)}¢
+                      @ {Number(bet.price).toFixed(0)}%
                     </div>
                   </div>
                 </div>
