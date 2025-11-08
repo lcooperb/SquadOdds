@@ -207,14 +207,14 @@ export default function BettingCard({
             <div>
               <div className="flex items-center justify-between mb-2">
                 <label className="text-white font-medium">Amount</label>
-                <div className="flex items-center">
-                  <span className={`text-3xl font-bold ${amount ? 'text-white' : 'text-gray-300'}`}>$</span>
+                <div className="flex items-center gap-1 flex-1 justify-end max-w-[60%]">
+                  <span className={`text-3xl font-bold ${amount ? 'text-white' : 'text-gray-300'} flex-shrink-0`}>$</span>
                   <input
                     type="number"
                     value={amount}
                     onChange={(e) => setAmount(e.target.value)}
                     placeholder="0"
-                    className="text-3xl font-bold text-white bg-transparent border-none outline-none text-right w-auto min-w-[3ch]"
+                    className="text-3xl font-bold text-white bg-transparent border-none outline-none text-right w-full max-w-full"
                     min="0"
                     step="0.01"
                   />
@@ -240,12 +240,12 @@ export default function BettingCard({
             {/* Potential Payout */}
             {amountNum > 0 && (
               <div className="bg-gray-700/30 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 flex-shrink-0">
                     <span className="text-white font-medium">To win</span>
                     <span className="text-green-400">💸</span>
                   </div>
-                  <div className="text-3xl font-bold text-green-400">
+                  <div className="text-2xl md:text-3xl font-bold text-green-400 truncate">
                     $
                     {potentialPayout.toLocaleString("en-US", {
                       minimumFractionDigits: 2,
