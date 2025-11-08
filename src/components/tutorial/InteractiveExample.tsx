@@ -5,7 +5,7 @@ import { Button } from '@/components/ui/Button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/Card'
 import { Badge } from '@/components/ui/Badge'
 import { TrendingUp, TrendingDown, DollarSign } from 'lucide-react'
-import { previewMarketImpact } from '@/lib/marketImpact'
+import { previewMarketImpact, calculatePoolsFromPrice } from '@/lib/marketImpact'
 
 interface InteractiveExampleProps {
   title?: string
@@ -24,7 +24,8 @@ export default function InteractiveExample({
   const betAmounts = [10, 25, 50, 100]
 
   // Calculate market impact
-  const impact = previewMarketImpact(betAmount, currentPrice, totalVolume, selectedSide)
+  const { yesPool, noPool } = calculatePoolsFromPrice(totalVolume, currentPrice)
+  const impact = previewMarketImpact(betAmount, currentPrice, yesPool, noPool, selectedSide)
   const yesPercentage = Math.round(currentPrice)
 
   const formatCompactNumber = (value: number) => {

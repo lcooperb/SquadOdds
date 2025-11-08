@@ -197,7 +197,7 @@ export async function POST(
     // Update user stats with parimutuel winnings/losses
     await prisma.$transaction(async (tx) => {
       // Update winners' stats
-      for (const [userId, profit] of userProfits.entries()) {
+      for (const [userId, profit] of Array.from(userProfits.entries())) {
         await tx.user.update({
           where: { id: userId },
           data: {
@@ -209,7 +209,7 @@ export async function POST(
       }
 
       // Update losers' stats
-      for (const [userId, loss] of userLosses.entries()) {
+      for (const [userId, loss] of Array.from(userLosses.entries())) {
         await tx.user.update({
           where: { id: userId },
           data: {
