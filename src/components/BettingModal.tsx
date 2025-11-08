@@ -140,7 +140,7 @@ export default function BettingModal({
 
   // Quick amount buttons
   const quickAmounts = [1, 20, 100];
-  const maxAmount = Math.floor(userBalance);
+  const maxAmount = 300; // Maximum bet amount per the credit system
 
   const handleQuickAmount = (value: number | "max") => {
     if (value === "max") {
@@ -154,11 +154,6 @@ export default function BettingModal({
   const handlePlaceBet = async () => {
     if (!amount || parseFloat(amount) <= 0) {
       setError("Please enter a valid amount");
-      return;
-    }
-
-    if (parseFloat(amount) > userBalance) {
-      setError("Insufficient balance");
       return;
     }
 
@@ -254,7 +249,6 @@ export default function BettingModal({
                     placeholder="0"
                     className="text-3xl font-bold text-gray-300 bg-transparent border-none outline-none text-right w-28"
                     min="0"
-                    max={userBalance}
                     step="0.01"
                   />
                 </div>
@@ -483,8 +477,7 @@ export default function BettingModal({
             loading ||
             !amount ||
             parseFloat(amount) <= 0 ||
-            (mode === "sell" && (!hasAnyPosition || !positionToSell || parseFloat(amount) > (positionToSell?.positionValue || 0))) ||
-            (mode === "buy" && parseFloat(amount) > userBalance)
+            (mode === "sell" && (!hasAnyPosition || !positionToSell || parseFloat(amount) > (positionToSell?.positionValue || 0)))
           }
           className={`w-full py-3 text-white ${
             mode === "sell"

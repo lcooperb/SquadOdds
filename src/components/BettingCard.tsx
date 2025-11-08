@@ -114,11 +114,6 @@ export default function BettingCard({
       return;
     }
 
-    if (parseFloat(amount) > userBalance) {
-      setError("Insufficient credits");
-      return;
-    }
-
     setLoading(true);
     setError("");
 
@@ -221,7 +216,6 @@ export default function BettingCard({
                     placeholder="0"
                     className="text-3xl font-bold text-white bg-transparent border-none outline-none text-right w-auto min-w-[3ch]"
                     min="0"
-                    max={userBalance}
                     step="0.01"
                   />
                 </div>
@@ -385,8 +379,7 @@ export default function BettingCard({
             loading ||
             !amount ||
             parseFloat(amount) <= 0 ||
-            (mode === "sell" && (!hasPosition || parseFloat(amount) > (userPosition?.positionValue || 0))) ||
-            (mode === "buy" && parseFloat(amount) > userBalance)
+            (mode === "sell" && (!hasPosition || parseFloat(amount) > (userPosition?.positionValue || 0)))
           }
           className={`w-full py-3 text-white ${
             mode === "sell"
