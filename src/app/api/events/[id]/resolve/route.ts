@@ -135,12 +135,7 @@ export async function POST(
       return false
     })
 
-    // Calculate payment matrix: who owes who (PURE PARIMUTUEL)
-    const payments: Array<{
-      from: { id: string; name: string }
-      to: { id: string; name: string }
-      amount: number
-    }> = []
+
 
     // Total amount won by each winner
     const totalWinningAmount = winningBets.reduce((sum, bet) => sum + Number(bet.amount), 0)
@@ -169,30 +164,7 @@ export async function POST(
       })
     }
 
-    // Each loser's amount is distributed proportionally to winners
-    losingBets.forEach(losingBet => {
-      const loserAmount = Number(losingBet.amount)
 
-      // Distribute this loser's amount proportionally to each winner
-      winningBets.forEach(winningBet => {
-        const winnerShare = Number(winningBet.amount) / totalWinningAmount
-        const paymentAmount = loserAmount * winnerShare
-
-        if (paymentAmount > 0.01) { // Only include payments over 1 cent
-          payments.push({
-            from: {
-              id: losingBet.userId,
-              name: losingBet.user.name || 'Unknown'
-            },
-            to: {
-              id: winningBet.userId,
-              name: winningBet.user.name || 'Unknown'
-            },
-            amount: Math.round(paymentAmount * 100) / 100 // Round to 2 decimals
-          })
-        }
-      })
-    })
 
     // Update user stats with parimutuel winnings/losses
     await prisma.$transaction(async (tx) => {
@@ -223,7 +195,7 @@ export async function POST(
 
     // Send notifications to all users with bets on this market
     try {
-      await notifyMarketResolution(params.id, outcome, winningOptionId, payments)
+      await notifyMarketResolution(params.id, outcome, winningOptionId)
     } catch (notificationError) {
       console.error('Error sending resolution notifications:', notificationError)
       // Don't fail the resolution if notifications fail
@@ -237,7 +209,7 @@ export async function POST(
       message: 'Event resolved successfully',
       event: result,
       outcome: winnerDescription,
-      payments,
+
     })
   } catch (error) {
     console.error('Error resolving event:', error)

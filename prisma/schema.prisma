@@ -44,7 +44,6 @@ model User {
   name            String    // User's name
   image           String?
   hashedPassword  String?
-  appleCashEmail  String?   // Apple Cash email for payments
   virtualBalance  Decimal   @default(1.00)
   totalWinnings   Decimal   @default(0.00)
   totalLosses     Decimal   @default(0.00)
@@ -58,8 +57,6 @@ model User {
   bets          Bet[]
   comments      Comment[]
   commentLikes  CommentLike[]
-  payments      Payment[]
-  redemptions   Redemption[]
   notifications Notification[]
 }
 
@@ -196,37 +193,7 @@ model CommentLike {
   @@map("comment_likes")
 }
 
-model Payment {
-  id            String   @id @default(cuid())
-  userId        String
-  amount        Decimal  // USD amount paid
-  tokens        Decimal  // Tokens received (typically 100x amount)
-  transactionId String   @unique // From payment provider
-  paymentMethod String   @default("manual") // venmo, cashapp, paypal, bank, etc.
-  status        String   @default("PENDING") // PENDING, VERIFIED, REJECTED
-  createdAt     DateTime @default(now())
-  verifiedAt    DateTime?
 
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("payments")
-}
-
-model Redemption {
-  id            String   @id @default(cuid())
-  userId        String
-  tokenAmount   Decimal  // Tokens to redeem
-  dollarAmount  Decimal  // Dollar equivalent (typically tokenAmount / 100)
-  appleCashEmail String   // User's Apple Cash email
-  status        String   @default("PENDING") // PENDING, APPROVED, COMPLETED, REJECTED
-  requestedAt   DateTime @default(now())
-  processedAt   DateTime?
-  adminNotes    String?  // Optional notes from admin
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("redemptions")
-}
 
 model Notification {
   id        String   @id @default(cuid())

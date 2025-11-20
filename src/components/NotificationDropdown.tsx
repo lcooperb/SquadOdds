@@ -20,7 +20,7 @@ interface NotificationData {
   status?: string;
   betId?: string;
   result?: string;
-  redemptionId?: string;
+
   adminNotes?: string;
 }
 
@@ -153,10 +153,6 @@ export default function NotificationDropdown() {
     // Navigate based on notification type
     if (notification.data?.eventId) {
       router.push(`/market/${notification.data.eventId}`);
-    } else if (notification.type.includes("PAYMENT")) {
-      router.push("/profile");
-    } else if (notification.type.includes("REDEMPTION")) {
-      router.push("/redeem");
     }
 
     setIsOpen(false);
@@ -167,10 +163,6 @@ export default function NotificationDropdown() {
       case "MARKET_CLOSED":
       case "MARKET_RESOLVED":
         return <TrendingUp className="h-4 w-4" />;
-      case "PAYMENT_APPROVED":
-      case "REDEMPTION_COMPLETED":
-      case "REDEMPTION_REJECTED":
-        return <DollarSign className="h-4 w-4" />;
       default:
         return <Bell className="h-4 w-4" />;
     }
@@ -182,11 +174,6 @@ export default function NotificationDropdown() {
         return "text-green-400";
       case "MARKET_CLOSED":
         return "text-blue-400";
-      case "PAYMENT_APPROVED":
-      case "REDEMPTION_COMPLETED":
-        return "text-green-400";
-      case "REDEMPTION_REJECTED":
-        return "text-red-400";
       default:
         return "text-gray-400";
     }

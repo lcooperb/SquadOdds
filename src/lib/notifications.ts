@@ -96,11 +96,6 @@ export async function notifyMarketResolution(
   eventId: string,
   outcome: boolean | null,
   winningOptionId?: string,
-  payments?: Array<{
-    from: { id: string; name: string }
-    to: { id: string; name: string }
-    amount: number
-  }>
 ) {
   try {
     // Get the event and all bets
@@ -144,42 +139,19 @@ export async function notifyMarketResolution(
         const result = isWinner ? 'won' : 'lost'
         const amount = isWinner ? Number(bet.shares) : Number(bet.amount)
 
-        // Calculate payment details for this user
-        let paymentDetails = ''
-        if (payments && payments.length > 0) {
-          if (isWinner) {
-            // Find who owes this winner
-            const paymentsToUser = payments.filter(p => p.to.id === bet.userId)
-            if (paymentsToUser.length > 0) {
-              const totalReceiving = paymentsToUser.reduce((sum, p) => sum + p.amount, 0)
-              const payersList = paymentsToUser.map(p => `${p.from.name} ($${p.amount.toFixed(2)})`).join(', ')
-              paymentDetails = ` You'll receive $${totalReceiving.toFixed(2)} from: ${payersList}`
-            }
-          } else {
-            // Find who this loser owes
-            const paymentsFromUser = payments.filter(p => p.from.id === bet.userId)
-            if (paymentsFromUser.length > 0) {
-              const totalOwing = paymentsFromUser.reduce((sum, p) => sum + p.amount, 0)
-              const payeesList = paymentsFromUser.map(p => `${p.to.name} ($${p.amount.toFixed(2)})`).join(', ')
-              paymentDetails = ` You owe $${totalOwing.toFixed(2)} to: ${payeesList}`
-            }
-          }
-        }
-
         const amountText = isWinner ? `won $${amount.toFixed(2)}` : `lost $${amount.toFixed(2)}`
 
         return createNotification(
           bet.userId,
           'MARKET_RESOLVED',
           'Market Resolved',
-          `Your bet on "${event.title}" has been resolved. You ${amountText}. Winner: ${winningDescription}.${paymentDetails}`,
+          `Your bet on "${event.title}" has been resolved. You ${amountText}. Winner: ${winningDescription}.`,
           {
             eventId: event.id,
             betId: bet.id,
             result,
             amount,
             outcome: winningDescription,
-            payments: payments?.filter(p => p.from.id === bet.userId || p.to.id === bet.userId) || []
           }
         )
       })
@@ -188,24 +160,6 @@ export async function notifyMarketResolution(
     return notifications
   } catch (error) {
     console.error('Error notifying market resolution:', error)
-    throw error
-  }
-}
-
-export async function notifyPaymentApproved(userId: string, amount: number) {
-  try {
-    const notification = await createNotification(
-      userId,
-      'PAYMENT_APPROVED',
-      'Payment Approved',
-      `Your $${amount.toFixed(2)} payment has been approved and added to your balance.`,
-      {
-        amount,
-      }
-    )
-    return notification
-  } catch (error) {
-    console.error('Error notifying payment approval:', error)
     throw error
   }
 }
@@ -250,54 +204,6 @@ export async function notifyMarketCancelled(eventId: string) {
     return notifications
   } catch (error) {
     console.error('Error notifying market cancellation:', error)
-    throw error
-  }
-}
-
-export async function notifyRedemptionUpdate(redemptionId: string, status: string, adminNotes?: string) {
-  try {
-    // Get the redemption details
-    const redemption = await prisma.redemption.findUnique({
-      where: { id: redemptionId },
-      include: {
-        user: true,
-      },
-    })
-
-    if (!redemption) {
-      throw new Error('Redemption not found')
-    }
-
-    let title = 'Redemption Update'
-    let message = `Your $${Number(redemption.dollarAmount).toFixed(2)} redemption has been ${status.toLowerCase()}.`
-
-    if (status === 'COMPLETED') {
-      title = 'Redemption Completed'
-      message = `Your $${Number(redemption.dollarAmount).toFixed(2)} redemption has been completed and sent to ${redemption.appleCashEmail}.`
-    } else if (status === 'REJECTED') {
-      title = 'Redemption Rejected'
-      message = `Your $${Number(redemption.dollarAmount).toFixed(2)} redemption has been rejected and refunded to your account.`
-      if (adminNotes) {
-        message += ` Reason: ${adminNotes}`
-      }
-    }
-
-    const notification = await createNotification(
-      redemption.userId,
-      `REDEMPTION_${status}`,
-      title,
-      message,
-      {
-        redemptionId: redemption.id,
-        amount: Number(redemption.dollarAmount),
-        status,
-        adminNotes,
-      }
-    )
-
-    return notification
-  } catch (error) {
-    console.error('Error notifying redemption update:', error)
     throw error
   }
 }

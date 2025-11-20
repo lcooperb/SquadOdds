@@ -21,30 +21,7 @@ export default function Navigation() {
     signOut({ callbackUrl: '/' })
   }
 
-  useEffect(() => {
-    const fetchAdminPending = async () => {
-      if (!session?.user?.isAdmin) return
-      try {
-        const [paymentsRes, redemptionsRes] = await Promise.all([
-          fetch('/api/admin/payments/process'),
-          fetch('/api/admin/redemptions'),
-        ])
-        let pending = 0
-        if (paymentsRes.ok) {
-          const payments = await paymentsRes.json()
-          pending += (payments || []).filter((p: any) => p.status === 'PENDING').length
-        }
-        if (redemptionsRes.ok) {
-          const redemptions = await redemptionsRes.json()
-          pending += (redemptions || []).filter((r: any) => r.status === 'PENDING').length
-        }
-        setPendingAdminCount(pending)
-      } catch (e) {
-        console.error('Error fetching pending admin counts', e)
-      }
-    }
-    fetchAdminPending()
-  }, [session])
+
 
   useEffect(() => {
     if (session?.user) {
@@ -306,22 +283,6 @@ export default function Navigation() {
                     >
                       <Settings className="h-4 w-4 mr-3" />
                       Settings
-                    </Link>
-                    <Link
-                      href="/topup"
-                      className="flex items-center px-0 py-2.5 text-base text-gray-300 hover:text-white hover:bg-gray-700 rounded-md transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <CreditCard className="h-4 w-4 mr-3" />
-                      Top Up
-                    </Link>
-                    <Link
-                      href="/redeem"
-                      className="flex items-center px-0 py-2.5 text-base text-gray-300 hover:text-white hover:bg-gray-700 rounded-md transition-colors"
-                      onClick={() => setIsMenuOpen(false)}
-                    >
-                      <ArrowDownCircle className="h-4 w-4 mr-3" />
-                      Redeem
                     </Link>
                     <button
                       onClick={() => {
